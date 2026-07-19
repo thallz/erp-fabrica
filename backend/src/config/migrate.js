@@ -30,6 +30,7 @@ async function runMigrations() {
         ALTER TABLE produto ADD COLUMN IF NOT EXISTS categoria_producao VARCHAR(50) DEFAULT 'Geral';
         ALTER TABLE colaborador ADD COLUMN IF NOT EXISTS meta_diaria_individual INT DEFAULT 350;
         ALTER TABLE colaborador ADD COLUMN IF NOT EXISTS eh_novato BOOLEAN DEFAULT FALSE;
+        ALTER TABLE colaborador ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'Ativo';
         ALTER TABLE ordem_producao ADD COLUMN IF NOT EXISTS categoria_producao VARCHAR(50);
         ALTER TABLE ordem_producao ADD COLUMN IF NOT EXISTS data_programada DATE;
     `);

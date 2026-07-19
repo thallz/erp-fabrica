@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fila de Produção — ERP Fabrica</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/global.css" />
+  <style>
+    .op-kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .toolbar {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 16px; flex-wrap: wrap;
+    }
+    .toolbar .search-bar { flex: 1; max-width: 380px; }
+    .toolbar-right { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+
+    .action-icons { display: flex; gap: 6px; }
+    .action-icons button {
+      padding: 4px 10px;
+      font-size: 11px;
+      font-weight: 700;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--surface);
+      cursor: pointer;
+      color: var(--text-secondary);
+      transition: all 0.12s;
+    }
+    .action-icons button.primary {
+      background: var(--brand);
+      color: white;
+      border-color: var(--brand);
+    }
+    .action-icons button.primary:hover {
+      background: var(--brand-hover);
+    }
+    .action-icons button.green {
+      background: var(--green);
+      color: white;
+      border-color: var(--green);
+    }
+    .action-icons button.green:hover {
+      background: #15803d;
+    }
+    .action-icons button.red:hover {
+      border-color: var(--red);
+      color: var(--red);
+    }
+  </style>
+</head>
+<body>
+<div class="erp-shell">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <span>ERP Fabrica</span>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-label">Menu Principal</div>
+      <a href="index.html" class="nav-link">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        Dashboard
+      </a>
+      <a href="colaboradores.html" class="nav-link">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        Colaboradores
+      </a>
+      <a href="producao.html" class="nav-link">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+        Insumos (Almoxarifado)
+      </a>
+      <a href="produtos.html" class="nav-link">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+        Receitas / Produtos
+      </a>
+      <a href="ordens_producao.html" class="nav-link active">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Fila de Produção (OPs)
+      </a>
+      <a href="vendas.html" class="nav-link">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Vendas / Clientes
+      </a>
+      <a href="planejamento.html" class="nav-link">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Planejamento Maestro
+      </a>
+      <a href="financeiro.html" class="nav-link">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        Financeiro
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <a href="#">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Sair do Sistema
+      </a>
+      <div class="sidebar-version">v2.4.0-build.102</div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main-wrap">
+    <header class="topbar">
+      <div class="topbar-search">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        Busca global (Alt + S)
+      </div>
+      <div class="topbar-right">
+        <span class="badge-offline" id="api-status">Conectando...</span>
+        <div class="user-chip">
+          <div><strong>Admin Fabrica</strong><span>Administrador</span></div>
+          <div class="user-avatar">AF</div>
+        </div>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <div class="page-header">
+        <div class="page-header-left">
+          <h1>Fila de Produção (OPs)</h1>
+          <p>Monitore a fila ativa, altere status de produção e crie ordens manuais.</p>
+        </div>
+        <div class="page-header-actions">
+          <button class="btn btn-primary" onclick="openNovaOP()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            + Criar OP Manual
+          </button>
+        </div>
+      </div>
+
+      <!-- KPI GRID -->
+      <div class="op-kpi-grid">
+        <div class="card kpi-card" style="position:relative">
+          <div class="card-body">
+            <div class="kpi-label">Aguardando (FILA)</div>
+            <div class="kpi-value" id="kpi-fila">0</div>
+            <div class="kpi-sub">Ordens aguardando início</div>
+            <div class="kpi-icon blue">⏳</div>
+          </div>
+        </div>
+        <div class="card kpi-card" style="position:relative">
+          <div class="card-body">
+            <div class="kpi-label">Em Produção</div>
+            <div class="kpi-value" id="kpi-produzindo">0</div>
+            <div class="kpi-sub">Ordens ativas na bancada</div>
+            <div class="kpi-icon green">⚙️</div>
+          </div>
+        </div>
+        <div class="card kpi-card" style="position:relative">
+          <div class="card-body">
+            <div class="kpi-label">Total Ativas</div>
+            <div class="kpi-value" id="kpi-total">0</div>
+            <div class="kpi-sub">Total de OPs em processamento</div>
+            <div class="kpi-icon amber">📈</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TOOLBAR -->
+      <div class="toolbar">
+        <div class="search-bar">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="op-search" placeholder="Filtrar por produto..." oninput="filtrarOPs()" />
+        </div>
+      </div>
+
+      <!-- MAIN TABLE CARD -->
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th width="90">OP ID</th>
+                <th>Tipo</th>
+                <th>Item / Produto</th>
+                <th>Meta / Carga</th>
+                <th>Agendado</th>
+                <th>Status</th>
+                <th width="220" style="text-align:right">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="op-tbody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+        <div class="tbl-footer">
+          <span id="footer-count">Exibindo 0 ordens de produção</span>
+        </div>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <span>&copy; 2026 ERP Fabrica — Produção Maestro</span>
+      <div class="footer-links">
+        <a href="#">Suporte Tecnico</a>
+        <a href="#">Documentacao</a>
+      </div>
+    </footer>
+  </div>
+</div>
+
+<!-- DRAWER: Nova OP Manual -->
+<div class="drawer-backdrop" id="drawer-backdrop" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-header">
+    <h2>
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>
+      Criar OP Manual
+    </h2>
+    <p>Aloque uma nova necessidade de produção diretamente na fila.</p>
+    <button class="drawer-close" onclick="closeDrawer()">&#10005;</button>
+  </div>
+  <div class="drawer-body">
+    <form id="form-op" onsubmit="submitOP(event)">
+      <div class="form-group">
+        <label>Escolha o Produto Acabado <span style="color:var(--red)">*</span></label>
+        <select id="f-produto-id" required>
+          <option value="">Carregando produtos...</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Quantidade Planejada (unidades) <span style="color:var(--red)">*</span></label>
+        <input type="number" id="f-quantidade" placeholder="Ex: 100" required min="1" />
+      </div>
+    </form>
+  </div>
+  <div class="drawer-footer">
+    <button class="btn btn-close" onclick="closeDrawer()">Cancelar</button>
+    <button class="btn btn-primary" onclick="document.getElementById('form-op').requestSubmit()">Alocar na Fila</button>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script>
+  const API = 'http://localhost:3001/api';
+  let opsList = [];
+  let produtos = [];
+
+  function toast(msg, type = '') {
+    const el = document.createElement('div');
+    el.className = 'toast ' + type;
+    el.textContent = msg;
+    document.getElementById('toast-container').appendChild(el);
+    setTimeout(() => el.remove(), 4000);
+  }
+
+  async function testConnection() {
+    try {
+      const res = await fetch(`${API}/status`);
+      if (res.ok) {
+        document.getElementById('api-status').textContent = 'API Online';
+        document.getElementById('api-status').className = 'api-status api-online';
+      }
+    } catch {
+      document.getElementById('api-status').textContent = 'Modo Offline';
+      document.getElementById('api-status').className = 'api-status api-offline';
+    }
+  }
+
+  async function loadProdutos() {
+    try {
+      const res = await fetch(`${API}/produtos`);
+      if (!res.ok) throw new Error();
+      produtos = await res.json();
+      
+      const select = document.getElementById('f-produto-id');
+      if (produtos.length === 0) {
+        select.innerHTML = '<option value="">Nenhum produto com ficha técnica cadastrada</option>';
+        return;
+      }
+
+      select.innerHTML = '<option value="">Selecione...</option>' + 
+        produtos.map(p => `<option value="${p.id}">${p.nome} (${p.categoria_producao || 'Geral'})</option>`).join('');
+    } catch (e) {
+      console.error(e);
+      document.getElementById('f-produto-id').innerHTML = '<option value="">Erro ao carregar produtos</option>';
+    }
+  }
+
+  async function loadOPs() {
+    try {
+      const res = await fetch(`${API}/producao/fila`);
+      if (!res.ok) throw new Error();
+      opsList = await res.json();
+      renderOPs();
+    } catch {
+      toast('Erro ao obter fila de OPs do servidor.', 'error');
+    }
+  }
+
+  function renderOPs() {
+    const tbody = document.getElementById('op-tbody');
+    const term = document.getElementById('op-search').value.toLowerCase().trim();
+
+    const filtered = opsList.filter(o => {
+      const nomeProd = (o.tipo_op === 'PREPARO' ? o.receita_nome : o.produto) || '';
+      return nomeProd.toLowerCase().includes(term);
+    });
+
+    const totalFila = opsList.filter(o => o.status === 'FILA').length;
+    const totalProd = opsList.filter(o => o.status === 'PRODUZINDO').length;
+
+    document.getElementById('kpi-fila').textContent = totalFila;
+    document.getElementById('kpi-produzindo').textContent = totalProd;
+    document.getElementById('kpi-total').textContent = opsList.length;
+    document.getElementById('footer-count').textContent = `Exibindo ${filtered.length} de ${opsList.length} ordens de produção`;
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--text-muted); padding:30px;">Nenhuma OP ativa na fila de trabalho.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = filtered.map(o => {
+      const isPrep = o.tipo_op === 'PREPARO';
+      const displayNome = isPrep ? (o.receita_nome || 'Receita Preparo') : o.produto;
+      const displayUnidade = isPrep ? 'kg' : 'un';
+      const statusClass = o.status === 'PRODUZINDO' ? 'badge-green' : 'badge-amber';
+      
+      let actionsHtml = '';
+      if (o.status === 'FILA') {
+        actionsHtml += `<button class="primary" onclick="alterarStatus(${o.numero_op}, 'PRODUZINDO')">Iniciar</button>`;
+      } else if (o.status === 'PRODUZINDO') {
+        actionsHtml += `<button class="green" onclick="alterarStatus(${o.numero_op}, 'CONCLUIDA')">Concluir</button>`;
+      }
+      actionsHtml += `<button class="red" onclick="excluirOP(${o.numero_op})">Excluir</button>`;
+
+      const dataStr = o.data_programada ? o.data_programada.split('T')[0].split('-').reverse().join('/') : '—';
+      const colabStr = o.colaborador_nome ? `${o.colaborador_nome}` : '—';
+
+      return `
+        <tr>
+          <td><strong>OP-${String(o.numero_op).padStart(3, '0')}</strong></td>
+          <td><span class="badge ${isPrep ? 'badge-purple' : 'badge-blue'}">${isPrep ? 'PREPARO' : 'MONTAGEM'}</span></td>
+          <td><strong>${displayNome}</strong></td>
+          <td><span style="font-weight:700;">${o.quantidade_planejada} ${displayUnidade}</span></td>
+          <td><span style="font-size:12px;">📅 ${dataStr}<br/><span style="color:var(--text-muted)">👤 ${colabStr}</span></span></td>
+          <td><span class="badge ${statusClass}">${o.status}</span></td>
+          <td style="text-align:right">
+            <div class="action-icons" style="justify-content:flex-end">
+              ${actionsHtml}
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  function filtrarOPs() {
+    renderOPs();
+  }
+
+  function openDrawer() {
+    document.getElementById('drawer-backdrop').classList.add('open');
+    document.getElementById('drawer').classList.add('open');
+  }
+
+  function closeDrawer() {
+    document.getElementById('drawer-backdrop').classList.remove('open');
+    document.getElementById('drawer').classList.remove('open');
+    document.getElementById('form-op').reset();
+  }
+
+  function openNovaOP() {
+    loadProdutos();
+    openDrawer();
+  }
+
+  async function submitOP(e) {
+    e.preventDefault();
+    const produto_id = document.getElementById('f-produto-id').value;
+    const quantidade_planejada = document.getElementById('f-quantidade').value;
+
+    try {
+      const res = await fetch(`${API}/producao/alocar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ produto_id, quantidade_planejada })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        toast(`Erro: ${data.erro || 'Falha ao alocar OP'}`, 'error');
+        return;
+      }
+
+      toast('OP alocada na fila com sucesso!', 'success');
+      closeDrawer();
+      await loadOPs();
+    } catch {
+      toast('Erro ao enviar dados para a API.', 'error');
+    }
+  }
+
+  async function alterarStatus(id, novoStatus) {
+    try {
+      const res = await fetch(`${API}/producao/op/${id}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: novoStatus })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        toast(`Impedimento: ${data.erro || 'Erro ao alterar status'}`, 'error');
+        return;
+      }
+
+      toast(`OP atualizada para ${novoStatus}!`, 'success');
+      await loadOPs();
+    } catch {
+      toast('Erro de rede ao atualizar status.', 'error');
+    }
+  }
+
+  async function excluirOP(id) {
+    if (!confirm('Deseja realmente excluir esta ordem de produção? Isso também excluirá preparos pendentes vinculados.')) return;
+    try {
+      const res = await fetch(`${API}/producao/op/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error();
+      toast('Ordem de produção excluída!', 'success');
+      await loadOPs();
+    } catch {
+      toast('Erro ao excluir OP.', 'error');
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    testConnection();
+    loadOPs();
+  });
+</script>
+</body>
+</html>
