@@ -9,12 +9,12 @@ const produtoController = {
         try {
             await client.query('BEGIN'); // Trava o banco: "Comece a gravar, mas só salve se eu mandar"
             
-            const { nome, preco_venda, cmv_estimado, margem_contribuicao, categoria, peso_produtividade, ficha_tecnica } = req.body;
+            const { nome, preco_venda, cmv_estimado, margem_contribuicao, categoria_producao, peso_produtividade, ficha_tecnica } = req.body;
             
             // Passo A: Gravar o Produto Final
             const resultProd = await client.query(
-                'INSERT INTO produto (nome, preco_venda, cmv_estimado, margem_contribuicao, categoria, peso_produtividade) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
-                [nome, preco_venda, cmv_estimado, margem_contribuicao, categoria || 'Geral', parseFloat(peso_produtividade) || 1.0]
+                'INSERT INTO produto (nome, preco_venda, cmv_estimado, margem_contribuicao, categoria, categoria_producao, peso_produtividade) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id',
+                [nome, preco_venda, cmv_estimado, margem_contribuicao, categoria_producao || 'Geral', categoria_producao || 'Geral', parseFloat(peso_produtividade) || 1.0]
             );
             const produtoId = resultProd.rows[0].id;
 
@@ -60,13 +60,13 @@ const produtoController = {
         try {
             await client.query('BEGIN');
             const { id } = req.params;
-            const { nome, preco_venda, cmv_estimado, margem_contribuicao, categoria, peso_produtividade, ficha_tecnica } = req.body;
+            const { nome, preco_venda, cmv_estimado, margem_contribuicao, categoria_producao, peso_produtividade, ficha_tecnica } = req.body;
 
             const result = await client.query(
                 `UPDATE produto
-                 SET nome = $1, preco_venda = $2, cmv_estimado = $3, margem_contribuicao = $4, categoria = $5, peso_produtividade = $6
-                 WHERE id = $7 RETURNING id`,
-                [nome, preco_venda, cmv_estimado, margem_contribuicao, categoria || 'Geral', parseFloat(peso_produtividade) || 1.0, id]
+                 SET nome = $1, preco_venda = $2, cmv_estimado = $3, margem_contribuicao = $4, categoria = $5, categoria_producao = $6, peso_produtividade = $7
+                 WHERE id = $8 RETURNING id`,
+                [nome, preco_venda, cmv_estimado, margem_contribuicao, categoria_producao || 'Geral', categoria_producao || 'Geral', parseFloat(peso_produtividade) || 1.0, id]
             );
             if (result.rows.length === 0) {
                 await client.query('ROLLBACK');

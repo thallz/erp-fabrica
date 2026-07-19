@@ -1,5 +1,51 @@
 const pool = require('../config/db');
 
+async function explodirEPrefabricarOPs(client, montagemOpId, produtoId, quantidadeMontagem) {
+    const receitasExigidas = await client.query(
+        `SELECT receita_id, quantidade_necessaria FROM ficha_tecnica_receita WHERE produto_id = $1`,
+        [produtoId]
+    );
+
+    for (const r of receitasExigidas.rows) {
+        const receitaId = r.receita_id;
+        const pesoNecessario = parseFloat(r.quantidade_necessaria) * quantidadeMontagem;
+
+        const recEstRes = await client.query(
+            `SELECT COALESCE(estoque_atual, 0) AS estoque_atual FROM receita WHERE id = $1`,
+            [receitaId]
+        );
+        
+        let estoquePronto = 0;
+        if (recEstRes.rows.length > 0) {
+            estoquePronto = parseFloat(recEstRes.rows[0].estoque_atual || 0);
+        }
+
+        if (pesoNecessario > estoquePronto) {
+            const pesoFalta = pesoNecessario - estoquePronto;
+            const qtdPreparoKg = Math.ceil(pesoFalta);
+
+            // Criar OP de PREPARO
+            await client.query(
+                `INSERT INTO ordem_producao (produto_id, quantidade_planejada, status, tipo_op, receita_id, parent_op_id, categoria_producao)
+                 VALUES ($1, $2, 'FILA', 'PREPARO', $3, $4, 'Preparo')`,
+                [produtoId, qtdPreparoKg, receitaId, montagemOpId]
+            );
+
+            // Abater estoque consumido
+            await client.query(
+                `UPDATE receita SET estoque_atual = 0 WHERE id = $1`,
+                [receitaId]
+            );
+        } else {
+            const novoEstoque = estoquePronto - pesoNecessario;
+            await client.query(
+                `UPDATE receita SET estoque_atual = $1 WHERE id = $2`,
+                [novoEstoque, receitaId]
+            );
+        }
+    }
+}
+
 const producaoController = {
     alocar: async (req, res) => {
         try {
@@ -35,10 +81,12 @@ const producaoController = {
                        op.quantidade_planejada, op.status, op.criado_em,
                        p.estoque_atual AS estoque_camara_fria,
                        op.data_programada, op.colaborador_id, op.categoria_producao,
-                       c.nome AS colaborador_nome, p.peso_produtividade
+                       c.nome AS colaborador_nome, p.peso_produtividade,
+                       op.tipo_op, op.receita_id, r.nome AS receita_nome
                 FROM ordem_producao op
                 JOIN produto p ON op.produto_id = p.id
                 LEFT JOIN colaborador c ON op.colaborador_id = c.id
+                LEFT JOIN receita r ON r.id = op.receita_id
                 WHERE op.status IN ('FILA', 'PRODUZINDO')
                 ORDER BY op.criado_em ASC
             `);
@@ -108,7 +156,61 @@ const producaoController = {
 
             const opData = op.rows[0];
 
-            // Buscar fichas técnicas do produto
+            const impedimentos = [];
+            const avisos = [];
+
+            if (opData.tipo_op === 'PREPARO') {
+                // Obter peso_total da receita
+                const recRes = await pool.query('SELECT peso_total, nome FROM receita WHERE id = $1', [opData.receita_id]);
+                if (recRes.rows.length === 0) {
+                    return res.status(404).json({ status: 'erro', erro: 'Receita não encontrada' });
+                }
+                const pesoTotalReceita = parseFloat(recRes.rows[0].peso_total || 10.0);
+                const scaleFactor = opData.quantidade_planejada / pesoTotalReceita;
+
+                const items = await pool.query(`
+                    SELECT ri.origem_id AS insumo_id, ri.nome, ri.quantidade_gramas, 
+                           i.unidade_medida, i.estoque_atual
+                    FROM receita_item ri
+                    LEFT JOIN insumo i ON i.id = ri.origem_id
+                    WHERE ri.receita_id = $1
+                `, [opData.receita_id]);
+
+                for (const ri of items.rows) {
+                    const qtdNecessaria = (parseFloat(ri.quantidade_gramas) / 1000.0) * scaleFactor;
+                    const qtdDisponivel = parseFloat(ri.estoque_atual || 0);
+                    const falta = qtdNecessaria - qtdDisponivel;
+
+                    if (falta > 0) {
+                        impedimentos.push({
+                            tipo: 'insumo',
+                            nome: ri.nome,
+                            necessario: qtdNecessaria.toFixed(4),
+                            disponivel: qtdDisponivel.toFixed(4),
+                            falta: falta.toFixed(4),
+                            unidade: ri.unidade_medida || 'kg'
+                        });
+                    }
+                }
+
+                if (items.rows.length === 0) {
+                    avisos.push('Receita sem insumos cadastrados.');
+                }
+
+                const temImpedimentos = impedimentos.length > 0;
+
+                return res.json({
+                    op_id: opData.id,
+                    produto: recRes.rows[0].nome,
+                    quantidade_planejada: opData.quantidade_planejada,
+                    tem_impedimentos: temImpedimentos,
+                    impedimentos: impedimentos,
+                    avisos: avisos,
+                    status_estoque: temImpedimentos ? 'IMPEDIMENTO' : 'OK'
+                });
+            }
+
+            // Caso padrão: MONTAGEM (Produto Final)
             const fichasInsumo = await pool.query(`
                 SELECT fti.insumo_id, fti.quantidade, i.nome, i.unidade_medida,
                        i.estoque_atual, i.custo_unitario
@@ -123,9 +225,6 @@ const producaoController = {
                 JOIN embalagem e ON e.id = fte.embalagem_id
                 WHERE fte.produto_id = $1
             `, [opData.produto_id]);
-
-            const impedimentos = [];
-            const avisos = [];
 
             // Verificar insumos
             for (const f of fichasInsumo.rows) {
@@ -421,6 +520,109 @@ const producaoController = {
                 ORDER BY op.id ASC
             `, [data]);
             res.json(ops.rows);
+        } catch (error) {
+            res.status(500).json({ status: 'erro', erro: error.message });
+        }
+    },
+
+    // 9. AGENDAR INDIVIDUALMENTE UMA OP (PUT)
+    agendarOP: async (req, res) => {
+        try {
+            const { id } = req.params;
+            const { data_programada, colaborador_id } = req.body;
+
+            const result = await pool.query(
+                `UPDATE ordem_producao
+                 SET data_programada = $1, colaborador_id = $2
+                 WHERE id = $3 RETURNING *`,
+                [data_programada || null, colaborador_id || null, id]
+            );
+
+            if (result.rows.length === 0) {
+                return res.status(404).json({ status: 'erro', erro: 'OP não encontrada.' });
+            }
+
+            const op = result.rows[0];
+            if (op.tipo_op === 'MONTAGEM' && data_programada) {
+                const filhas = await pool.query(
+                    `SELECT id FROM ordem_producao WHERE parent_op_id = $1 AND tipo_op = 'PREPARO'`,
+                    [id]
+                );
+                if (filhas.rows.length === 0) {
+                    await explodirEPrefabricarOPs(pool, id, op.produto_id, op.quantidade_planejada);
+                }
+
+                // Aplicar Inteligência de Cronograma: Recheios/Molhos em D-1, Massas em D+0
+                const filhasOPs = await pool.query(
+                    `SELECT op.id, r.categoria FROM ordem_producao op
+                     LEFT JOIN receita r ON r.id = op.receita_id
+                     WHERE op.parent_op_id = $1 AND op.tipo_op = 'PREPARO'`,
+                    [id]
+                );
+                for (const f of filhasOPs.rows) {
+                    if (f.categoria === 'Recheio' || f.categoria === 'Molho') {
+                        const dateObj = new Date(data_programada + 'T00:00:00');
+                        dateObj.setDate(dateObj.getDate() - 1);
+                        const dateStrMinus1 = dateObj.toISOString().split('T')[0];
+                        await pool.query(
+                            `UPDATE ordem_producao SET data_programada = $1 WHERE id = $2`,
+                            [dateStrMinus1, f.id]
+                        );
+                    } else {
+                        await pool.query(
+                            `UPDATE ordem_producao SET data_programada = $1 WHERE id = $2`,
+                            [data_programada, f.id]
+                        );
+                    }
+                }
+            }
+
+            res.json({ status: 'sucesso', op: result.rows[0] });
+        } catch (error) {
+            res.status(500).json({ status: 'erro', erro: error.message });
+        }
+    },
+
+    // 10. ATUALIZAR STATUS DE UMA OP (COM REGRA DE BLOQUEIO DE MONTAGEM)
+    atualizarStatusOP: async (req, res) => {
+        try {
+            const { id } = req.params;
+            const { status } = req.body;
+
+            if (!status) {
+                return res.status(400).json({ status: 'erro', erro: 'Status é obrigatório' });
+            }
+
+            const opRes = await pool.query('SELECT * FROM ordem_producao WHERE id = $1', [id]);
+            if (opRes.rows.length === 0) {
+                return res.status(404).json({ status: 'erro', erro: 'OP não encontrada' });
+            }
+            const op = opRes.rows[0];
+
+            if (op.tipo_op === 'MONTAGEM' && (status === 'PRODUZINDO' || status === 'CONCLUIDA')) {
+                const preparosPendentes = await pool.query(
+                    `SELECT id, status FROM ordem_producao 
+                     WHERE parent_op_id = $1 AND tipo_op = 'PREPARO' AND status != 'CONCLUIDA'`,
+                    [id]
+                );
+
+                if (preparosPendentes.rows.length > 0) {
+                    return res.status(400).json({
+                        status: 'erro',
+                        erro: 'Bloqueio: Esta OP de montagem só pode ser iniciada se a OP de preparo vinculada estiver com status CONCLUÍDA.'
+                    });
+                }
+            }
+
+            const result = await pool.query(
+                `UPDATE ordem_producao SET status = $1, 
+                 data_inicio = CASE WHEN CAST($1 AS VARCHAR) = 'PRODUZINDO' AND data_inicio IS NULL THEN CURRENT_TIMESTAMP ELSE data_inicio END,
+                 data_fim = CASE WHEN CAST($1 AS VARCHAR) = 'CONCLUIDA' THEN CURRENT_TIMESTAMP ELSE data_fim END
+                 WHERE id = $2 RETURNING *`,
+                [status, id]
+            );
+
+            res.json({ status: 'sucesso', op: result.rows[0] });
         } catch (error) {
             res.status(500).json({ status: 'erro', erro: error.message });
         }

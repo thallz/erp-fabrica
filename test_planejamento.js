@@ -1,98 +1,134 @@
 const http = require('http');
 
-// Helper to make JSON requests
-const makeRequest = (options, postData = null) => {
+function makeRequest(options, postData) {
     return new Promise((resolve, reject) => {
         const req = http.request(options, (res) => {
             let data = '';
             res.on('data', (chunk) => { data += chunk; });
             res.on('end', () => {
                 try {
-                    const jsonData = JSON.parse(data);
-                    resolve({ status: res.statusCode, body: jsonData });
-                } catch (e) {
-                    resolve({ status: res.statusCode, error: 'Could not parse JSON', raw: data });
+                    const parsed = JSON.parse(data);
+                    resolve({ status: res.statusCode, body: parsed });
+                } catch {
+                    resolve({ status: res.statusCode, body: data });
                 }
             });
         });
-        req.on('error', (e) => { reject(e); });
+
+        req.on('error', (e) => reject(e));
+
         if (postData) {
             req.write(JSON.stringify(postData));
         }
         req.end();
     });
-};
+}
 
 async function runTests() {
-    console.log('🧪 Iniciando testes de integração de Planejamento...\n');
+    console.log('🧪 Iniciando testes de integração do Cronograma Maestro (D-1 vs D+0)...\n');
 
     try {
-        // Teste 1: Buscar sugestões semanais baseadas em pedidos CRIADOS
-        console.log('1️⃣ Testando sugestão semanal baseada em pedidos ativos...');
-        const sugRes = await makeRequest({
+        // 1. Agendar a OP 3 de MONTAGEM para '2026-06-10' (Quarta-feira)
+        console.log('1️⃣ Agendando OP 3 de MONTAGEM para a data X (2026-06-10)...');
+        const putRes = await makeRequest({
             hostname: 'localhost',
             port: 3001,
-            path: '/api/planejamento/sugestao-semanal',
-            method: 'GET'
-        });
-        console.log(`Status: ${sugRes.status}`);
-        console.log(`Sugestões obtidas:`, JSON.stringify(sugRes.body, null, 2));
-        console.log('--------------------------------------------------\n');
-
-        // Teste 2: Validar capacidade de colaborador
-        console.log('2️⃣ Testando validação de capacidade do colaborador...');
-        // Simulando que vamos alocar OP #1 para o colaborador Maria Silva (ID 1)
-        const capRes = await makeRequest({
-            hostname: 'localhost',
-            port: 3001,
-            path: '/api/planejamento/validar',
-            method: 'POST',
+            path: '/api/producao/op/3/agendar',
+            method: 'PUT',
             headers: { 'Content-Type': 'application/json' }
         }, {
-            colaborador_id: 1,
             data_programada: '2026-06-10',
-            ops: [{ op_id: 3 }] // Se a OP existir no banco
+            colaborador_id: 1
         });
-        console.log(`Status: ${capRes.status}`);
-        console.log(`Resultado da capacidade:`, JSON.stringify(capRes.body, null, 2));
+        console.log(`Status: ${putRes.status}`);
         console.log('--------------------------------------------------\n');
 
-        // Teste 3: Listar OPs programadas para hoje
-        console.log('3️⃣ Testando listagem de OPs programadas para hoje...');
-        const hojeRes = await makeRequest({
+        // 2. Buscar todas as OPs na fila para verificar o desmembramento temporal automático
+        console.log('2️⃣ Verificando se OPs de Preparo foram criadas e divididas temporadamente...');
+        const filaRes = await makeRequest({
             hostname: 'localhost',
             port: 3001,
-            path: `/api/producao/programadas-hoje?data=2026-06-10`,
+            path: '/api/producao/fila',
             method: 'GET'
         });
-        console.log(`Status: ${hojeRes.status}`);
-        console.log(`OPs programadas:`, JSON.stringify(hojeRes.body, null, 2));
+        const preparos = (filaRes.body || []).filter(o => o.tipo_op === 'PREPARO');
+        
+        console.log(`Encontradas ${preparos.length} OPs de Preparo na Fila.`);
+        preparos.forEach(op => {
+            console.log(`- OP ID: ${op.numero_op} | Receita: ${op.receita_nome} | Data Programada: ${op.data_programada.split('T')[0]} (Tipo: ${op.categoria_producao})`);
+        });
         console.log('--------------------------------------------------\n');
 
-        // Teste 4: Verificar se a divisão (split) de OP funciona
-        console.log('4️⃣ Testando divisão e redistribuição de OP...');
-        const splitRes = await makeRequest({
+        // 3. Testar a geração da ficha de trabalho para o dia da montagem (2026-06-10)
+        console.log('3️⃣ Testando GET /api/planejamento/ficha/1/2026-06-10 (Montagem)...');
+        const fichaRes = await makeRequest({
             hostname: 'localhost',
             port: 3001,
-            path: '/api/planejamento/split-op',
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
-        }, {
-            op_id: 3, // Supondo OP #3 existe
-            quantidade_colaborador_1: 40,
-            colaborador_1_id: 1,
-            data_1: '2026-06-10',
-            quantidade_colaborador_2: 60,
-            colaborador_2_id: 2,
-            data_2: '2026-06-10'
+            path: '/api/planejamento/ficha/1/2026-06-10',
+            method: 'GET'
         });
-        console.log(`Status: ${splitRes.status}`);
-        console.log(`Resultado da divisão:`, JSON.stringify(splitRes.body, null, 2));
+        console.log(`Status: ${fichaRes.status}`);
+        console.log(`Ficha (Montagem D+0):`, JSON.stringify(fichaRes.body, null, 2));
         console.log('--------------------------------------------------\n');
 
-        console.log('🎉 Todos os testes de planejamento concluídos!');
+        // 4. Testar a geração da ficha de trabalho para o dia anterior (2026-06-09 - Preparo do Recheio)
+        // Agendar a OP de Recheio para o colaborador 1 no dia 2026-06-09 para imprimir
+        const opRecheio = preparos.find(p => p.receita_nome.includes('Recheio'));
+        if (opRecheio) {
+            console.log(`4️⃣ Agendando OP de Preparo de Recheio (${opRecheio.numero_op}) para Colaborador 1 em 2026-06-09...`);
+            await makeRequest({
+                hostname: 'localhost',
+                port: 3001,
+                path: `/api/producao/op/${opRecheio.numero_op}/agendar`,
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' }
+            }, {
+                data_programada: '2026-06-09',
+                colaborador_id: 1
+            });
+
+            console.log('Consultando ficha de Cozinha (D-1) em 2026-06-09...');
+            const fichaCozinhaRes = await makeRequest({
+                hostname: 'localhost',
+                port: 3001,
+                path: '/api/planejamento/ficha/1/2026-06-09',
+                method: 'GET'
+            });
+            console.log(`Ficha Cozinha (D-1):`, JSON.stringify(fichaCozinhaRes.body, null, 2));
+            console.log('--------------------------------------------------\n');
+        }
+
+        // Limpeza dos dados
+        console.log('🧹 Limpando dados de teste...');
+        await makeRequest({
+            hostname: 'localhost',
+            port: 3001,
+            path: '/api/producao/op/3/agendar',
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' }
+        }, { data_programada: null, colaborador_id: null });
+
+        for (const op of preparos) {
+            await makeRequest({
+                hostname: 'localhost',
+                port: 3001,
+                path: `/api/producao/op/${op.numero_op}/agendar`,
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' }
+            }, { data_programada: null, colaborador_id: null });
+
+            await makeRequest({
+                hostname: 'localhost',
+                port: 3001,
+                path: `/api/producao/op/${op.numero_op}`,
+                method: 'DELETE'
+            });
+        }
+        console.log('Dados de teste limpos.');
+
+        console.log('🎉 Todos os testes de Cronograma Maestro concluídos com sucesso!');
     } catch (err) {
-        console.error('❌ Falha ao rodar testes. Certifique-se de que a API está rodando na porta 3001:', err.message);
+        console.error('❌ Falha nos testes de integração:', err.message);
     }
 }
 

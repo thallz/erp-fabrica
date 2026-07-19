@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ficha de Produção Segregada — ERP Fabrica</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --primary: #111827;
+      --text: #1f2937;
+      --text-muted: #4b5563;
+      --border: #d1d5db;
+      --border-light: #e5e7eb;
+      --radius: 8px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      color: var(--text);
+      background: #f9fafb;
+      padding: 30px;
+      line-height: 1.5;
+    }
+
+    .print-actions {
+      max-width: 800px;
+      margin: 0 auto 20px auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: white;
+      padding: 16px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+    .btn {
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      border: none;
+    }
+    .btn-print {
+      background: #4f46e5;
+      color: white;
+    }
+    .btn-print:hover { background: #4338ca; }
+    .btn-close {
+      background: #f3f4f6;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+    .btn-close:hover { background: #e5e7eb; }
+
+    /* A4 PAGE FORMAT */
+    .ficha-page {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 40px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+      position: relative;
+    }
+
+    .ficha-header {
+      border-bottom: 2px solid var(--primary);
+      padding-bottom: 20px;
+      margin-bottom: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .factory-logo {
+      font-weight: 800;
+      font-size: 18px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--primary);
+    }
+    .ficha-title {
+      font-size: 14px;
+      font-weight: 700;
+      text-transform: uppercase;
+      background: #f3f4f6;
+      padding: 4px 10px;
+      border-radius: 4px;
+      color: var(--text-muted);
+      margin-top: 6px;
+      display: inline-block;
+    }
+
+    .header-details {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(180px, 1fr));
+      gap: 12px;
+      font-size: 14px;
+    }
+    .detail-item strong {
+      color: var(--primary);
+    }
+
+    /* PRODUÇÃO BLOCKS */
+    .op-block {
+      margin-bottom: 30px;
+      page-break-inside: avoid;
+    }
+    .op-title-row {
+      background: #f3f4f6;
+      border-left: 4px solid var(--primary);
+      padding: 10px 16px;
+      font-weight: 700;
+      font-size: 16px;
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    
+    .etiqueta-resfriamento {
+      border: 2px solid #3b82f6;
+      background: #eff6ff;
+      border-radius: var(--radius);
+      padding: 12px;
+      margin-bottom: 16px;
+      font-size: 13px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    
+    .etiqueta-field {
+      border-bottom: 1px dashed #3b82f6;
+      padding-bottom: 4px;
+      font-weight: 700;
+    }
+
+    .ingredient-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 16px;
+      margin-top: 8px;
+    }
+    .ingredient-table th {
+      background: #f9fafb;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      padding: 6px 10px;
+      font-size: 10px;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+    .ingredient-table td {
+      border-bottom: 1px solid var(--border-light);
+      padding: 6px 10px;
+      font-size: 12px;
+    }
+
+    .montagem-box {
+      border: 1px solid var(--border);
+      padding: 16px;
+      border-radius: 8px;
+      background: #faf5ff;
+      margin-bottom: 16px;
+    }
+    
+    .instrucao-item {
+      margin-bottom: 12px;
+      font-size: 14px;
+    }
+    .instrucao-header {
+      font-weight: 700;
+      color: #6b21a8;
+      margin-bottom: 4px;
+    }
+    
+    .montagem-inputs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-top: 14px;
+      border-top: 1px dashed var(--border);
+      padding-top: 14px;
+    }
+    .input-field {
+      border-bottom: 1px solid var(--text);
+      padding: 6px 0;
+      font-weight: 700;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    /* FOOTER */
+    .ficha-footer {
+      margin-top: 40px;
+      border-top: 2px solid var(--primary);
+      padding-top: 20px;
+      page-break-inside: avoid;
+    }
+
+    .signatures-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 30px;
+      padding-top: 10px;
+    }
+    .signature-line {
+      width: 45%;
+      border-top: 1px solid var(--text-muted);
+      text-align: center;
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 40px;
+      padding-top: 6px;
+    }
+
+    .intercorrencia-box h4 {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--primary);
+      margin-bottom: 8px;
+    }
+    .intercorrencia-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+    }
+    .intercorrencia-table th {
+      background: #f3f4f6;
+      border: 1px solid var(--border);
+      padding: 6px 10px;
+      text-align: left;
+    }
+    .intercorrencia-table td {
+      border: 1px solid var(--border);
+      padding: 6px 10px;
+    }
+
+    .loading {
+      text-align: center;
+      font-size: 16px;
+      color: var(--text-muted);
+      padding: 60px 0;
+    }
+
+    @media print {
+      body {
+        background: white;
+        padding: 0;
+      }
+      .print-actions {
+        display: none !important;
+      }
+      .ficha-page {
+        border: none;
+        box-shadow: none;
+        padding: 0;
+      }
+      @page {
+        size: A4;
+        margin: 15mm;
+      }
+      .op-block {
+        page-break-after: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- PRINT ACTIONS HEADER (HIDDEN ON PRINT) -->
+  <div class="print-actions">
+    <div>
+      <span style="font-weight:700;">Layout de Produção Segregada (D-1 e D+0)</span>
+      <p style="font-size:12px; color:var(--text-muted);">Pressione Ctrl + P para imprimir em folha A4.</p>
+    </div>
+    <div style="display:flex; gap:10px;">
+      <button class="btn btn-close" onclick="window.close()">Fechar Aba</button>
+      <button class="btn btn-print" onclick="window.print()">🖨️ Imprimir Ficha</button>
+    </div>
+  </div>
+
+  <!-- A4 SHEET WRAPPER -->
+  <div class="ficha-page" id="ficha-container">
+    <div class="loading">Carregando dados da ficha de trabalho...</div>
+  </div>
+
+  <script>
+    const API = 'http://localhost:3001/api';
+
+    async function carregarFicha() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const colabId = urlParams.get('colaborador_id');
+      const dataStr = urlParams.get('data');
+
+      const container = document.getElementById('ficha-container');
+
+      if (!colabId || !dataStr) {
+        container.innerHTML = '<div class="loading" style="color:red">Erro: Parâmetros "colaborador_id" e "data" ausentes na URL.</div>';
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API}/planejamento/ficha/${colabId}/${dataStr}`);
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+
+        renderFicha(data);
+      } catch (err) {
+        console.error(err);
+        container.innerHTML = '<div class="loading" style="color:red">Erro de conexão ao carregar ficha do servidor. Certifique-se de que a API está ativa na porta 3001.</div>';
+      }
+    }
+
+    function formatarData(dataStr) {
+      const parts = dataStr.split('-');
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+
+    function renderFicha(data) {
+      const container = document.getElementById('ficha-container');
+      
+      let opsHtml = '';
+      let isCozinha = false;
+
+      if (!data.ops || data.ops.length === 0) {
+        opsHtml = '<div style="text-align:center;padding:40px;color:var(--text-muted);">Nenhuma ordem de produção agendada para este colaborador nesta data.</div>';
+      } else {
+        data.ops.forEach(op => {
+          if (op.tipo_op === 'PREPARO') {
+            isCozinha = true;
+            let rowsHtml = '';
+            op.ingredientes.forEach(ing => {
+              rowsHtml += `
+                <tr>
+                  <td><strong>${ing.nome}</strong></td>
+                  <td>${ing.qtd_por_unidade.toFixed(4)} kg</td>
+                  <td><strong>${ing.qtd_total} kg</strong></td>
+                  <td class="check-box-cell" style="width: 50px; text-align: center;"><div class="check-box-mock"></div></td>
+                </tr>
+              `;
+            });
+
+            opsHtml += `
+              <div class="op-block">
+                <div class="op-title-row">
+                  <span>🥣 PREPARO DE RECHEIO: ${op.produto_nome}</span>
+                  <span>Peso Total: ${op.quantidade_total} kg</span>
+                </div>
+                
+                <div class="op-batelada-box">
+                  🥣 Instrução de Misturador: ${op.instrucao_batelada}
+                </div>
+
+                <!-- ETIQUETA DE RESFRIAMENTO -->
+                <div class="etiqueta-resfriamento">
+                  <div class="etiqueta-field">LOTE COZINHA: _____________________</div>
+                  <div class="etiqueta-field">DATA DE FABRICAÇÃO: ____/____/2026</div>
+                  <div class="etiqueta-field">RESPONSÁVEL PESAGEM: _______________</div>
+                  <div class="etiqueta-field">VALIDADE (ETIQUETA): ____/____/2026</div>
+                </div>
+
+                <div style="font-size:11px; margin-bottom:8px; color: var(--text-muted);">
+                  <strong>Instrução Geral:</strong> Pesar insumos, cozinhar no misturador/masseira conforme tempo padrão e transferir em cubas higienizadas com tampa para a câmara de resfriamento rápido (D-1).
+                </div>
+
+                <table class="ingredient-table">
+                  <thead>
+                    <tr>
+                      <th>Insumo/Matéria-Prima</th>
+                      <th>Proporção p/ Lote</th>
+                      <th>Quantidade a Pesar</th>
+                      <th style="width: 50px; text-align: center;">Pesado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${rowsHtml}
+                  </tbody>
+                </table>
+              </div>
+            `;
+          } else {
+            // MONTAGEM / CONFECÇÃO
+            const recReq = op.receitas_requeridas || [];
+            
+            // Separar Massa e Recheio
+            const massaRec = recReq.find(r => r.categoria === 'Massa');
+            const recheioRecs = recReq.filter(r => r.categoria === 'Recheio' || r.categoria === 'Molho');
+
+            let massaHtml = '';
+            if (massaRec) {
+              let ingRows = '';
+              massaRec.ingredientes.forEach(ing => {
+                ingRows += `
+                  <tr>
+                    <td><strong>${ing.nome}</strong></td>
+                    <td><strong>${ing.qtd_total} kg</strong></td>
+                    <td style="width: 50px; text-align: center;"><div class="check-box-mock"></div></td>
+                  </tr>
+                `;
+              });
+
+              massaHtml = `
+                <div class="instrucao-item" style="margin-left: 15px; margin-top: 10px;">
+                  <div class="instrucao-header">👉 1. Preparar Massa [${massaRec.nome}] conforme receita abaixo (Fazer na hora - D+0):</div>
+                  <div style="font-size:11px; color:var(--text-muted); margin-bottom:6px;">Necessidade: ${massaRec.peso_total_kg} kg de massa.</div>
+                  <table class="ingredient-table" style="max-width: 500px; margin-bottom: 12px;">
+                    <thead>
+                      <tr>
+                        <th>Ingrediente</th>
+                        <th>Peso a Pesar (kg)</th>
+                        <th style="width: 50px; text-align: center;">Pesado</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${ingRows}
+                    </tbody>
+                  </table>
+                </div>
+              `;
+            } else {
+              massaHtml = `
+                <div class="instrucao-item" style="margin-left: 15px;">
+                  <div class="instrucao-header">👉 1. Massa: Utilizar massa padrão conforme roteiro de produção.</div>
+                </div>
+              `;
+            }
+
+            let recheioHtml = '';
+            if (recheioRecs.length > 0) {
+              const textoRecheios = recheioRecs.map(r => `*${r.peso_total_kg} kg* de *${r.nome}*`).join(' e ');
+              recheioHtml = `
+                <div class="instrucao-item" style="margin-left: 15px; margin-top: 10px;">
+                  <div class="instrucao-header">👉 2. Retirar Recheio [${recheioRecs.map(r=>r.nome).join(', ')}] da câmara de resfriamento (D-1):</div>
+                  <div style="font-size: 13px; color: var(--text-primary);">
+                    Retirar exatamente: <strong>${textoRecheios}</strong> preparados no dia anterior.
+                  </div>
+                </div>
+              `;
+            } else {
+              recheioHtml = `
+                <div class="instrucao-item" style="margin-left: 15px;">
+                  <div class="instrucao-header">👉 2. Recheio: Pesar recheio pronto conforme ficha do produto.</div>
+                </div>
+              `;
+            }
+
+            opsHtml += `
+              <div class="op-block">
+                <div class="op-title-row">
+                  <span>🛠️ ORDEM DE CONFEÇÃO: ${op.produto_nome}</span>
+                  <span>Meta: ${op.quantidade_total} un</span>
+                </div>
+
+                <div class="montagem-box">
+                  ${massaHtml}
+                  ${recheioHtml}
+                  
+                  <div class="instrucao-item" style="margin-left: 15px; margin-top: 10px;">
+                    <div class="instrucao-header">👉 3. Montar ${op.quantidade_total} unidades do salgado [${op.produto_nome}]:</div>
+                    <div style="font-size: 11px; color: var(--text-muted);">
+                      Molde na modeladora ou bancada de confecção, aplique recheio na proporção exata, distribua nas assadeiras e destine ao ultracongelador.
+                    </div>
+                  </div>
+
+                  <div class="montagem-inputs">
+                    <div class="input-field">Produção Realizada: ________________ un</div>
+                    <div class="input-field">Perdas na Montagem: ________________ un</div>
+                  </div>
+                </div>
+              </div>
+            `;
+          }
+        });
+      }
+
+      const tipoFichaTitulo = isCozinha ? 'MAPA DE RECHEIOS - PARA USO AMANHÃ (D-1)' : 'ORDEM DE CONFEÇÃO - DIA ' + formatarData(data.data);
+
+      container.innerHTML = `
+        <!-- HEADER -->
+        <div class="ficha-header">
+          <div>
+            <div class="factory-logo">ERP FÁBRICA</div>
+            <div class="ficha-title" style="background:${isCozinha ? '#eff6ff' : '#faf5ff'}; color:${isCozinha ? '#1e3a8a' : '#6b21a8'}">${tipoFichaTitulo}</div>
+          </div>
+          <div class="header-details">
+            <div class="detail-item">Colaborador: <strong>${data.colaborador.nome}</strong></div>
+            <div class="detail-item">Data: <strong>${formatarData(data.data)}</strong></div>
+            <div class="detail-item">Meta Diária: <strong>${data.colaborador.meta_diaria_individual} un</strong></div>
+            <div class="detail-item">Categoria do Dia: <strong>${data.categoria_dia}</strong></div>
+          </div>
+        </div>
+
+        <!-- OPS LIST -->
+        <div class="ficha-body">
+          ${opsHtml}
+        </div>
+
+        <!-- FOOTER -->
+        <div class="ficha-footer">
+          <div class="intercorrencia-box">
+            <h4>Registro de Intercorrências (Preenchimento Manual)</h4>
+            <p style="font-size:10px; color:var(--text-muted); margin-bottom:8px;">
+              Caso ocorra algum problema que afete sua produtividade, anote o código do evento e a duração do atraso.
+            </p>
+            <table class="intercorrencia-table">
+              <thead>
+                <tr>
+                  <th width="80">Código</th>
+                  <th>Motivo / Evento</th>
+                  <th width="100">Horário Início</th>
+                  <th width="100">Duração (Min)</th>
+                  <th>Assinatura Supervisor</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>M1</strong></td>
+                  <td>Manutenção Mecânica (Falha de Equipamento/Misturador)</td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td><strong>E1</strong></td>
+                  <td>Falta de Energia / Instabilidade Elétrica</td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td><strong>P1</strong></td>
+                  <td>Problema de Processo / Qualidade de Massa e Recheio</td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td><strong>O1</strong></td>
+                  <td>Ociosidade / Falta de Demanda ou Insumos</td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="signatures-row">
+            <div class="signature-line">Assinatura do Colaborador (${data.colaborador.nome})</div>
+            <div class="signature-line">Assinatura do Supervisor / Qualidade</div>
+          </div>
+        </div>
+      `;
+    }
+
+    window.addEventListener('DOMContentLoaded', carregarFicha);
+  </script>
+</body>
+</html>

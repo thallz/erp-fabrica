@@ -1,5 +1,51 @@
 const pool = require('../config/db');
 
+async function explodirEPrefabricarOPs(client, montagemOpId, produtoId, quantidadeMontagem) {
+    const receitasExigidas = await client.query(
+        `SELECT receita_id, quantidade_necessaria FROM ficha_tecnica_receita WHERE produto_id = $1`,
+        [produtoId]
+    );
+
+    for (const r of receitasExigidas.rows) {
+        const receitaId = r.receita_id;
+        const pesoNecessario = parseFloat(r.quantidade_necessaria) * quantidadeMontagem;
+
+        const recEstRes = await client.query(
+            `SELECT COALESCE(estoque_atual, 0) AS estoque_atual FROM receita WHERE id = $1`,
+            [receitaId]
+        );
+        
+        let estoquePronto = 0;
+        if (recEstRes.rows.length > 0) {
+            estoquePronto = parseFloat(recEstRes.rows[0].estoque_atual || 0);
+        }
+
+        if (pesoNecessario > estoquePronto) {
+            const pesoFalta = pesoNecessario - estoquePronto;
+            const qtdPreparoKg = Math.ceil(pesoFalta);
+
+            // Criar OP de PREPARO
+            await client.query(
+                `INSERT INTO ordem_producao (produto_id, quantidade_planejada, status, tipo_op, receita_id, parent_op_id, categoria_producao)
+                 VALUES ($1, $2, 'FILA', 'PREPARO', $3, $4, 'Preparo')`,
+                [produtoId, qtdPreparoKg, receitaId, montagemOpId]
+            );
+
+            // Abater estoque consumido
+            await client.query(
+                `UPDATE receita SET estoque_atual = 0 WHERE id = $1`,
+                [receitaId]
+            );
+        } else {
+            const novoEstoque = estoquePronto - pesoNecessario;
+            await client.query(
+                `UPDATE receita SET estoque_atual = $1 WHERE id = $2`,
+                [novoEstoque, receitaId]
+            );
+        }
+    }
+}
+
 const planejamentoController = {
     // 1. GERAR SUGESTAO SEMANAL DE PRODUÇÃO
     gerarSugestaoSemanal: async (req, res) => {
@@ -313,9 +359,12 @@ const planejamentoController = {
 
                 // 2. Criar a OP agendada
                 const novaOp = await client.query(`
-                    INSERT INTO ordem_producao (produto_id, quantidade_planejada, status, data_programada, categoria_producao)
-                    VALUES ($1, $2, 'FILA', $3, $4) RETURNING *
+                    INSERT INTO ordem_producao (produto_id, quantidade_planejada, status, data_programada, categoria_producao, tipo_op)
+                    VALUES ($1, $2, 'FILA', $3, $4, 'MONTAGEM') RETURNING *
                 `, [produto_id, quantidade, data_programada, categoria]);
+
+                const montagemOpId = novaOp.rows[0].id;
+                await explodirEPrefabricarOPs(client, montagemOpId, produto_id, quantidade);
 
                 opsCriadas.push(novaOp.rows[0]);
             }
@@ -398,6 +447,454 @@ const planejamentoController = {
             res.status(500).json({ status: 'erro', erro: error.message });
         } finally {
             client.release();
+        }
+    },
+
+    // 6. RETORNAR TODAS AS OPS PROGRAMADAS NA SEMANA ATUAL AGRUPADAS POR DIA E COLABORADOR
+    obterPlanejamentoSemanal: async (req, res) => {
+        try {
+            let { data_inicio, data_fim } = req.query;
+
+            if (!data_inicio || !data_fim) {
+                const hoje = new Date();
+                const diaSem = hoje.getDay();
+                const diffSeg = hoje.getDate() - diaSem + (diaSem === 0 ? -6 : 1);
+                
+                const seg = new Date(hoje.setDate(diffSeg));
+                const sex = new Date(seg);
+                sex.setDate(seg.getDate() + 4);
+
+                data_inicio = seg.toISOString().split('T')[0];
+                data_fim = sex.toISOString().split('T')[0];
+            }
+
+            // 1. Obter todos os colaboradores ativos
+            const colabsResult = await pool.query(
+                'SELECT id, nome, meta_diaria_individual, eh_novato FROM colaborador WHERE ativo = TRUE ORDER BY nome ASC'
+            );
+            const colaboradores = colabsResult.rows;
+
+            // 2. Obter OPs no intervalo agendadas
+            const opsResult = await pool.query(`
+                SELECT op.id AS op_id, op.produto_id, p.nome AS produto_nome, 
+                       op.quantidade_planejada, op.status, op.data_programada,
+                       op.colaborador_id, p.peso_produtividade, p.categoria_producao,
+                       op.tipo_op, op.receita_id, r.nome AS receita_nome, op.parent_op_id
+                FROM ordem_producao op
+                JOIN produto p ON p.id = op.produto_id
+                LEFT JOIN receita r ON r.id = op.receita_id
+                WHERE op.data_programada >= $1 AND op.data_programada <= $2
+                AND op.status IN ('FILA', 'PRODUZINDO')
+                ORDER BY op.id ASC
+            `, [data_inicio, data_fim]);
+
+            // 3. Montar a resposta agrupada por dia e colaborador
+            const diasNomes = ['Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira'];
+            const datasSemana = [];
+            let current = new Date(data_inicio + 'T00:00:00');
+            for (let i = 0; i < 5; i++) {
+                const temp = new Date(current);
+                temp.setDate(current.getDate() + i);
+                datasSemana.push(temp.toISOString().split('T')[0]);
+            }
+
+            const agenda = {};
+            datasSemana.forEach((dStr, index) => {
+                agenda[dStr] = {
+                    dia_nome: diasNomes[index],
+                    data: dStr,
+                    colaboradores: colaboradores.map(c => ({
+                        colaborador_id: c.id,
+                        nome: c.nome,
+                        meta_diaria_individual: c.meta_diaria_individual,
+                        eh_novato: c.eh_novato,
+                        total_pontos: 0.0,
+                        ops: []
+                    }))
+                };
+            });
+
+            // Distribuir OPs
+            opsResult.rows.forEach(op => {
+                const dStr = op.data_programada.toISOString().split('T')[0];
+                if (agenda[dStr]) {
+                    const colab = agenda[dStr].colaboradores.find(c => c.colaborador_id === op.colaborador_id);
+                    if (colab) {
+                        const peso = parseFloat(op.peso_produtividade || 1.0);
+                        colab.ops.push({
+                            op_id: op.op_id,
+                            produto_id: op.produto_id,
+                            produto_nome: op.produto_nome,
+                            quantidade_planejada: op.quantidade_planejada,
+                            peso_produtividade: peso,
+                            categoria_producao: op.categoria_producao || 'Geral',
+                            tipo_op: op.tipo_op,
+                            receita_id: op.receita_id,
+                            receita_nome: op.receita_nome,
+                            parent_op_id: op.parent_op_id
+                        });
+                        colab.total_pontos += op.quantidade_planejada * peso;
+                    }
+                }
+            });
+
+            // Inteligência de Cronograma (Lead Time): verificar dependências temporais D-1 para Recheios/Molhos
+            for (const dStr of Object.keys(agenda)) {
+                for (const colab of agenda[dStr].colaboradores) {
+                    for (const op of colab.ops) {
+                        if (op.tipo_op === 'MONTAGEM' && op.data_programada) {
+                            const receitasExigidas = await pool.query(
+                                `SELECT r.id, r.nome, r.categoria 
+                                 FROM ficha_tecnica_receita ftr
+                                 JOIN receita r ON r.id = ftr.receita_id
+                                 WHERE ftr.produto_id = $1`,
+                                [op.produto_id]
+                            );
+
+                            const recheiosMolhos = receitasExigidas.rows.filter(
+                                r => r.categoria === 'Recheio' || r.categoria === 'Molho'
+                            );
+
+                            if (recheiosMolhos.length > 0) {
+                                const dataX = new Date(dStr + 'T00:00:00');
+                                dataX.setDate(dataX.getDate() - 1);
+                                const dateStrXMinus1 = dataX.toISOString().split('T')[0];
+
+                                for (const rec of recheiosMolhos) {
+                                    const opPrepCheck = await pool.query(
+                                        `SELECT id FROM ordem_producao 
+                                         WHERE tipo_op = 'PREPARO' AND receita_id = $1 AND data_programada = $2`,
+                                        [rec.id, dateStrXMinus1]
+                                    );
+
+                                    if (opPrepCheck.rows.length === 0) {
+                                        op.alerta = 'Atenção: Recheio para esta produção ainda não foi agendado para o dia anterior';
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            res.json({
+                data_inicio,
+                data_fim,
+                agenda
+            });
+        } catch (error) {
+            res.status(500).json({ status: 'erro', erro: error.message });
+        }
+    },
+
+    // 7. COMPARA NECESSIDADE DE INSUMOS DAS OPS AGENDADAS VS ESTOQUES (RETORNA APENAS FALTANTES)
+    validarEstoqueSemana: async (req, res) => {
+        try {
+            let { data_inicio, data_fim } = req.query;
+
+            if (!data_inicio || !data_fim) {
+                const hoje = new Date();
+                const diaSem = hoje.getDay();
+                const diffSeg = hoje.getDate() - diaSem + (diaSem === 0 ? -6 : 1);
+                
+                const seg = new Date(hoje.setDate(diffSeg));
+                const sex = new Date(seg);
+                sex.setDate(seg.getDate() + 4);
+
+                data_inicio = seg.toISOString().split('T')[0];
+                data_fim = sex.toISOString().split('T')[0];
+            }
+
+            // 1. Obter todas as OPs agendadas no período
+            const opsRes = await pool.query(
+                `SELECT id, produto_id, quantidade_planejada 
+                 FROM ordem_producao 
+                 WHERE data_programada >= $1 AND data_programada <= $2
+                 AND status IN ('FILA', 'PRODUZINDO')`,
+                [data_inicio, data_fim]
+            );
+
+            // Se não houver OPs, retorna vazio
+            if (opsRes.rows.length === 0) {
+                return res.json({
+                    data_inicio,
+                    data_fim,
+                    itens: []
+                });
+            }
+
+            // 2. Explodir as receitas (insumos e embalagens)
+            const demandasInsumos = {};
+            const demandasEmbalagens = {};
+
+            for (const op of opsRes.rows) {
+                const qtd = op.quantidade_planejada;
+
+                // Ficha técnica insumos
+                const insumos = await pool.query(
+                    `SELECT insumo_id, quantidade FROM ficha_tecnica_insumo WHERE produto_id = $1`,
+                    [op.produto_id]
+                );
+                for (const ins of insumos.rows) {
+                    if (!demandasInsumos[ins.insumo_id]) {
+                        demandasInsumos[ins.insumo_id] = 0;
+                    }
+                    demandasInsumos[ins.insumo_id] += parseFloat(ins.quantidade) * qtd;
+                }
+
+                // Ficha técnica embalagens
+                const embalagens = await pool.query(
+                    `SELECT embalagem_id, quantidade FROM ficha_tecnica_embalagem WHERE produto_id = $1`,
+                    [op.produto_id]
+                );
+                for (const emb of embalagens.rows) {
+                    if (!demandasEmbalagens[emb.embalagem_id]) {
+                        demandasEmbalagens[emb.embalagem_id] = 0;
+                    }
+                    demandasEmbalagens[emb.embalagem_id] += parseFloat(emb.quantidade) * qtd;
+                }
+            }
+
+            // 3. Buscar estoque atual dos insumos demandados
+            const itensFaltantes = [];
+
+            if (Object.keys(demandasInsumos).length > 0) {
+                const ids = Object.keys(demandasInsumos).map(Number);
+                const insumosInfo = await pool.query(
+                    `SELECT id, nome, estoque_atual, unidade_medida FROM insumo WHERE id = ANY($1)`,
+                    [ids]
+                );
+                for (const row of insumosInfo.rows) {
+                    const demanda = demandasInsumos[row.id];
+                    const estoque = parseFloat(row.estoque_atual || 0);
+                    if (demanda > estoque) {
+                        itensFaltantes.push({
+                            id: row.id,
+                            nome: row.nome,
+                            tipo: 'Insumo',
+                            demanda: parseFloat(demanda.toFixed(3)),
+                            estoque_atual: estoque,
+                            falta: parseFloat((demanda - estoque).toFixed(3)),
+                            unidade: row.unidade_medida
+                        });
+                    }
+                }
+            }
+
+            // 4. Buscar estoque atual das embalagens demandadas
+            if (Object.keys(demandasEmbalagens).length > 0) {
+                const ids = Object.keys(demandasEmbalagens).map(Number);
+                const embalagensInfo = await pool.query(
+                    `SELECT id, nome, estoque_atual FROM embalagem WHERE id = ANY($1)`,
+                    [ids]
+                );
+                for (const row of embalagensInfo.rows) {
+                    const demanda = demandasEmbalagens[row.id];
+                    const estoque = parseFloat(row.estoque_atual || 0);
+                    if (demanda > estoque) {
+                        itensFaltantes.push({
+                            id: row.id,
+                            nome: row.nome,
+                            tipo: 'Embalagem',
+                            demanda: Math.ceil(demanda),
+                            estoque_atual: estoque,
+                            falta: Math.ceil(demanda - estoque),
+                            unidade: 'un'
+                        });
+                    }
+                }
+            }
+
+            res.json({
+                data_inicio,
+                data_fim,
+                itens: itensFaltantes
+            });
+
+        } catch (error) {
+            res.status(500).json({ status: 'erro', erro: error.message });
+        }
+    },
+
+    // 8. GERAR DADOS DA FICHA DE TRABALHO INDIVIDUAL PARA O COLABORADOR NO DIA
+    obterFichaTrabalho: async (req, res) => {
+        try {
+            const { colaborador_id, data } = req.params;
+
+            if (!colaborador_id || !data) {
+                return res.status(400).json({ status: 'erro', erro: 'colaborador_id e data são obrigatórios' });
+            }
+
+            // 1. Obter dados do colaborador
+            const colabRes = await pool.query(
+                'SELECT id, nome, meta_diaria_individual, eh_novato FROM colaborador WHERE id = $1',
+                [colaborador_id]
+            );
+            if (colabRes.rows.length === 0) {
+                return res.status(404).json({ status: 'erro', erro: 'Colaborador não encontrado' });
+            }
+            const colaborador = colabRes.rows[0];
+
+            // 2. Determinar dia e categoria do dia
+            const dataObj = new Date(data + 'T00:00:00');
+            const diaSemanaIndex = dataObj.getDay();
+            const diasNomes = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+            const diaNome = diasNomes[diaSemanaIndex];
+            let categoriaDia = 'Geral';
+            if (diaSemanaIndex === 1) {
+                categoriaDia = 'Fermentados';
+            } else if (diaSemanaIndex === 2 || diaSemanaIndex === 4) {
+                categoriaDia = 'Assados';
+            } else if (diaSemanaIndex === 3 || diaSemanaIndex === 5) {
+                categoriaDia = 'Fritos';
+            }
+
+            // 3. Obter OPs agendadas para ele no dia
+            const opsRes = await pool.query(`
+                SELECT op.id AS op_id, op.produto_id, p.nome AS produto_nome, 
+                       op.quantidade_planejada, op.categoria_producao,
+                       op.tipo_op, op.receita_id, r.nome AS receita_nome, op.parent_op_id
+                FROM ordem_producao op
+                JOIN produto p ON p.id = op.produto_id
+                LEFT JOIN receita r ON r.id = op.receita_id
+                WHERE op.colaborador_id = $1 AND op.data_programada = $2
+                AND op.status IN ('FILA', 'PRODUZINDO')
+                ORDER BY op.id ASC
+            `, [colaborador_id, data]);
+
+            const opsDetalhadas = [];
+
+            for (const op of opsRes.rows) {
+                if (op.tipo_op === 'PREPARO') {
+                    // CÁLCULO DE PREPARO (COZINHA)
+                    const recRes = await pool.query('SELECT peso_total FROM receita WHERE id = $1', [op.receita_id]);
+                    const pesoTotalReceita = parseFloat(recRes.rows[0]?.peso_total || 10.0);
+                    const scaleFactor = op.quantidade_planejada / pesoTotalReceita;
+
+                    const items = await pool.query(`
+                        SELECT ri.origem_id AS insumo_id, ri.nome AS insumo_nome, 
+                               ri.quantidade_gramas, i.unidade_medida
+                        FROM receita_item ri
+                        LEFT JOIN insumo i ON i.id = ri.origem_id
+                        WHERE ri.receita_id = $1
+                        ORDER BY ri.nome ASC
+                    `, [op.receita_id]);
+
+                    const ingredientes = [];
+                    let pesoTotalOP = 0;
+
+                    items.rows.forEach(ri => {
+                        // Converter gramas para kg para escala brutos de cozinha
+                        const qtdTotalKg = (parseFloat(ri.quantidade_gramas) / 1000.0) * scaleFactor;
+                        ingredientes.push({
+                            insumo_id: ri.insumo_id,
+                            nome: ri.insumo_nome,
+                            qtd_por_unidade: parseFloat((parseFloat(ri.quantidade_gramas) / 1000.0).toFixed(4)),
+                            qtd_total: parseFloat(qtdTotalKg.toFixed(3)),
+                            unidade: 'kg'
+                        });
+                        pesoTotalOP += qtdTotalKg;
+                    });
+
+                    // Bateladas por panela (Misturadores cozinha)
+                    const capPanela = 10;
+                    const numPanelas = Math.floor(op.quantidade_planejada / capPanela);
+                    const saldoPanela = op.quantidade_planejada % capPanela;
+
+                    let instrucaoBatelada = '';
+                    if (op.quantidade_planejada <= 0) {
+                        instrucaoBatelada = 'Nenhuma quantidade de peso planejada.';
+                    } else {
+                        const partes = [];
+                        if (numPanelas > 0) {
+                            partes.push(`Fazer ${numPanelas} panela(s) de ${capPanela}kg`);
+                        }
+                        if (saldoPanela > 0.05) {
+                            partes.push(`1 panela de ${saldoPanela.toFixed(2)}kg`);
+                        }
+                        instrucaoBatelada = partes.join(' + ');
+                    }
+
+                    opsDetalhadas.push({
+                        op_id: op.op_id,
+                        produto_nome: op.receita_nome || 'Receita de Preparo',
+                        quantidade_total: op.quantidade_planejada, // em kg
+                        categoria_producao: 'Preparo',
+                        tipo_op: 'PREPARO',
+                        peso_total_kg: op.quantidade_planejada,
+                        instrucao_batelada: instrucaoBatelada,
+                        ingredientes
+                    });
+
+                } else {
+                    // CÁLCULO DE MONTAGEM (CONFEÇÃO)
+                    // Obter receitas vinculadas exigidas (Massas, Recheios, etc.)
+                    const receitasExigidas = await pool.query(`
+                        SELECT r.id, r.nome AS receita_nome, r.categoria, r.peso_total AS receita_peso_total,
+                               f.quantidade_necessaria 
+                        FROM ficha_tecnica_receita f
+                        JOIN receita r ON r.id = f.receita_id
+                        WHERE f.produto_id = $1
+                    `, [op.produto_id]);
+
+                    const receitasRequeridas = [];
+                    for (const row of receitasExigidas.rows) {
+                        const pesoTotalKg = parseFloat((parseFloat(row.quantidade_necessaria) * op.quantidade_planejada).toFixed(2));
+                        const itemRec = {
+                            id: row.id,
+                            nome: row.receita_nome,
+                            categoria: row.categoria,
+                            peso_total_kg: pesoTotalKg,
+                            ingredientes: []
+                        };
+
+                        if (row.categoria === 'Massa') {
+                            const scaleFactor = pesoTotalKg / parseFloat(row.receita_peso_total || 10.0);
+                            const items = await pool.query(`
+                                SELECT ri.origem_id AS insumo_id, ri.nome AS insumo_nome, 
+                                       ri.quantidade_gramas, i.unidade_medida
+                                FROM receita_item ri
+                                LEFT JOIN insumo i ON i.id = ri.origem_id
+                                WHERE ri.receita_id = $1
+                                ORDER BY ri.nome ASC
+                            `, [row.id]);
+
+                            itemRec.ingredientes = items.rows.map(ri => ({
+                                nome: ri.insumo_nome,
+                                qtd_total: parseFloat(((parseFloat(ri.quantidade_gramas) / 1000.0) * scaleFactor).toFixed(3)),
+                                unidade: 'kg'
+                            }));
+                        }
+
+                        receitasRequeridas.push(itemRec);
+                    }
+
+                    opsDetalhadas.push({
+                        op_id: op.op_id,
+                        produto_nome: op.produto_nome,
+                        quantidade_total: op.quantidade_planejada, // em unidades
+                        categoria_producao: op.categoria_producao || 'Geral',
+                        tipo_op: 'MONTAGEM',
+                        receitas_requeridas: receitasRequeridas
+                    });
+                }
+            }
+
+            res.json({
+                colaborador: {
+                    id: colaborador.id,
+                    nome: colaborador.nome,
+                    meta_diaria_individual: colaborador.meta_diaria_individual,
+                    eh_novato: colaborador.eh_novato
+                },
+                data,
+                dia_nome: diaNome,
+                categoria_dia: categoriaDia,
+                ops: opsDetalhadas
+            });
+        } catch (error) {
+            res.status(500).json({ status: 'erro', erro: error.message });
         }
     }
 };

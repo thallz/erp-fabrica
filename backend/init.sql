@@ -29,7 +29,8 @@ CREATE TABLE produto (
     margem_contribuicao DECIMAL(5, 2), -- Porcentagem (%)
     estoque_atual INT DEFAULT 0, -- Câmara Fria (produto acabado)
     peso_produtividade FLOAT DEFAULT 1.0,
-    categoria VARCHAR(50) DEFAULT 'Geral'
+    categoria VARCHAR(50) DEFAULT 'Geral',
+    categoria_producao VARCHAR(50) DEFAULT 'Geral'
 );
 
 -- 4. FICHAS TÉCNICAS (A "Receita" do Produto para Cálculo em Cascata)
@@ -89,6 +90,7 @@ CREATE TABLE colaborador (
     nome VARCHAR(100) NOT NULL,
     meta_diaria INT DEFAULT 350, -- Meta padrão de 350 unidades por dia
     meta_diaria_individual INT DEFAULT 350,
+    eh_novato BOOLEAN DEFAULT FALSE,
     ativo BOOLEAN DEFAULT TRUE,
     criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

@@ -10,6 +10,8 @@ router.get('/op/:op_id/impedimentos', producaoController.verificarImpedimentosOP
 router.post('/planejar', producaoController.planejarProducao);
 router.get('/necessidade-compras', producaoController.necessidadeCompras);
 router.delete('/op/:id', producaoController.excluirOP);
+router.put('/op/:id/agendar', producaoController.agendarOP);
+router.put('/op/:id/status', producaoController.atualizarStatusOP);
 router.post('/intercorrencia', producaoController.registrarIntercorrencia);
 
 module.exports = router;

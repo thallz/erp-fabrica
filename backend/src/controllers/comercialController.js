@@ -1,5 +1,51 @@
 const pool = require('../config/db');
 
+async function explodirEPrefabricarOPs(client, montagemOpId, produtoId, quantidadeMontagem) {
+    const receitasExigidas = await client.query(
+        `SELECT receita_id, quantidade_necessaria FROM ficha_tecnica_receita WHERE produto_id = $1`,
+        [produtoId]
+    );
+
+    for (const r of receitasExigidas.rows) {
+        const receitaId = r.receita_id;
+        const pesoNecessario = parseFloat(r.quantidade_necessaria) * quantidadeMontagem;
+
+        const recEstRes = await client.query(
+            `SELECT COALESCE(estoque_atual, 0) AS estoque_atual FROM receita WHERE id = $1`,
+            [receitaId]
+        );
+        
+        let estoquePronto = 0;
+        if (recEstRes.rows.length > 0) {
+            estoquePronto = parseFloat(recEstRes.rows[0].estoque_atual || 0);
+        }
+
+        if (pesoNecessario > estoquePronto) {
+            const pesoFalta = pesoNecessario - estoquePronto;
+            const qtdPreparoKg = Math.ceil(pesoFalta);
+
+            // Criar OP de PREPARO
+            await client.query(
+                `INSERT INTO ordem_producao (produto_id, quantidade_planejada, status, tipo_op, receita_id, parent_op_id, categoria_producao)
+                 VALUES ($1, $2, 'FILA', 'PREPARO', $3, $4, 'Preparo')`,
+                [produtoId, qtdPreparoKg, receitaId, montagemOpId]
+            );
+
+            // Abater estoque consumido
+            await client.query(
+                `UPDATE receita SET estoque_atual = 0 WHERE id = $1`,
+                [receitaId]
+            );
+        } else {
+            const novoEstoque = estoquePronto - pesoNecessario;
+            await client.query(
+                `UPDATE receita SET estoque_atual = $1 WHERE id = $2`,
+                [novoEstoque, receitaId]
+            );
+        }
+    }
+}
+
 const comercialController = {
     // 1. CRIAR CLIENTE B2B
     criarCliente: async (req, res) => {
@@ -128,7 +174,7 @@ const comercialController = {
                 valorTotal += item.quantidade * item.preco_unitario;
 
                 const prodResult = await client.query(
-                    'SELECT id, nome, COALESCE(estoque_atual, 0) AS estoque_atual, categoria FROM produto WHERE id = $1 FOR UPDATE',
+                    'SELECT id, nome, COALESCE(estoque_atual, 0) AS estoque_atual, categoria, categoria_producao FROM produto WHERE id = $1 FOR UPDATE',
                     [item.produto_id]
                 );
                 if (prodResult.rows.length === 0) {
@@ -176,10 +222,12 @@ const comercialController = {
                     }
 
                     const opResult = await client.query(
-                        `INSERT INTO ordem_producao (produto_id, quantidade_planejada, status, categoria_producao)
-                         VALUES ($1, $2, 'FILA', $3) RETURNING id`,
-                        [item.produto_id, quantidadeFaltante, produto.categoria || 'Geral']
+                        `INSERT INTO ordem_producao (produto_id, quantidade_planejada, status, categoria_producao, tipo_op)
+                         VALUES ($1, $2, 'FILA', $3, 'MONTAGEM') RETURNING id`,
+                        [item.produto_id, quantidadeFaltante, produto.categoria_producao || produto.categoria || 'Geral']
                     );
+                    const montagemOpId = opResult.rows[0].id;
+                    await explodirEPrefabricarOPs(client, montagemOpId, item.produto_id, quantidadeFaltante);
 
                     opsGeradas.push({
                         op_id: opResult.rows[0].id,

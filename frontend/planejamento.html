@@ -3,343 +3,394 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Planejamento Semanal — ERP Fabrica</title>
+  <title>Painel do Maestro — ERP Fabrica</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/global.css" />
   <style>
-    .weekly-kanban-grid {
-      display: grid;
-      grid-template-columns: repeat(6, 1fr);
-      gap: 12px;
-      margin-bottom: 24px;
-      overflow-x: auto;
-      align-items: start;
-    }
-
-    .kanban-col {
+    /* TABS NAVIGATION */
+    .maestro-tabs {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius-lg);
-      padding: 12px;
-      min-height: 450px;
+      padding: 6px;
+      width: fit-content;
       display: flex;
-      flex-direction: column;
-      gap: 10px;
+      gap: 8px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow-sm);
     }
-
-    .kanban-col-header {
-      border-bottom: 1px solid var(--border-light);
-      padding-bottom: 8px;
-      margin-bottom: 4px;
-    }
-
-    .kanban-day-name {
-      font-weight: 700;
-      font-size: 13px;
-      color: var(--text-primary);
-    }
-
-    .kanban-day-date {
-      font-size: 11px;
-      color: var(--text-secondary);
-    }
-
-    .kanban-day-pts {
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--brand);
-      margin-top: 2px;
-      display: flex;
-      justify-content: space-between;
-    }
-
-    .op-card {
-      background: var(--bg);
-      border: 1px solid var(--border);
+    .tab-btn {
+      padding: 10px 20px;
       border-radius: var(--radius);
-      padding: 10px;
-      font-size: 12.5px;
+      border: none;
+      background: none;
+      font-weight: 700;
       cursor: pointer;
-      transition: box-shadow .15s, transform .15s;
-      position: relative;
-    }
-
-    .op-card:hover {
-      transform: translateY(-2px);
-      box-shadow: var(--shadow);
-    }
-
-    .op-card-header {
+      color: var(--text-secondary);
+      font-size: 13.5px;
+      transition: all 0.2s;
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      margin-bottom: 4px;
+      gap: 8px;
+    }
+    .tab-btn.active {
+      background: var(--brand);
+      color: white;
     }
 
-    .op-card-op {
-      font-weight: 700;
-      color: var(--brand);
-    }
-
-    .op-card-tag {
-      font-size: 9.5px;
-      padding: 1px 6px;
-      border-radius: 10px;
-      font-weight: 700;
-    }
-
-    .tag-fermentado { background: #e0e7ff; color: #3730a3; }
-    .tag-assado     { background: #fef3c7; color: #b45309; }
-    .tag-frito      { background: #fee2e2; color: #991b1b; }
-    .tag-geral      { background: #e2e8f0; color: #475569; }
-
-    .op-card-prod {
-      font-weight: 600;
-      color: var(--text-primary);
-      margin-bottom: 6px;
-    }
-
-    .op-card-meta {
-      font-size: 11px;
-      color: var(--text-secondary);
-      border-top: 1px dashed var(--border);
-      padding-top: 6px;
-      margin-top: 6px;
-    }
-
-    .op-card-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 6px;
-      margin-top: 8px;
-    }
-
-    .op-card-btn {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-size: 10px;
-      cursor: pointer;
-      color: var(--text-secondary);
-    }
-    .op-card-btn:hover {
-      border-color: var(--brand);
-      color: var(--brand);
-    }
-
-    .planner-layout {
+    /* MAESTRO LAYOUT */
+    .maestro-layout {
       display: grid;
-      grid-template-columns: 1fr 300px;
+      grid-template-columns: 320px 1fr;
       gap: 20px;
+      align-items: start;
     }
 
-    .unplanned-panel {
+    /* SIDEBAR PENDENCIAS */
+    .sidebar-pendencias {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius-lg);
       padding: 16px;
-      max-height: 600px;
+      max-height: 750px;
       display: flex;
       flex-direction: column;
       gap: 12px;
+      box-shadow: var(--shadow);
     }
 
-    .unplanned-header {
+    .pendencias-header {
       font-weight: 700;
-      font-size: 14px;
-      border-bottom: 1px solid var(--border-light);
-      padding-bottom: 8px;
+      font-size: 15px;
+      border-bottom: 2px solid var(--border-light);
+      padding-bottom: 10px;
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
 
-    .unplanned-list {
+    .pendencias-list {
       flex: 1;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
       gap: 10px;
+      padding-right: 4px;
     }
 
-    .modal-overlay {
-      display: none;
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(17, 24, 39, 0.7);
-      backdrop-filter: blur(4px);
-      z-index: 1000;
+    .op-drag-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px;
+      cursor: grab;
+      font-size: 13px;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .op-drag-card:active {
+      cursor: grabbing;
+    }
+    .op-drag-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-sm);
+      border-color: var(--brand);
+    }
+
+    .op-meta-row {
+      display: flex;
+      justify-content: space-between;
       align-items: center;
-      justify-content: center;
+      margin-bottom: 6px;
     }
-    .modal-overlay.open { display: flex; }
+    .op-code {
+      font-weight: 700;
+      color: var(--brand);
+    }
+    .op-badge {
+      font-size: 9px;
+      padding: 2px 6px;
+      border-radius: 8px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    
+    .op-name {
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+    .op-details {
+      font-size: 11px;
+      color: var(--text-secondary);
+      display: flex;
+      justify-content: space-between;
+    }
 
-    .modal-box {
+    /* GRID SEMANAL (5 COLUNAS) */
+    .grid-semanal {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+      align-items: start;
+    }
+
+    .dia-col {
       background: var(--surface);
+      border: 1px solid var(--border);
       border-radius: var(--radius-lg);
-      width: 90%;
-      max-width: 480px;
-      padding: 24px;
-      box-shadow: var(--shadow-md);
-      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      min-height: 650px;
+      box-shadow: var(--shadow-sm);
     }
 
-    .modal-box h3 {
-      font-size: 16px;
+    .dia-header {
+      padding: 12px;
+      text-align: center;
+      color: white;
+      font-weight: 700;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .dia-nome { font-size: 14px; text-transform: capitalize; }
+    .dia-data { font-size: 11px; opacity: 0.85; }
+    .dia-desc { font-size: 10px; font-weight: 500; opacity: 0.9; margin-top: 2px; }
+
+    /* Cores de Cabeçalho dos Dias */
+    .col-segunda .dia-header { background: #6366f1; } /* Roxo / D-1 Cozinha ou D+0 Montagem */
+    .col-terca   .dia-header { background: #2563eb; }
+    .col-quarta  .dia-header { background: #f97316; }
+    .col-quinta  .dia-header { background: #2563eb; }
+    .col-sexta   .dia-header { background: #f97316; }
+
+    .dia-col-body {
+      padding: 10px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      overflow-y: auto;
+    }
+
+    /* CARTÃO DO COLABORADOR */
+    .colab-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px;
+      transition: all 0.2s;
+      min-height: 100px;
+    }
+    .colab-card.drag-over {
+      border-color: var(--brand);
+      background: var(--brand-light);
+      box-shadow: 0 0 0 2px var(--brand);
+    }
+
+    .colab-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 8px;
+    }
+    .colab-nome {
+      font-size: 12px;
       font-weight: 700;
       color: var(--text-primary);
-      margin-bottom: 14px;
+    }
+    .colab-novato-badge {
+      font-size: 9px;
+      background: #fed7aa;
+      color: #9a3412;
+      padding: 1px 4px;
+      border-radius: 4px;
+      font-weight: 700;
     }
 
-    .modal-close {
-      position: absolute;
-      top: 18px; right: 18px;
-      background: none; border: none;
-      font-size: 18px; cursor: pointer;
-      color: var(--text-muted);
+    /* BARRA DE PROGRESSO */
+    .progress-wrapper {
+      margin-bottom: 8px;
+    }
+    .progress-label {
+      font-size: 10.5px;
+      color: var(--text-secondary);
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+    .progress-bar-bg {
+      background: var(--border-light);
+      height: 6px;
+      border-radius: 3px;
+      overflow: hidden;
+      position: relative;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: var(--green);
+      transition: width 0.3s ease, background-color 0.3s ease;
+      width: 0%;
+    }
+    .progress-bar-fill.excedido {
+      background: var(--red) !important;
     }
 
-    .form-group {
+    /* LEGENDA DE PRODUÇÃO (ESSENCIAL) */
+    .legend-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      border-top: 1px dashed var(--border);
+      padding-top: 6px;
       display: flex;
       flex-direction: column;
       gap: 6px;
-      margin-bottom: 16px;
     }
-    .form-group label {
-      font-size: 12px;
-      font-weight: 600;
+    .legend-item {
+      font-size: 11px;
       color: var(--text-secondary);
+      display: flex;
+      flex-direction: column;
+      cursor: pointer;
     }
-    .form-group select, .form-group input {
-      padding: 10px;
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      outline: none;
-      font-family: inherit;
+    .legend-item:hover {
+      color: var(--brand);
     }
-
-    .capacity-indicator {
-      background: var(--brand-light);
-      border: 1px solid #c7d2fe;
-      padding: 12px;
-      border-radius: var(--radius);
-      margin-bottom: 16px;
-      font-size: 12.5px;
+    .legend-bullet {
+      color: var(--brand);
+      margin-right: 4px;
     }
 
-    .capacity-warn {
-      background: var(--amber-bg);
-      border: 1px solid #fde68a;
-      color: #92400e;
+    /* SLIDE-OVER DE COMPRAS */
+    .slide-over {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 420px;
+      height: 100%;
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15);
+      z-index: 1000;
+      transform: translateX(100%);
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      flex-direction: column;
     }
-
-    .split-section {
-      border: 1px dashed var(--border);
-      border-radius: var(--radius);
-      padding: 12px;
+    .slide-over.open {
+      transform: translateX(0);
+    }
+    .slide-over-header {
+      padding: 20px;
+      border-bottom: 1px solid var(--border-light);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       background: var(--bg);
-      margin-top: 10px;
+    }
+    .slide-over-header h3 {
+      font-size: 16px;
+      font-weight: 700;
+    }
+    .slide-over-close {
+      background: none;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      color: var(--text-muted);
+    }
+    .slide-over-body {
+      padding: 20px;
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .slide-over-footer {
+      padding: 20px;
+      border-top: 1px solid var(--border-light);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .falta-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .falta-info {
+      display: flex;
+      flex-direction: column;
+    }
+    .falta-nome { font-weight: 700; font-size: 13px; }
+    .falta-det { font-size: 11px; color: var(--text-muted); }
+    .falta-qtd { font-weight: 700; color: var(--red); font-size: 14px; }
+
+    /* GENERAL BUTTON STYLE */
+    .btn-validate {
+      background: var(--brand);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-validate:hover {
+      background: var(--brand-hover);
+    }
+
+    .btn-wa {
+      background: #25d366;
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 8px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      text-decoration: none;
+    }
+    .btn-wa:hover {
+      background: #20ba5a;
     }
 
     .week-nav {
       display: flex;
       align-items: center;
       gap: 12px;
-      margin-bottom: 16px;
+      margin-bottom: 20px;
+    }
+    .week-nav button {
       background: var(--surface);
       border: 1px solid var(--border);
-      padding: 8px 16px;
-      border-radius: var(--radius);
-      width: fit-content;
-    }
-
-    .week-nav button {
-      background: var(--bg);
-      border: 1px solid var(--border);
-      padding: 4px 8px;
-      border-radius: 4px;
+      padding: 6px 12px;
+      border-radius: 6px;
       cursor: pointer;
-      font-weight: 700;
+      font-weight: 600;
     }
     .week-nav button:hover {
       background: var(--brand-light);
       color: var(--brand);
+      border-color: var(--brand);
     }
-
-    .mrp-section {
-      margin-top: 24px;
-    }
-
-    .mrp-table-wrap {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      overflow: hidden;
-      margin-top: 12px;
-    }
-
-    .mrp-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-    }
-    .mrp-table th {
-      background: var(--border-light);
-      text-align: left;
-      padding: 10px 14px;
-      font-weight: 700;
-      color: var(--text-secondary);
-    }
-    .mrp-table td {
-      padding: 10px 14px;
-      border-bottom: 1px solid var(--border-light);
-    }
-    .mrp-table tr:last-child td {
-      border-bottom: none;
-    }
-
-    .critical-buy {
-      background: var(--red-bg);
-      color: var(--red);
-      font-weight: 700;
-      padding: 2px 8px;
-      border-radius: 20px;
-      font-size: 11px;
-      display: inline-block;
-    }
-    
-    .ok-stock {
-      background: var(--green-bg);
-      color: var(--green);
-      font-weight: 700;
-      padding: 2px 8px;
-      border-radius: 20px;
-      font-size: 11px;
-      display: inline-block;
-    }
-
-    .dialog-buttons {
-      display: flex;
-      justify-content: flex-end;
-      gap: 10px;
-      margin-top: 20px;
-    }
-    .btn {
-      padding: 10px 16px;
-      border-radius: var(--radius);
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      border: none;
-    }
-    .btn-primary { background: var(--brand); color: white; }
-    .btn-primary:hover { background: var(--brand-hover); }
-    .btn-outline { background: white; border: 1px solid var(--border); color: var(--text-secondary); }
-    .btn-outline:hover { background: var(--bg); }
-    .btn-warning { background: var(--amber); color: white; }
-    .btn-warning:hover { background: #b45309; }
   </style>
 </head>
 <body>
@@ -388,10 +439,10 @@
         Busca global (Alt + S)
       </div>
       <div class="topbar-right">
-        <span class="badge-offline" id="connection-status">Verificando...</span>
+        <span class="badge-offline" id="connection-status">Conectando...</span>
         <div class="user-chip">
-          <div><strong>Admin Fabrica</strong><span>Administrador</span></div>
-          <div class="user-avatar">AF</div>
+          <div><strong>Admin Maestro</strong><span>Administrador</span></div>
+          <div class="user-avatar">AM</div>
         </div>
       </div>
     </header>
@@ -399,160 +450,129 @@
     <main class="page-content">
       <div class="page-header">
         <div class="page-header-left">
-          <h1>Planejamento Semanal de Produção</h1>
-          <p>Organize metas diárias, capacidade de equipe e atenda demandas de pedidos B2B.</p>
+          <h1>Planejamento Maestro (Cozinha & Montagem)</h1>
+          <p>Gerenciamento de dependências produtivas e lead time de recheios (D-1 vs D+0).</p>
         </div>
         <div class="page-header-actions">
-          <button class="btn btn-outline" onclick="abrirModalSugestao()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
-            Sugerir Distribuição Semanal
+          <button class="btn btn-outline" onclick="abrirSlideOver()" style="border-color: var(--red); color: var(--red); font-weight: 700;">
+            ⚠️ Validar Estoque (MRP)
           </button>
         </div>
       </div>
 
-      <!-- WEEK NAVIGATION -->
+      <!-- TABS DE NAVEGAÇÃO MAESTRO -->
+      <div class="maestro-tabs">
+        <button class="tab-btn active" id="btn-tab-preparo" onclick="alterarTab('PREPARO')">🥣 Visão A: Cozinha de Preparos (Foco em D-1)</button>
+        <button class="tab-btn" id="btn-tab-montagem" onclick="alterarTab('MONTAGEM')">🛠️ Visão B: Linha de Montagem/Confecção (Foco em D+0)</button>
+      </div>
+
+      <!-- NAVIGATION BAR -->
       <div class="week-nav">
-        <button onclick="mudarSemana(-7)">← Anterior</button>
-        <strong id="week-label">Carregando semana...</strong>
-        <button onclick="mudarSemana(7)">Próxima →</button>
+        <button onclick="navegarSemana(-7)">← Semana Anterior</button>
+        <strong id="label-semana" style="font-size: 15px; color: var(--text-primary);">Carregando datas...</strong>
+        <button onclick="navegarSemana(7)">Próxima Semana →</button>
       </div>
 
-      <!-- KANBAN PLANNER LAYOUT -->
-      <div class="planner-layout">
-        <div>
-          <!-- KANBAN BOARD -->
-          <div class="weekly-kanban-grid" id="kanban-grid">
-            <!-- Columns mapped dynamically -->
+      <!-- MAESTRO MAIN GRID LAYOUT -->
+      <div class="maestro-layout">
+        
+        <!-- SIDEBAR PENDENCIAS -->
+        <div class="sidebar-pendencias">
+          <div class="pendencias-header">
+            <span id="pendencias-titulo">Fila de Cozinha</span>
+            <span class="badge" id="badge-pendencias" style="background:var(--brand-light); color:var(--brand); font-weight: 700;">0 OPs</span>
+          </div>
+          <div class="pendencias-list" id="pendencias-container">
+            <!-- Rendered dynamically -->
           </div>
         </div>
 
-        <!-- UNPLANNED SIDEBAR PANEL -->
-        <div class="unplanned-panel">
-          <div class="unplanned-header">
-            <span>Fila (Sem Agendamento)</span>
-            <span class="badge" id="unplanned-count" style="background:var(--brand-light);color:var(--brand);font-weight:700">0 OPs</span>
+        <!-- GRID SEMANAL (5 COLUNAS) -->
+        <div class="grid-semanal" id="kanban-grid">
+          
+          <!-- SEGUNDA -->
+          <div class="dia-col col-segunda" id="col-segunda">
+            <div class="dia-header">
+              <span class="dia-nome">Segunda-feira</span>
+              <span class="dia-data" id="data-seg">--/--</span>
+              <span class="dia-desc" id="desc-seg">🥣 Preparo Recheios</span>
+            </div>
+            <div class="dia-col-body" id="body-seg">
+              <!-- Mapped Colab Cards -->
+            </div>
           </div>
-          <div class="unplanned-list" id="unplanned-list">
-            <!-- Unplanned cards go here -->
+
+          <!-- TERÇA -->
+          <div class="dia-col col-terca" id="col-terca">
+            <div class="dia-header">
+              <span class="dia-nome">Terça-feira</span>
+              <span class="dia-data" id="data-ter">--/--</span>
+              <span class="dia-desc" id="desc-ter">🥣 Preparo Recheios</span>
+            </div>
+            <div class="dia-col-body" id="body-ter">
+              <!-- Mapped Colab Cards -->
+            </div>
           </div>
-        </div>
-      </div>
 
-      <!-- MRP TABLE SECTION -->
-      <div class="mrp-section card">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
-          <h2 style="font-size:15px; font-weight:700">Resumo de Insumos da Semana (MRP)</h2>
-          <span style="font-size:12px; color:var(--text-secondary)">Explosão de receitas x Saldo do Almoxarifado</span>
-        </div>
-        <div class="mrp-table-wrap">
-          <table class="mrp-table">
-            <thead>
-              <tr>
-                <th>Insumo / Embalagem</th>
-                <th>Tipo</th>
-                <th style="text-align:right">Demanda da Semana</th>
-                <th style="text-align:right">Estoque Almoxarifado</th>
-                <th style="text-align:right">Falta de Estoque</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody id="mrp-tbody">
-              <tr>
-                <td colspan="6" style="text-align:center; color:var(--text-muted); padding:20px">Nenhum planejamento carregado para esta semana.</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+          <!-- QUARTA -->
+          <div class="dia-col col-quarta" id="col-quarta">
+            <div class="dia-header">
+              <span class="dia-nome">Quarta-feira</span>
+              <span class="dia-data" id="data-qua">--/--</span>
+              <span class="dia-desc" id="desc-qua">🥣 Preparo Recheios</span>
+            </div>
+            <div class="dia-col-body" id="body-qua">
+              <!-- Mapped Colab Cards -->
+            </div>
+          </div>
 
+          <!-- QUINTA -->
+          <div class="dia-col col-quinta" id="col-quinta">
+            <div class="dia-header">
+              <span class="dia-nome">Quinta-feira</span>
+              <span class="dia-data" id="data-qui">--/--</span>
+              <span class="dia-desc" id="desc-qui">🥣 Preparo Recheios</span>
+            </div>
+            <div class="dia-col-body" id="body-qui">
+              <!-- Mapped Colab Cards -->
+            </div>
+          </div>
+
+          <!-- SEXTA -->
+          <div class="dia-col col-sexta" id="col-sexta">
+            <div class="dia-header">
+              <span class="dia-nome">Sexta-feira</span>
+              <span class="dia-data" id="data-sex">--/--</span>
+              <span class="dia-desc" id="desc-sex">🥣 Preparo Recheios</span>
+            </div>
+            <div class="dia-col-body" id="body-sex">
+              <!-- Mapped Colab Cards -->
+            </div>
+          </div>
+
+        </div>
+
+      </div>
     </main>
   </div>
 </div>
 
-<!-- ALLOCATION MODAL -->
-<div class="modal-overlay" id="alloc-modal">
-  <div class="modal-box">
-    <button class="modal-close" onclick="fecharModalAlloc()">×</button>
-    <h3 id="modal-title">Agendar Ordem de Produção</h3>
-    <form id="alloc-form" onsubmit="salvarAlocacao(event)">
-      <input type="hidden" id="alloc-op-id" />
-      <input type="hidden" id="alloc-peso" />
-      <input type="hidden" id="alloc-qtd" />
-
-      <div class="form-group">
-        <label>Produto / Qtd</label>
-        <input type="text" id="alloc-prod-info" disabled style="background:var(--bg);" />
-      </div>
-
-      <div class="form-group">
-        <label>Colaborador Responsável</label>
-        <select id="alloc-colab" onchange="verificarPontosCapacidade()" required>
-          <option value="">Selecione...</option>
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label>Data Programada</label>
-        <input type="date" id="alloc-data" onchange="verificarPontosCapacidade()" required />
-      </div>
-
-      <!-- CAPACITY WIDGET -->
-      <div class="capacity-indicator" id="capacity-indicator" style="display:none">
-        <!-- Filled dynamically -->
-      </div>
-
-      <!-- SPLIT FORM SECTION -->
-      <div class="split-section" id="split-section" style="display:none">
-        <h4 style="font-size:12px; font-weight:700; margin-bottom:8px; color:var(--amber)">Dividir OP para Evitar Sobrecarga</h4>
-        <p style="font-size:11px; color:var(--text-secondary); margin-bottom:10px">
-          Deseja alocar a capacidade restante ao atual colaborador e criar uma nova OP com o saldo para outro colaborador?
-        </p>
-        
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px">
-          <div class="form-group" style="margin:0">
-            <label>Qtd p/ Atual (Máx)</label>
-            <input type="number" id="split-qtd-1" min="1" oninput="ajustarSplitSaldo()" />
-          </div>
-          <div class="form-group" style="margin:0">
-            <label>Saldo p/ Outro</label>
-            <input type="number" id="split-qtd-2" disabled style="background:var(--bg);" />
-          </div>
-        </div>
-
-        <div class="form-group" style="margin-bottom:0">
-          <label>Alocar Saldo p/ Colaborador</label>
-          <select id="split-colab-2">
-            <option value="">Colocar na fila (não agendar)</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="dialog-buttons">
-        <button type="button" class="btn btn-outline" onclick="fecharModalAlloc()">Cancelar</button>
-        <button type="button" class="btn btn-warning" id="btn-split-confirm" style="display:none" onclick="executarDivisaoOP()">Confirmar e Dividir</button>
-        <button type="submit" class="btn btn-primary" id="btn-submit">Salvar Agendamento</button>
-      </div>
-    </form>
+<!-- SLIDE-OVER DE COMPRAS -->
+<div class="slide-over" id="slide-over">
+  <div class="slide-over-header">
+    <h3>Validação de Estoque (MRP)</h3>
+    <button class="slide-over-close" onclick="fecharSlideOver()">×</button>
   </div>
-</div>
-
-<!-- AUTO SUGGESTION REVIEW MODAL -->
-<div class="modal-overlay" id="sugestao-modal">
-  <div class="modal-box" style="max-width: 580px;">
-    <button class="modal-close" onclick="fecharModalSugestao()">×</button>
-    <h3>Sugestão Semanal de Produção</h3>
-    <p style="font-size:12px; color:var(--text-secondary); margin-bottom:14px">
-      Cruzamos todos os pedidos em status <strong>'CRIADO'</strong> com o estoque atual da <strong>Câmara Fria</strong> e distribuímos a produção conforme a especialidade de cada dia.
-    </p>
-
-    <div style="max-height:350px; overflow-y:auto; border:1px solid var(--border); border-radius:var(--radius); padding:10px; background:var(--bg)" id="sugestao-conteudo">
-      <!-- Mapped dynamically -->
+  <div class="slide-over-body" id="slide-over-body">
+    <div style="text-align: center; color: var(--text-muted); padding: 40px 10px;">
+      Clique em "Validar" para analisar insumos necessários para a semana selecionada.
     </div>
-
-    <div class="dialog-buttons">
-      <button class="btn btn-outline" onclick="fecharModalSugestao()">Fechar</button>
-      <button class="btn btn-primary" id="btn-aplicar-sugestao" onclick="aplicarSugestaoEmLote()">Aplicar Planejamento</button>
-    </div>
+  </div>
+  <div class="slide-over-footer">
+    <button class="btn-wa" id="btn-whatsapp-compras" style="display:none;" onclick="enviarWhatsAppCompras()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12.012 2c-5.506 0-9.989 4.478-9.99 9.984a9.96 9.96 0 0 0 1.333 4.993L2 22l5.13-1.347a9.96 9.96 0 0 0 4.887 1.277h.005c5.505 0 9.989-4.478 9.99-9.985A9.97 9.97 0 0 0 12.012 2zm4.957 14.135c-.272.766-1.58 1.488-2.176 1.583-.55.088-1.267.16-3.7-.847-3.11-1.288-5.11-4.446-5.267-4.653-.156-.207-1.272-1.69-1.272-3.228 0-1.538.8-2.292 1.085-2.597.285-.306.623-.383.83-.383.208 0 .416.002.6.01.196.007.458-.074.717.552.264.639.907 2.213.985 2.373.078.16.13.346.026.556-.104.21-.156.34-.312.522-.156.181-.325.405-.467.545-.162.16-.33.334-.143.655.188.32.834 1.378 1.79 2.228.956.85 1.76 1.11 2.072 1.27.311.162.493.136.677-.077.185-.213.79-.92.998-1.233.208-.313.416-.26.702-.154.286.106 1.815.856 2.128 1.012.311.157.52.233.597.368.077.135.077.785-.195 1.551z"/></svg>
+      Enviar para Compras (WhatsApp)
+    </button>
   </div>
 </div>
 
@@ -560,17 +580,14 @@
 
 <script>
   const API = 'http://localhost:3001/api';
-  let dataReferencia = new Date(); // Inicia com hoje
-  let colaboradores = [];
-  let todasOps = [];
-  let sugestaoSemanalTemp = null;
+  let dataReferencia = new Date();
+  let totalOps = [];
+  let currentAgenda = {};
+  let missingStockItems = [];
+  let activeTab = 'PREPARO'; // PREPARO (Visão A: Cozinha) ou MONTAGEM (Visão B: Montagem)
 
-  // Formatar BRL
-  function fmtBRL(v) {
-    return Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-  }
+  let draggedOpId = null;
 
-  // Toast notifications
   function toast(msg, type = '') {
     const el = document.createElement('div');
     el.className = 'toast ' + type;
@@ -579,16 +596,44 @@
     setTimeout(() => el.remove(), 3500);
   }
 
-  // Obter datas da semana comercial (Segunda a Sábado) baseadas na data de referência
-  function obterDatasSemana(dataRef) {
+  // Alternar Visões de Dashboard
+  function alterarTab(tabName) {
+    activeTab = tabName;
+    
+    document.getElementById('btn-tab-preparo').classList.remove('active');
+    document.getElementById('btn-tab-montagem').classList.remove('active');
+    if (tabName === 'PREPARO') {
+      document.getElementById('btn-tab-preparo').classList.add('active');
+      document.getElementById('pendencias-titulo').textContent = 'Fila de Cozinha (kg)';
+      
+      document.getElementById('desc-seg').textContent = '🥣 Recheio (D-1)';
+      document.getElementById('desc-ter').textContent = '🥣 Recheio (D-1)';
+      document.getElementById('desc-qua').textContent = '🥣 Recheio (D-1)';
+      document.getElementById('desc-qui').textContent = '🥣 Recheio (D-1)';
+      document.getElementById('desc-sex').textContent = '🥣 Recheio (D-1)';
+    } else {
+      document.getElementById('btn-tab-montagem').classList.add('active');
+      document.getElementById('pendencias-titulo').textContent = 'Fila de Confecção (un)';
+      
+      document.getElementById('desc-seg').textContent = '🍞 Fermentados (D+0)';
+      document.getElementById('desc-ter').textContent = '🍰 Assados (D+0)';
+      document.getElementById('desc-qua').textContent = '🔥 Fritos (D+0)';
+      document.getElementById('desc-qui').textContent = '🍰 Assados (D+0)';
+      document.getElementById('desc-sex').textContent = '🔥 Fritos (D+0)';
+    }
+
+    renderSidebarPendencias();
+    renderMaestroBoard(obterDatasSemanaUtil(dataReferencia), currentAgenda);
+  }
+
+  function obterDatasSemanaUtil(dataRef) {
     const d = new Date(dataRef);
     const day = d.getDay();
-    const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Ajusta para segunda-feira
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
     
     const segunda = new Date(d.setDate(diff));
     const datas = [];
-    
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 5; i++) {
       const temp = new Date(segunda);
       temp.setDate(segunda.getDate() + i);
       datas.push(temp);
@@ -596,540 +641,390 @@
     return datas;
   }
 
-  // Formatar data para YYYY-MM-DD local
   function formatarYYYYMMDD(data) {
-    const ano = data.getFullYear();
-    const mes = String(data.getMonth() + 1).padStart(2, '0');
-    const dia = String(data.getDate()).padStart(2, '0');
-    return `${ano}-${mes}-${dia}`;
+    return data.toISOString().split('T')[0];
   }
 
-  // Formatar data curta para exibição (dd/mm)
-  function formatarDDMM(data) {
-    const dia = String(data.getDate()).padStart(2, '0');
-    const mes = String(data.getMonth() + 1).padStart(2, '0');
-    return `${dia}/${mes}`;
+  function formatarDDMM(dataStr) {
+    const parts = dataStr.split('-');
+    return `${parts[2]}/${parts[1]}`;
   }
 
-  // Inicializar a tela
+  function navegarSemana(dias) {
+    dataReferencia.setDate(dataReferencia.getDate() + dias);
+    carregarTudo();
+  }
+
   async function init() {
     await testarConexao();
-    await carregarColaboradores();
-    await carregarPlanejamento();
+    await carregarTudo();
   }
 
-  // Testar conexão com o servidor
   async function testarConexao() {
-    const indicator = document.getElementById('connection-status');
+    const el = document.getElementById('connection-status');
     try {
       const res = await fetch(`${API}/status`);
       if (res.ok) {
-        indicator.textContent = 'API Online';
-        indicator.className = 'api-status api-online';
-      } else {
-        throw new Error();
-      }
+        el.textContent = 'API Online';
+        el.className = 'api-status api-online';
+      } else throw new Error();
     } catch {
-      indicator.textContent = 'Modo Offline (Servidor Desconectado)';
-      indicator.className = 'api-status api-offline';
-      toast('Não foi possível conectar ao servidor backend na porta 3001.', 'error');
+      el.textContent = 'Modo Offline';
+      el.className = 'api-status api-offline';
+      toast('Servidor backend offline.', 'error');
     }
   }
 
-  // Carregar colaboradores do backend
-  async function carregarColaboradores() {
-    try {
-      const res = await fetch(`${API}/producao/colaboradores`);
-      if (!res.ok) throw new Error();
-      colaboradores = await res.json();
-      
-      // Popular select modal
-      const select = document.getElementById('alloc-colab');
-      select.innerHTML = '<option value="">Selecione...</option>' + 
-        colaboradores.map(c => `<option value="${c.id}">${c.nome} (Meta: ${c.meta_diaria_individual} pts)</option>`).join('');
+  async function carregarTudo() {
+    const datas = obterDatasSemanaUtil(dataReferencia);
+    const startStr = formatarYYYYMMDD(datas[0]);
+    const endStr = formatarYYYYMMDD(datas[4]);
 
-      // Popular select split
-      const selectSplit = document.getElementById('split-colab-2');
-      selectSplit.innerHTML = '<option value="">Colocar na fila (não agendar)</option>' + 
-        colaboradores.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
-    } catch {
-      colaboradores = [
-        { id: 1, nome: 'Maria Silva', meta_diaria_individual: 350 },
-        { id: 2, nome: 'João Santos', meta_diaria_individual: 400 },
-        { id: 3, nome: 'Ana Costa', meta_diaria_individual: 350 }
-      ];
-    }
-  }
+    document.getElementById('label-semana').textContent = `Semana de ${formatarDDMM(startStr)} a ${formatarDDMM(endStr)}`;
 
-  // Mudar semana
-  function mudarSemana(dias) {
-    dataReferencia.setDate(dataReferencia.getDate() + dias);
-    carregarPlanejamento();
-  }
-
-  // Carregar dados de planejamento e preencher os Kanban/MRP
-  async function carregarPlanejamento() {
-    const datasSemana = obterDatasSemana(dataReferencia);
-    const startStr = formatarYYYYMMDD(datasSemana[0]);
-    const endStr = formatarYYYYMMDD(datasSemana[5]);
-
-    document.getElementById('week-label').textContent = `Semana de ${formatarDDMM(datasSemana[0])} a ${formatarDDMM(datasSemana[5])}`;
+    document.getElementById('data-seg').textContent = formatarDDMM(startStr);
+    document.getElementById('data-ter').textContent = formatarDDMM(formatarYYYYMMDD(datas[1]));
+    document.getElementById('data-qua').textContent = formatarDDMM(formatarYYYYMMDD(datas[2]));
+    document.getElementById('data-qui').textContent = formatarDDMM(formatarYYYYMMDD(datas[3]));
+    document.getElementById('data-sex').textContent = formatarDDMM(endStr);
 
     try {
-      // 1. Carregar OPs da Fila
-      const resOps = await fetch(`${API}/producao/fila`);
-      if (!resOps.ok) throw new Error();
-      todasOps = await resOps.json();
-    } catch {
-      todasOps = [
-        { numero_op: 1, produto: 'Coxinha de Frango', produto_id: 1, quantidade_planejada: 150, status: 'FILA', data_programada: null, peso_produtividade: 1.0, categoria_producao: 'Frito' },
-        { numero_op: 2, produto: 'Bolinho de Queijo', produto_id: 2, quantidade_planejada: 100, status: 'FILA', data_programada: null, peso_produtividade: 1.0, categoria_producao: 'Frito' },
-        { numero_op: 3, produto: 'Pão de Queijo', produto_id: 3, quantidade_planejada: 200, status: 'FILA', data_programada: null, peso_produtividade: 0.8, categoria_producao: 'Assado' },
-        { numero_op: 4, produto: 'Kibe Especial', produto_id: 4, quantidade_planejada: 80, status: 'FILA', data_programada: null, peso_produtividade: 1.2, categoria_producao: 'Frito' }
-      ];
-    }
+      const resFila = await fetch(`${API}/producao/fila`);
+      const rawFila = await resFila.json();
+      totalOps = Array.isArray(rawFila) ? rawFila : [];
 
-    renderKanban(datasSemana);
-    await carregarMRPSemanal(startStr, endStr);
-  }
+      const resSemana = await fetch(`${API}/planejamento/semanal?data_inicio=${startStr}&data_fim=${endStr}`);
+      const dataSemana = await resSemana.json();
+      currentAgenda = dataSemana.agenda || {};
 
-  // Renderizar o tabuleiro Kanban
-  function renderKanban(datasSemana) {
-    const grid = document.getElementById('kanban-grid');
-    grid.innerHTML = '';
-
-    const diasNomes = ['Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
-
-    // Mapeamento de OPs programadas por data
-    const mapOpsPorData = {};
-    const unallocated = [];
-
-    todasOps.forEach(op => {
-      if (op.data_programada) {
-        // Normaliza string da data para comparar (extrai yyyy-mm-dd)
-        const dStr = op.data_programada.substring(0, 10);
-        if (!mapOpsPorData[dStr]) mapOpsPorData[dStr] = [];
-        mapOpsPorData[dStr].push(op);
-      } else {
-        unallocated.push(op);
-      }
-    });
-
-    // 1. Renderizar Colunas Semanais
-    diasNomes.forEach((nomeDia, index) => {
-      const dataDia = datasSemana[index];
-      const dStr = formatarYYYYMMDD(dataDia);
-      const opsDia = mapOpsPorData[dStr] || [];
-
-      // Calcular pontos acumulados na coluna
-      const ptsAcumulados = opsDia.reduce((sum, op) => sum + (op.quantidade_planejada * (op.peso_produtividade || 1.0)), 0);
-
-      const colHtml = document.createElement('div');
-      colHtml.className = 'kanban-col';
-      colHtml.innerHTML = `
-        <div class="kanban-col-header">
-          <div class="kanban-day-name">${nomeDia}</div>
-          <div class="kanban-day-date">${formatarDDMM(dataDia)}</div>
-          <div class="kanban-day-pts">
-            <span>Pontuação:</span>
-            <strong>${ptsAcumulados.toFixed(1)} pts</strong>
-          </div>
-        </div>
-        <div class="kanban-col-cards" style="display:flex; flex-direction:column; gap:8px;" id="col-${dStr}">
-          ${opsDia.map(op => renderOPCard(op, true)).join('')}
-          ${opsDia.length === 0 ? '<div style="font-size:11px;color:var(--text-muted);text-align:center;padding:20px 0;border:1px dashed var(--border);border-radius:var(--radius)">Sem agendamentos</div>' : ''}
-        </div>
-      `;
-      grid.appendChild(colHtml);
-    });
-
-    // 2. Renderizar Fila lateral (Desprogramadas)
-    const unplannedCount = document.getElementById('unplanned-count');
-    unplannedCount.textContent = `${unallocated.length} OPs`;
-
-    const listHtml = document.getElementById('unplanned-list');
-    if (unallocated.length === 0) {
-      listHtml.innerHTML = '<div style="color:var(--text-muted);font-size:12px;text-align:center;padding:40px 10px;">Nenhuma OP pendente na fila.</div>';
-    } else {
-      listHtml.innerHTML = unallocated.map(op => renderOPCard(op, false)).join('');
+      renderSidebarPendencias();
+      renderMaestroBoard(datas, currentAgenda);
+    } catch (err) {
+      console.error('Erro ao carregar planejamento:', err);
+      toast('Erro ao obter dados do servidor.', 'error');
     }
   }
 
-  // Renderizar card individual de OP
-  function renderOPCard(op, programada) {
-    const catClass = 'tag-' + (op.categoria_producao || 'Geral').trim().toLowerCase();
-    const peso = parseFloat(op.peso_produtividade || 1.0);
-    const pontos = op.quantidade_planejada * peso;
+  // 1. Renderizar fila de pendências
+  function renderSidebarPendencias() {
+    const list = document.getElementById('pendencias-container');
+    const badge = document.getElementById('badge-pendencias');
 
-    return `
-      <div class="op-card" onclick="${programada ? '' : `abrirModalAlloc(${op.numero_op}, '${op.produto}', ${op.quantidade_planejada}, ${peso})`}">
-        <div class="op-card-header">
-          <span class="op-card-op">OP-${String(op.numero_op).padStart(3, '0')}</span>
-          <span class="op-card-tag ${catClass}">${op.categoria_producao || 'Geral'}</span>
-        </div>
-        <div class="op-card-prod">${op.produto}</div>
-        <div style="font-weight:600">Qtd: ${op.quantidade_planejada} un</div>
-        <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">
-          Pontos: <strong>${pontos.toFixed(1)}</strong> <span style="color:var(--text-muted)">(${peso.toFixed(1)}x)</span>
-        </div>
-        ${programada ? `
-          <div class="op-card-meta">
-            👤 Responsável: <strong>${op.colaborador_nome || 'Não definido'}</strong>
-          </div>
-          <div class="op-card-actions">
-            <button class="op-card-btn" onclick="desagendarOP(${op.numero_op})">Desagendar</button>
-          </div>
-        ` : `
-          <div class="op-card-actions">
-            <button class="op-card-btn" style="border-color:var(--brand);color:var(--brand);font-weight:600;">Agendar OP</button>
-          </div>
-        `}
-      </div>
-    `;
-  }
+    const desprogramadas = totalOps.filter(op => !op.data_programada && (op.tipo_op === activeTab || (!op.tipo_op && activeTab === 'MONTAGEM')));
+    badge.textContent = `${desprogramadas.length} OPs`;
 
-  // Desagendar uma OP (remover data e colaborador)
-  async function desagendarOP(opId) {
-    try {
-      const res = await fetch(`${API}/producao/planejar`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          colaborador_id: null,
-          data_programada: null,
-          ops_ids: [opId]
-        })
-      });
-      if (!res.ok) throw new Error();
-      toast('OP removida do planejamento semanal.', 'success');
-      await carregarPlanejamento();
-    } catch {
-      // Mock local
-      const op = todasOps.find(o => o.numero_op === opId);
-      if (op) {
-        op.data_programada = null;
-        op.colaborador_nome = null;
-        op.colaborador_id = null;
-      }
-      toast('Removido localmente (servidor offline).', 'warning');
-      const datasSemana = obterDatasSemana(dataReferencia);
-      renderKanban(datasSemana);
-    }
-  }
-
-  // Abrir modal de agendamento de OP
-  function abrirModalAlloc(opId, produto, quantidade, peso) {
-    document.getElementById('alloc-op-id').value = opId;
-    document.getElementById('alloc-peso').value = peso;
-    document.getElementById('alloc-qtd').value = quantidade;
-    document.getElementById('alloc-prod-info').value = `${produto} (${quantidade} un)`;
-    
-    // Set default date to the Monday of the selected week if today is out of week
-    const datas = obterDatasSemana(dataReferencia);
-    document.getElementById('alloc-data').value = formatarYYYYMMDD(datas[0]);
-    document.getElementById('alloc-colab').value = '';
-    
-    document.getElementById('capacity-indicator').style.display = 'none';
-    document.getElementById('split-section').style.display = 'none';
-    document.getElementById('btn-split-confirm').style.display = 'none';
-    document.getElementById('btn-submit').style.display = 'inline-block';
-
-    document.getElementById('alloc-modal').classList.add('open');
-  }
-
-  // Fechar modal de agendamento
-  function fecharModalAlloc() {
-    document.getElementById('alloc-modal').classList.remove('open');
-  }
-
-  // Verificar capacidade do colaborador selecionado em tempo real
-  async function verificarPontosCapacidade() {
-    const colabId = document.getElementById('alloc-colab').value;
-    const dataProg = document.getElementById('alloc-data').value;
-    const opId = document.getElementById('alloc-op-id').value;
-    const qty = parseInt(document.getElementById('alloc-qtd').value, 10);
-    const peso = parseFloat(document.getElementById('alloc-peso').value);
-
-    const indicator = document.getElementById('capacity-indicator');
-    const splitSection = document.getElementById('split-section');
-    const btnSplitConfirm = document.getElementById('btn-split-confirm');
-    const btnSubmit = document.getElementById('btn-submit');
-
-    if (!colabId || !dataProg) {
-      indicator.style.display = 'none';
-      splitSection.style.display = 'none';
-      btnSplitConfirm.style.display = 'none';
-      btnSubmit.style.display = 'inline-block';
+    if (desprogramadas.length === 0) {
+      list.innerHTML = `<div style="color:var(--text-muted);font-size:12px;text-align:center;padding:40px 10px;">Nenhuma OP de ${activeTab === 'PREPARO' ? 'Cozinha' : 'Montagem'} na fila.</div>`;
       return;
     }
 
-    try {
-      const res = await fetch(`${API}/planejamento/validar`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          colaborador_id: colabId,
-          data_programada: dataProg,
-          ops: [{ op_id: opId }]
-        })
-      });
-      if (!res.ok) throw new Error();
-      const val = await res.json();
+    list.innerHTML = desprogramadas.map(op => {
+      const isPrep = op.tipo_op === 'PREPARO';
+      const displayNome = isPrep ? (op.receita_nome || 'Receita Preparo') : op.produto;
+      const displayUnidade = isPrep ? 'kg' : 'un';
+      const peso = parseFloat(op.peso_produtividade || 1.0);
+      const pontos = op.quantidade_planejada * peso;
+      const catClass = isPrep ? 'tag-fermentado' : 'tag-' + (op.categoria_producao || 'Geral').trim().toLowerCase();
 
-      indicator.style.display = 'block';
-      
-      const pontosDisponiveis = val.capacidade_restante_pontos;
-      const pontosRequisitados = val.proposta_pontos;
-
-      if (val.ultrapassa_meta) {
-        indicator.className = 'capacity-indicator capacity-warn';
-        indicator.innerHTML = `
-          <strong>Excesso de Capacidade!</strong><br/>
-          Capacidade atual agendada: ${val.capacidade_atual_pontos.toFixed(1)} / ${val.meta_diaria_individual} pts.<br/>
-          Esta OP necessita de: ${pontosRequisitados.toFixed(1)} pts.<br/>
-          <strong>Sobrecarga: ${(val.novo_total_pontos - val.meta_diaria_individual).toFixed(1)} pontos.</strong>
-        `;
-        
-        // Exibir opção de divisão/split
-        splitSection.style.display = 'block';
-        btnSplitConfirm.style.display = 'inline-block';
-        btnSubmit.textContent = 'Ignorar e Agendar Mesmo Assim';
-
-        // Sugerir divisão ideal
-        const qtdIdealParaMeta = Math.floor(pontosDisponiveis / peso);
-        document.getElementById('split-qtd-1').value = Math.max(1, qtdIdealParaMeta);
-        ajustarSplitSaldo();
-      } else {
-        indicator.className = 'capacity-indicator';
-        indicator.innerHTML = `
-          <strong>Capacidade OK</strong><br/>
-          Capacidade atual agendada: ${val.capacidade_atual_pontos.toFixed(1)} / ${val.meta_diaria_individual} pts.<br/>
-          Esta OP consumirá: ${pontosRequisitados.toFixed(1)} pts.<br/>
-          Capacidade restante após alocação: ${(val.meta_diaria_individual - val.novo_total_pontos).toFixed(1)} pts.
-        `;
-        
-        splitSection.style.display = 'none';
-        btnSplitConfirm.style.display = 'none';
-        btnSubmit.textContent = 'Salvar Agendamento';
-        btnSubmit.style.display = 'inline-block';
-      }
-    } catch {
-      indicator.style.display = 'none';
-      splitSection.style.display = 'none';
-      btnSplitConfirm.style.display = 'none';
-      btnSubmit.style.display = 'inline-block';
-    }
+      return `
+        <div class="op-drag-card" draggable="true" ondragstart="dragStart(event, ${op.numero_op})">
+          <div class="op-meta-row">
+            <span class="op-code">OP-${String(op.numero_op).padStart(3, '0')}</span>
+            <span class="op-badge ${catClass}">${isPrep ? 'PREPARO' : 'MONTAGEM'}</span>
+          </div>
+          <div class="op-name">${displayNome}</div>
+          <div class="op-details">
+            <span>Demanda: <strong>${op.quantidade_planejada} ${displayUnidade}</strong></span>
+            ${isPrep ? '' : `<span>Pts: <strong>${pontos.toFixed(1)}</strong></span>`}
+          </div>
+        </div>
+      `;
+    }).join('');
   }
 
-  // Ajustar quantidade de divisão
-  function ajustarSplitSaldo() {
-    const qtyTotal = parseInt(document.getElementById('alloc-qtd').value, 10);
-    const qty1 = parseInt(document.getElementById('split-qtd-1').value, 10) || 0;
-    
-    let colab1 = Math.min(qtyTotal - 1, qty1);
-    if (colab1 < 1) colab1 = 1;
+  // 2. Renderizar Quadro Maestro Semanal (D-1 Cozinha vs D+0 Montagem)
+  function renderMaestroBoard(datasSemana, agenda) {
+    const diasIDs = ['seg', 'ter', 'qua', 'qui', 'sex'];
 
-    document.getElementById('split-qtd-1').value = colab1;
-    document.getElementById('split-qtd-2').value = qtyTotal - colab1;
-  }
+    datasSemana.forEach((data, index) => {
+      const dStr = formatarYYYYMMDD(data);
+      const colId = `body-${diasIDs[index]}`;
+      const colEl = document.getElementById(colId);
+      colEl.innerHTML = '';
 
-  // Salvar alocação manual convencional (pode ignorar capacidade)
-  async function salvarAlocacao(e) {
-    e.preventDefault();
-    const opId = document.getElementById('alloc-op-id').value;
-    const colabId = document.getElementById('alloc-colab').value;
-    const dataProg = document.getElementById('alloc-data').value;
+      const diaAgenda = agenda[dStr] || { colaboradores: [] };
+      const colabs = diaAgenda.colaboradores || [];
 
-    try {
-      const res = await fetch(`${API}/producao/planejar`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          colaborador_id: colabId,
-          data_programada: dataProg,
-          ops_ids: [parseInt(opId, 10)]
-        })
-      });
-      if (!res.ok) throw new Error();
-      toast('OP planejada com sucesso.', 'success');
-      fecharModalAlloc();
-      await carregarPlanejamento();
-    } catch {
-      // Offline fallback
-      const op = todasOps.find(o => o.numero_op === parseInt(opId, 10));
-      const colab = colaboradores.find(c => c.id === parseInt(colabId, 10));
-      if (op && colab) {
-        op.data_programada = dataProg;
-        op.colaborador_id = colab.id;
-        op.colaborador_name = colab.nome;
-        op.colaborador_nome = colab.nome;
-      }
-      toast('Salvo localmente (servidor offline).', 'warning');
-      fecharModalAlloc();
-      const datasSemana = obterDatasSemana(dataReferencia);
-      renderKanban(datasSemana);
-    }
-  }
-
-  // Executar a divisão de OP (Split) e salvar
-  async function executarDivisaoOP() {
-    const opId = parseInt(document.getElementById('alloc-op-id').value, 10);
-    const colab1Id = parseInt(document.getElementById('alloc-colab').value, 10);
-    const data1 = document.getElementById('alloc-data').value;
-    const qty1 = parseInt(document.getElementById('split-qtd-1').value, 10);
-    const qty2 = parseInt(document.getElementById('split-qtd-2').value, 10);
-    const colab2Id = document.getElementById('split-colab-2').value;
-
-    const payload = {
-      op_id: opId,
-      quantidade_colaborador_1: qty1,
-      colaborador_1_id: colab1Id,
-      data_1: data1,
-      quantidade_colaborador_2: qty2,
-      colaborador_2_id: colab2Id ? parseInt(colab2Id, 10) : null,
-      data_2: colab2Id ? data1 : null // Se agendado, usa a mesma data
-    };
-
-    try {
-      const res = await fetch(`${API}/planejamento/split-op`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      if (!res.ok) throw new Error();
-      toast('OP dividida e alocada com sucesso!', 'success');
-      fecharModalAlloc();
-      await carregarPlanejamento();
-    } catch {
-      toast('Erro de conexão ao dividir OP no servidor.', 'error');
-    }
-  }
-
-  // Carregar MRP de insumos da semana
-  async function carregarMRPSemanal(startStr, endStr) {
-    const tbody = document.getElementById('mrp-tbody');
-    try {
-      const res = await fetch(`${API}/planejamento/insumos-semana?data_inicio=${startStr}&data_fim=${endStr}`);
-      if (!res.ok) throw new Error();
-      const data = await res.json();
-      const itens = data.itens || [];
-
-      if (itens.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:20px">Nenhum insumo faltante para a demanda desta semana. Estoque OK!</td></tr>';
+      if (colabs.length === 0) {
+        colEl.innerHTML = '<div style="color:var(--text-muted);font-size:11px;text-align:center;padding:40px 0;">Nenhum operador ativo.</div>';
         return;
       }
 
-      tbody.innerHTML = itens.map(i => {
-        const badge = i.comprar_urgente 
-          ? `<span class="critical-buy">COMPRAR URGENTE (Falta: ${i.falta} ${i.unidade})</span>` 
-          : `<span class="ok-stock">Estoque Suficiente</span>`;
+      colabs.forEach(c => {
+        const opsFiltradas = (c.ops || []).filter(o => o.tipo_op === activeTab || (!o.tipo_op && activeTab === 'MONTAGEM'));
+
+        const meta = c.meta_diaria_individual || 350;
         
-        return `
-          <tr>
-            <td><strong>${i.nome}</strong></td>
-            <td><span style="font-size:11px; text-transform:uppercase; font-weight:700; color:var(--text-secondary)">${i.tipo}</span></td>
-            <td align="right">${i.demanda} ${i.unidade}</td>
-            <td align="right">${i.estoque_atual} ${i.unidade}</td>
-            <td align="right" style="${i.comprar_urgente ? 'color:var(--red); font-weight:700;' : ''}">${i.falta > 0 ? `${i.falta} ${i.unidade}` : '—'}</td>
-            <td>${badge}</td>
-          </tr>
-        `;
-      }).join('');
-    } catch {
-      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:20px">Não foi possível carregar o MRP (Servidor Offline).</td></tr>';
-    }
-  }
+        let totalCargaExibida = 0;
+        let pct = 0;
+        let exceeds = false;
 
-  // Abrir modal de sugestões semanais
-  async function abrirModalSugestao() {
-    const div = document.getElementById('sugestao-conteudo');
-    const btn = document.getElementById('btn-aplicar-sugestao');
-    div.innerHTML = '<div style="text-align:center;padding:20px;">Carregando sugestões da inteligência de planejamento...</div>';
-    btn.style.display = 'none';
+        if (activeTab === 'PREPARO') {
+          totalCargaExibida = opsFiltradas.reduce((sum, o) => sum + parseFloat(o.quantidade_planejada), 0);
+          pct = Math.min(100, (totalCargaExibida / 50.0) * 100);
+          exceeds = totalCargaExibida > 50.0;
+        } else {
+          totalCargaExibida = opsFiltradas.reduce((sum, o) => sum + (o.quantidade_planejada * (o.peso_produtividade || 1.0)), 0);
+          pct = Math.min(200, (totalCargaExibida / meta) * 100);
+          exceeds = totalCargaExibida > meta;
+        }
 
-    document.getElementById('sugestao-modal').classList.add('open');
+        // Mapear itens da legenda
+        const legendsHtml = opsFiltradas.length > 0
+          ? opsFiltradas.map(o => {
+              const displayNomeLeg = o.tipo_op === 'PREPARO' ? (o.receita_nome || 'Preparo') : o.produto_nome;
+              const displayUnLeg = o.tipo_op === 'PREPARO' ? 'kg' : 'un';
+              const elementId = `op-legend-${o.op_id}`;
+              
+              // Se for Cozinha (PREPARO), disparamos checagem assíncrona de almoxarifado
+              if (activeTab === 'PREPARO') {
+                  verificarMateriaPrimaOP(o.op_id, elementId);
+              }
 
-    try {
-      const res = await fetch(`${API}/planejamento/sugestao-semanal`);
-      if (!res.ok) throw new Error();
-      const data = await res.json();
-      sugestaoSemanalTemp = data.sugestao;
+              return `
+                <li class="legend-item" id="${elementId}" onclick="desagendarOP(${o.op_id})">
+                  <div>
+                    <span class="legend-bullet">•</span><strong>${o.quantidade_planejada} ${displayUnLeg}</strong> - ${displayNomeLeg}
+                    <span style="font-size: 9px; color: var(--text-muted)">❌</span>
+                  </div>
+                  ${o.alerta ? `
+                    <div style="color:#b91c1c; font-size:9.5px; font-weight:700; background:#fef2f2; border:1px solid #fee2e2; padding:4px 6px; border-radius:4px; margin-top:4px;">
+                      ⚠️ ${o.alerta}
+                    </div>
+                  ` : ''}
+                </li>
+              `;
+            }).join('')
+          : '<li style="font-size:10px;color:var(--text-muted);list-style:none;">Sem carga</li>';
 
-      let html = '';
-      let hasData = false;
+        const card = document.createElement('div');
+        card.className = 'colab-card';
+        card.setAttribute('ondragover', 'allowDrop(event)');
+        card.setAttribute('ondragleave', 'dragLeave(event)');
+        card.setAttribute('ondrop', `drop(event, ${c.colaborador_id}, '${dStr}')`);
+        card.id = `card-${dStr}-${c.colaborador_id}`;
 
-      const dias = Object.keys(sugestaoSemanalTemp);
-      const datasSemana = obterDatasSemana(dataReferencia);
-
-      dias.forEach((dia, index) => {
-        const ops = sugestaoSemanalTemp[dia] || [];
-        if (ops.length > 0) {
-          hasData = true;
-          // Anexar data estimada
-          const dStr = formatarDDMM(datasSemana[index] || new Date());
-          html += `
-            <div style="margin-bottom:14px; background:white; padding:10px; border-radius:var(--radius); border:1px solid var(--border)">
-              <h4 style="font-weight:700; font-size:13px; color:var(--brand); margin-bottom:6px;">${dia} (${dStr})</h4>
-              <ul style="padding-left:16px; font-size:12px; display:flex; flex-direction:column; gap:4px;">
-                ${ops.map(o => `<li><strong>${o.produto_nome}</strong>: produzir <strong>${o.quantidade} un</strong> <span style="color:var(--text-secondary)">(${o.categoria})</span></li>`).join('')}
-              </ul>
+        const progressHtml = activeTab === 'MONTAGEM'
+          ? `
+            <div class="progress-wrapper">
+              <div class="progress-label">
+                <span>Carga Montagem:</span>
+                <strong>${totalCargaExibida.toFixed(1)} / ${meta} pts</strong>
+              </div>
+              <div class="progress-bar-bg">
+                <div class="progress-bar-fill ${exceeds ? 'excedido' : ''}" style="width: ${pct}%"></div>
+              </div>
+            </div>
+          `
+          : `
+            <div class="progress-wrapper">
+              <div class="progress-label">
+                <span>Carga Cozinha (Preparos):</span>
+                <strong>${totalCargaExibida.toFixed(1)} kg planejado</strong>
+              </div>
+              <div class="progress-bar-bg">
+                <div class="progress-bar-fill" style="width: ${pct}%; background:#8b5cf6;"></div>
+              </div>
             </div>
           `;
-        }
-      });
 
-      if (!hasData) {
-        div.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-secondary)">Nenhum pedido em aberto ("CRIADO") necessita de produção. Todos cobertos pelo estoque da Câmara Fria!</div>';
-        btn.style.display = 'none';
-      } else {
-        div.innerHTML = html;
-        btn.style.display = 'inline-block';
-      }
-    } catch {
-      div.innerHTML = '<div style="text-align:center;padding:20px;color:var(--red)">Falha de conexão com o servidor. Verifique a API.</div>';
-      btn.style.display = 'none';
-    }
-  }
+        card.innerHTML = `
+          <div class="colab-header">
+            <div style="display:flex; flex-direction:column;">
+              <span class="colab-nome">${c.nome}</span>
+              ${c.eh_novato ? '<span class="colab-novato-badge" style="width:fit-content;margin-top:2px;">Novato</span>' : ''}
+            </div>
+            <button onclick="imprimirFicha(${c.colaborador_id}, '${dStr}')" title="Imprimir Ficha de Trabalho" style="background:none; border:none; cursor:pointer; font-size:14px; padding:2px;">🖨️</button>
+          </div>
+          ${progressHtml}
+          <ul class="legend-list">
+            ${legendsHtml}
+          </ul>
+        `;
 
-  // Fechar modal de sugestão
-  function fecharModalSugestao() {
-    document.getElementById('sugestao-modal').classList.remove('open');
-  }
-
-  // Aplicar sugestões em lote
-  async function aplicarSugestaoEmLote() {
-    if (!sugestaoSemanalTemp) return;
-    
-    const datasSemana = obterDatasSemana(dataReferencia);
-    const dias = ['Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
-    const atribuicoes = [];
-
-    dias.forEach((dia, index) => {
-      const dataDia = datasSemana[index];
-      const dataStr = formatarYYYYMMDD(dataDia);
-      const ops = sugestaoSemanalTemp[dia] || [];
-      ops.forEach(op => {
-        atribuicoes.push({
-          produto_id: op.produto_id,
-          quantidade: op.quantidade,
-          data_programada: dataStr
-        });
+        colEl.appendChild(card);
       });
     });
+  }
+
+  // Aviso de Almoxarifado para Cozinha (Preparo)
+  async function verificarMateriaPrimaOP(opId, elementId) {
+      try {
+          const res = await fetch(`${API}/producao/op/${opId}/impedimentos`);
+          if (!res.ok) return;
+          const data = await res.json();
+          if (data.tem_impedimentos) {
+              const container = document.getElementById(elementId);
+              if (container) {
+                  const badge = document.createElement('div');
+                  badge.style.color = '#b91c1c';
+                  badge.style.background = '#fef2f2';
+                  badge.style.border = '1px solid #fee2e2';
+                  badge.style.fontSize = '9px';
+                  badge.style.fontWeight = '700';
+                  badge.style.padding = '4px 6px';
+                  badge.style.borderRadius = '4px';
+                  badge.style.marginTop = '4px';
+                  badge.innerHTML = `⚠️ FALTAM NO ESTOQUE: ${data.impedimentos.map(i=>i.nome).join(', ')}`;
+                  container.appendChild(badge);
+              }
+          }
+      } catch (e) {
+          console.error(e);
+      }
+  }
+
+  // --- DRAG AND DROP HANDLERS ---
+  function dragStart(ev, opId) {
+    draggedOpId = opId;
+    ev.dataTransfer.setData("text/plain", opId);
+  }
+
+  function allowDrop(ev) {
+    ev.preventDefault();
+    ev.currentTarget.classList.add('drag-over');
+  }
+
+  function dragLeave(ev) {
+    ev.currentTarget.classList.remove('drag-over');
+  }
+
+  async function drop(ev, colabId, targetDateStr) {
+    ev.preventDefault();
+    ev.currentTarget.classList.remove('drag-over');
+
+    const opId = parseInt(ev.dataTransfer.getData("text/plain") || draggedOpId, 10);
+    if (!opId) return;
+
+    atualizarLocalmenteOP(opId, colabId, targetDateStr);
 
     try {
-      const res = await fetch(`${API}/planejamento/aplicar-sugestao`, {
-        method: 'POST',
+      const res = await fetch(`${API}/producao/op/${opId}/agendar`, {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ atribuicoes })
+        body: JSON.stringify({
+          data_programada: targetDateStr,
+          colaborador_id: colabId
+        })
+      });
+
+      if (!res.ok) throw new Error();
+      toast(`OP-${String(opId).padStart(3, '0')} agendada com sucesso.`, 'success');
+      await carregarTudo();
+    } catch (err) {
+      toast('Erro ao agendar OP no servidor.', 'error');
+      await carregarTudo();
+    }
+  }
+
+  function atualizarLocalmenteOP(opId, colabId, dateStr) {
+    const op = totalOps.find(o => o.numero_op === opId);
+    if (op) {
+      op.data_programada = dateStr;
+      op.colaborador_id = colabId;
+    }
+  }
+
+  async function desagendarOP(opId) {
+    try {
+      const res = await fetch(`${API}/producao/op/${opId}/agendar`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          data_programada: null,
+          colaborador_id: null
+        })
       });
       if (!res.ok) throw new Error();
-      toast('Sugestões aplicadas e integradas à fila semanal!', 'success');
-      fecharModalSugestao();
-      await carregarPlanejamento();
+      toast(`OP-${String(opId).padStart(3, '0')} removida do agendamento.`, 'success');
+      await carregarTudo();
     } catch {
-      toast('Erro de conexão ao salvar sugestão em lote.', 'error');
+      toast('Erro ao desagendar OP.', 'error');
     }
+  }
+
+  function imprimirFicha(colaboradorId, dataStr) {
+    window.open(`ficha_trabalho.html?colaborador_id=${colaboradorId}&data=${dataStr}`, '_blank');
+  }
+
+  // --- SLIDE-OVER DE COMPRAS ---
+  function abrirSlideOver() {
+    document.getElementById('slide-over').classList.add('open');
+    validarFaltasEstoque();
+  }
+
+  function fecharSlideOver() {
+    document.getElementById('slide-over').classList.remove('open');
+  }
+
+  async function validarFaltasEstoque() {
+    const datas = obterDatasSemanaUtil(dataReferencia);
+    const startStr = formatarYYYYMMDD(datas[0]);
+    const endStr = formatarYYYYMMDD(datas[4]);
+    const body = document.getElementById('slide-over-body');
+    const btnWA = document.getElementById('btn-whatsapp-compras');
+
+    body.innerHTML = '<div style="text-align:center;padding:40px 10px;">Calculando necessidade líquida de compras...</div>';
+    btnWA.style.display = 'none';
+
+    try {
+      const res = await fetch(`${API}/planejamento/validar-estoque?data_inicio=${startStr}&data_fim=${endStr}`);
+      const data = await res.json();
+      missingStockItems = data.itens || [];
+
+      if (missingStockItems.length === 0) {
+        body.innerHTML = `
+          <div style="text-align: center; color: var(--green); padding: 40px 10px; font-weight:600">
+            ✅ Estoques Suficientes!<br/>
+            Nenhum insumo em falta no almoxarifado para esta semana.
+          </div>
+        `;
+        return;
+      }
+
+      body.innerHTML = missingStockItems.map(item => `
+        <div class="falta-card">
+          <div class="falta-info">
+            <span class="falta-nome">${item.nome}</span>
+            <span class="falta-det">Tipo: ${item.tipo} | Estoque: ${item.estoque_atual} ${item.unidade}</span>
+          </div>
+          <div class="falta-qtd">Falta: ${item.falta} ${item.unidade}</div>
+        </div>
+      `).join('');
+
+      btnWA.style.display = 'flex';
+    } catch {
+      body.innerHTML = '<div style="text-align:center;color:var(--red);padding:40px 10px;">Erro de conexão ao validar estoques.</div>';
+    }
+  }
+
+  function enviarWhatsAppCompras() {
+    if (missingStockItems.length === 0) return;
+
+    const datas = obterDatasSemanaUtil(dataReferencia);
+    const startStr = formatarDDMM(formatarYYYYMMDD(datas[0]));
+    const endStr = formatarDDMM(formatarYYYYMMDD(datas[4]));
+
+    let msg = `📋 *LISTA DE COMPRAS — ERP FÁBRICA*\n`;
+    msg += `Demanda de Vendas e Produção: Semana de ${startStr} a ${endStr}\n\n`;
+    msg += `Insumos em falta necessitando de compra imediata:\n`;
+
+    missingStockItems.forEach(item => {
+      msg += `• *${item.nome}*: necessita de mais *${item.falta} ${item.unidade}* (Demanda: ${item.demanda} / Estoque atual: ${item.estoque_atual})\n`;
+    });
+
+    const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+    window.open(url, '_blank');
   }
 
   window.addEventListener('DOMContentLoaded', init);
