@@ -8,116 +8,60 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/global.css" />
   <style>
-    .toolbar {
-      display: flex; align-items: center; gap: 10px;
-      margin-bottom: 20px; flex-wrap: wrap;
-    }
-    .toolbar .search-bar { flex: 1; max-width: 380px; }
-    .toolbar-right { margin-left: auto; }
-
     .prod-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
       gap: 16px;
-      margin-bottom: 30px;
     }
     .prod-card {
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
       background: var(--surface);
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
+      padding: 18px;
+      display: flex; flex-direction: column;
+      transition: box-shadow .15s;
     }
+    .prod-card:hover { box-shadow: var(--shadow-md); }
     .prod-card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
+      display: flex; justify-content: space-between; align-items: flex-start;
       margin-bottom: 12px;
     }
-    .prod-card-title {
-      font-size: 15px;
-      font-weight: 700;
-      color: var(--text-primary);
-    }
-    .prod-meta {
-      display: flex;
-      gap: 6px;
-      margin-top: 4px;
-    }
-    .badge-prod {
-      font-size: 11px;
-      padding: 2px 8px;
-      border-radius: 4px;
-      font-weight: 600;
-    }
-    .badge-price { background: #f0fdf4; color: #166534; }
-    .badge-points { background: #faf5ff; color: #6b21a8; }
-
-    .action-icons { display: flex; gap: 6px; }
-    .action-icons button {
-      width: 24px;
-      height: 24px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      background: var(--surface);
-      cursor: pointer;
-      color: var(--text-muted);
-      transition: all 0.12s;
-    }
-    .action-icons button:hover { border-color: var(--brand); color: var(--brand); }
-    .action-icons button.red:hover { border-color: var(--red); color: var(--red); }
-
+    .prod-card-title { font-size: 15px; font-weight: 700; margin-top: 4px; }
+    .prod-meta { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
     .ficha-resumo {
-      font-size: 12px;
-      color: var(--text-secondary);
+      font-size: 12.5px; color: var(--text-secondary);
       border-top: 1px dashed var(--border-light);
-      padding-top: 10px;
-      margin-top: 12px;
+      padding-top: 10px; margin-top: 12px;
     }
-    .ficha-title {
-      font-weight: 700;
-      margin-bottom: 4px;
-      font-size: 11.5px;
-      color: var(--text-muted);
-    }
+    .ficha-item { display: flex; justify-content: space-between; padding: 3px 0; }
 
-    /* Form items inside drawer */
-    .row-ficha-container {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      margin-top: 10px;
-    }
+    /* Form items */
+    .ficha-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
     .ficha-row {
       display: grid;
-      grid-template-columns: 80px 180px 1fr 24px;
-      gap: 6px;
-      align-items: center;
+      grid-template-columns: 80px 1fr 74px 26px;
+      gap: 6px; align-items: center;
     }
-    .ficha-row select, .ficha-row input {
-      padding: 6px;
-      font-size: 12px;
+    .ficha-row select, .ficha-row input { padding: 6px 8px; font-size: 12.5px; }
+    .row-remove-btn {
+      background: none; border: none; cursor: pointer;
+      color: var(--text-muted); font-size: 18px; line-height: 1;
+      display: flex; align-items: center; justify-content: center;
     }
-    .btn-add-ficha {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--brand);
-      background: none;
-      border: none;
-      cursor: pointer;
-      margin-top: 8px;
+    .row-remove-btn:hover { color: var(--red); }
+    .btn-add-row {
+      background: none; border: none; cursor: pointer;
+      color: var(--brand); font-size: 12px; font-weight: 600;
+      margin-top: 8px; padding: 0; display: flex; align-items: center; gap: 4px;
     }
-    .btn-add-ficha:hover { text-decoration: underline; }
+    .btn-add-row:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
+
+<div id="toast-container"></div>
+
 <div class="erp-shell">
 
   <!-- SIDEBAR -->
@@ -150,328 +94,249 @@
       </a>
       <a href="planejamento.html" class="nav-link">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-        📅 Planejamento de Produção (Maestro)
+        📅 Planejamento (Maestro)
       </a>
     </nav>
   </aside>
 
-  <!-- MAIN WRAPPER -->
+  <!-- MAIN -->
   <div class="main-wrap">
     <header class="topbar">
-      <h2>🍰 Produtos Finais (Cadastrados para Venda)</h2>
-      <div class="topbar-right">
-        <span class="badge-offline" id="connection-status">Online</span>
-      </div>
+      <div style="font-size:15px;font-weight:700">🍰 Produtos Finais</div>
+      <div class="topbar-right"><span class="badge-online">● Online</span></div>
     </header>
 
-    <div class="content-body">
-      <!-- Toolbar -->
-      <div class="toolbar">
-        <input type="text" id="input-busca" class="search-bar" placeholder="Buscar produto..." oninput="filtrar()" />
-        <div class="toolbar-right">
-          <button class="btn btn-brand" onclick="abrirDrawer()">+ Novo Produto</button>
+    <div class="page-content">
+      <div class="page-header">
+        <div class="page-header-left">
+          <h1>Engenharia de Produtos</h1>
+          <p>Ficha técnica mista — receitas, insumos diretos e embalagens.</p>
+        </div>
+        <div class="page-header-actions">
+          <div class="search-bar" style="width:260px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="input-busca" placeholder="Buscar produto..." oninput="filtrar()" />
+          </div>
+          <button class="btn btn-primary" onclick="openDrawer()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Novo Produto
+          </button>
         </div>
       </div>
 
-      <!-- Grid de Produtos -->
       <div class="prod-grid" id="product-list">
-        <!-- Carregado via JS -->
+        <p style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted)">
+          <span class="spinner" style="display:inline-block;margin-right:8px"></span>Carregando...
+        </p>
       </div>
     </div>
   </div>
+</div>
 
-  <!-- Drawer lateral para Cadastro / Edição -->
-  <div class="slide-over" id="drawer-form" style="width: 480px">
-    <div class="slide-over-header">
-      <h3 id="drawer-titulo">Novo Produto</h3>
-      <button class="slide-over-close" onclick="fecharDrawer()">&times;</button>
-    </div>
-    <div class="slide-over-body">
-      <form id="form-produto" onsubmit="salvarProduto(event)">
-        <input type="hidden" id="produto-id" />
+<!-- BACKDROP -->
+<div class="drawer-backdrop" id="drawer-backdrop" onclick="closeDrawer()"></div>
 
-        <div class="form-group">
-          <label>Nome do Produto</label>
-          <input type="text" id="produto-nome" required placeholder="Ex: Coxinha de Frango com Catupiry" />
-        </div>
-
-        <div class="form-row cols-2">
-          <div class="form-group">
-            <label>Preço de Venda (R$)</label>
-            <input type="number" id="produto-preco" step="0.01" min="0" required placeholder="Ex: 8.50" />
-          </div>
-          <div class="form-group">
-            <label>Peso de Produtividade (Pontos)</label>
-            <input type="number" id="produto-peso-prod" step="0.1" min="0.1" required value="1.0" placeholder="Ex: 1.0" />
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label>Categoria de Produção</label>
-          <select id="produto-categoria" required>
-            <option value="Frito">Frito</option>
-            <option value="Assado">Assado</option>
-            <option value="Mini">Mini</option>
-          </select>
-        </div>
-
-        <!-- Ficha Técnica Mista -->
-        <div style="margin-top:16px">
-          <label style="font-weight:600">Composição (Ficha Técnica)</label>
-          <div class="row-ficha-container" id="ficha-container">
-            <!-- Linhas inseridas dinamicamente -->
-          </div>
-          <button type="button" class="btn-add-ficha" onclick="adicionarLinhaFicha()">+ Adicionar Componente</button>
-        </div>
-
-        <div style="margin-top: 28px; display:flex; gap:10px">
-          <button type="submit" class="btn btn-brand" style="flex:1">Salvar Produto</button>
-          <button type="button" class="btn btn-outline" onclick="fecharDrawer()" style="flex:1">Cancelar</button>
-        </div>
-      </form>
-    </div>
+<!-- DRAWER -->
+<div class="drawer" id="drawer-form">
+  <div class="drawer-header">
+    <h2 id="drawer-title">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+      Novo Produto
+    </h2>
+    <p>Preencha a ficha técnica do produto final</p>
+    <button class="drawer-close" onclick="closeDrawer()">✕</button>
   </div>
 
+  <div class="drawer-body">
+    <form id="form-produto" onsubmit="salvarProduto(event)">
+      <input type="hidden" id="produto-id" />
+
+      <div class="form-group">
+        <label>Nome do Produto</label>
+        <input type="text" id="produto-nome" required placeholder="Ex: Coxinha de Frango com Catupiry" />
+      </div>
+
+      <div class="form-row cols-2">
+        <div class="form-group">
+          <label>Preço de Venda (R$)</label>
+          <input type="number" id="produto-preco" step="0.01" min="0" required placeholder="8,50" />
+        </div>
+        <div class="form-group">
+          <label>Produtividade (Pts)</label>
+          <input type="number" id="produto-peso-prod" step="0.1" min="0.1" required value="1.0" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Categoria de Produção</label>
+        <select id="produto-categoria" required>
+          <option value="Frito">Frito</option>
+          <option value="Assado">Assado</option>
+          <option value="Mini">Mini</option>
+        </select>
+      </div>
+
+      <div class="form-section-title">Composição (Ficha Técnica)</div>
+      <div class="ficha-list" id="ficha-container"></div>
+      <button type="button" class="btn-add-row" onclick="adicionarLinhaFicha()">+ Adicionar componente</button>
+    </form>
+  </div>
+
+  <div class="drawer-footer">
+    <span class="hint">Qtd em kg para receitas, na unidade do insumo para insumos</span>
+    <button class="btn btn-outline" onclick="closeDrawer()">Cancelar</button>
+    <button class="btn btn-primary" onclick="document.getElementById('form-produto').requestSubmit()">Salvar Produto</button>
+  </div>
 </div>
 
 <script>
   const API_PRODUTOS = 'http://localhost:3001/api/produtos';
   const API_RECEITAS = 'http://localhost:3001/api/receitas';
-  const API_INSUMOS = 'http://localhost:3001/api/insumos';
+  const API_INSUMOS  = 'http://localhost:3001/api/insumos';
 
-  let todosProdutos = [];
-  let todasReceitas = [];
-  let todosInsumos = [];
+  let todosProdutos = [], todasReceitas = [], todosInsumos = [];
+
+  function showToast(msg, type = '') {
+    const el = document.createElement('div');
+    el.className = 'toast ' + type;
+    el.textContent = msg;
+    document.getElementById('toast-container').appendChild(el);
+    setTimeout(() => el.remove(), 3200);
+  }
 
   async function carregarDados() {
     try {
-      const [resProd, resRec, resIns] = await Promise.all([
-        fetch(API_PRODUTOS),
-        fetch(API_RECEITAS),
-        fetch(API_INSUMOS)
-      ]);
+      const [resProd, resRec, resIns] = await Promise.all([fetch(API_PRODUTOS), fetch(API_RECEITAS), fetch(API_INSUMOS)]);
       todosProdutos = await resProd.json();
       todasReceitas = await resRec.json();
-      todosInsumos = await resIns.json();
-
-      // Carregar os detalhes das fichas técnicas de cada produto
+      todosInsumos  = await resIns.json();
       for (let i = 0; i < todosProdutos.length; i++) {
-        const detRes = await fetch(`${API_PRODUTOS}/${todosProdutos[i].id}`);
-        todosProdutos[i] = await detRes.json();
+        const d = await fetch(`${API_PRODUTOS}/${todosProdutos[i].id}`);
+        todosProdutos[i] = await d.json();
       }
-
       renderizar(todosProdutos);
     } catch (e) {
-      console.error(e);
-      document.getElementById('product-list').innerHTML = `<p style="color:var(--red);grid-column:1/-1;text-align:center">Erro ao carregar dados do servidor.</p>`;
+      document.getElementById('product-list').innerHTML = `<p style="grid-column:1/-1;text-align:center;color:var(--red)">⚠️ Erro ao conectar com o servidor.</p>`;
     }
   }
 
   function renderizar(lista) {
     const grid = document.getElementById('product-list');
-    if (lista.length === 0) {
-      grid.innerHTML = `<p style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 40px">Nenhum produto cadastrado.</p>`;
+    if (!lista.length) {
+      grid.innerHTML = `<p style="grid-column:1/-1;text-align:center;color:var(--text-muted);padding:40px">Nenhum produto cadastrado. Clique em <strong>+ Novo Produto</strong> para começar.</p>`;
       return;
     }
-
     grid.innerHTML = lista.map(p => `
       <div class="prod-card">
         <div class="prod-card-header">
           <div>
-            <span class="badge badge-brand" style="font-size:10px;margin-bottom:4px;display:inline-block">${p.categoria_producao || 'Geral'}</span>
+            <span class="badge badge-purple">${p.categoria_producao || 'Geral'}</span>
             <div class="prod-card-title">${p.nome}</div>
             <div class="prod-meta">
-              <span class="badge-prod badge-price">R$ ${parseFloat(p.preco_venda).toFixed(2)}</span>
-              <span class="badge-prod badge-points">Produtividade: ${parseFloat(p.peso_produtividade).toFixed(1)} pt</span>
+              <span class="badge badge-green">R$ ${parseFloat(p.preco_venda).toFixed(2)}</span>
+              <span class="badge badge-gray">${parseFloat(p.peso_produtividade).toFixed(1)} pt</span>
             </div>
           </div>
-          <div class="action-icons">
-            <button onclick="editarProduto(${p.id})" title="Editar"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-            <button class="red" onclick="excluirProduto(${p.id})" title="Excluir"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+          <div class="flex gap-2">
+            <button class="btn btn-outline btn-sm" onclick="openDrawer(${p.id})">Editar</button>
+            <button class="btn btn-outline btn-sm" style="color:var(--red);border-color:var(--red)" onclick="excluirProduto(${p.id})">Excluir</button>
           </div>
         </div>
-        
         <div class="ficha-resumo">
-          <div class="ficha-title">Composição:</div>
-          ${(p.ficha_tecnica_receitas && p.ficha_tecnica_receitas.length > 0) || (p.ficha_tecnica_insumos && p.ficha_tecnica_insumos.length > 0) ? `
-            ${(p.ficha_tecnica_receitas || []).map(r => `
-              <div style="display:flex;justify-content:space-between;padding:2px 0">
-                <span>• ${r.nome} <span style="font-size:9px;color:var(--text-muted)">(Receita)</span></span>
-                <strong>${parseFloat(r.quantidade_necessaria).toFixed(3)} kg</strong>
-              </div>
-            `).join('')}
-            ${(p.ficha_tecnica_insumos || []).map(i => `
-              <div style="display:flex;justify-content:space-between;padding:2px 0">
-                <span>• ${i.nome} <span style="font-size:9px;color:var(--text-muted)">(Insumo)</span></span>
-                <strong>${parseFloat(i.quantidade).toFixed(3)} ${i.unidade_medida}</strong>
-              </div>
-            `).join('')}
-          ` : '<span style="color:var(--text-muted)">Sem componentes.</span>'}
+          <div style="font-size:10.5px;font-weight:700;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em">Composição</div>
+          ${(p.ficha_tecnica_receitas && p.ficha_tecnica_receitas.length) || (p.ficha_tecnica_insumos && p.ficha_tecnica_insumos.length) ? `
+            ${(p.ficha_tecnica_receitas||[]).map(r => `<div class="ficha-item"><span>• ${r.nome} <span class="text-muted text-sm">(Receita)</span></span><strong>${parseFloat(r.quantidade_necessaria).toFixed(3)} kg</strong></div>`).join('')}
+            ${(p.ficha_tecnica_insumos||[]).map(i => `<div class="ficha-item"><span>• ${i.nome} <span class="text-muted text-sm">(Insumo)</span></span><strong>${parseFloat(i.quantidade).toFixed(3)} ${i.unidade_medida}</strong></div>`).join('')}
+          ` : '<span class="text-muted">Sem componentes na ficha técnica.</span>'}
         </div>
-      </div>
-    `).join('');
+      </div>`).join('');
   }
 
   function filtrar() {
-    const query = document.getElementById('input-busca').value.toLowerCase();
-    const filtrados = todosProdutos.filter(p => p.nome.toLowerCase().includes(query));
-    renderizar(filtrados);
+    const q = document.getElementById('input-busca').value.toLowerCase();
+    renderizar(todosProdutos.filter(p => p.nome.toLowerCase().includes(q)));
   }
 
-  function abrirDrawer(id = null) {
-    const drawer = document.getElementById('drawer-form');
-    drawer.classList.add('open');
+  function openDrawer(id = null) {
     document.getElementById('ficha-container').innerHTML = '';
-
     if (id) {
-      document.getElementById('drawer-titulo').innerText = 'Editar Produto';
-      const item = todosProdutos.find(p => p.id === id);
-      document.getElementById('produto-id').value = item.id;
-      document.getElementById('produto-nome').value = item.nome;
-      document.getElementById('produto-preco').value = item.preco_venda;
-      document.getElementById('produto-peso-prod').value = item.peso_produtividade;
-      document.getElementById('produto-categoria').value = item.categoria_producao || 'Frito';
-
-      if (item.ficha_tecnica_receitas && item.ficha_tecnica_receitas.length > 0) {
-        item.ficha_tecnica_receitas.forEach(r => adicionarLinhaFicha({ tipo: 'receita', id: r.receita_id, qtd: r.quantidade_necessaria }));
-      }
-      if (item.ficha_tecnica_insumos && item.ficha_tecnica_insumos.length > 0) {
-        item.ficha_tecnica_insumos.forEach(ins => adicionarLinhaFicha({ tipo: 'insumo', id: ins.insumo_id, qtd: ins.quantidade }));
-      }
+      const p = todosProdutos.find(x => x.id === id);
+      document.getElementById('drawer-title').innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Editar Produto`;
+      document.getElementById('produto-id').value = p.id;
+      document.getElementById('produto-nome').value = p.nome;
+      document.getElementById('produto-preco').value = p.preco_venda;
+      document.getElementById('produto-peso-prod').value = p.peso_produtividade;
+      document.getElementById('produto-categoria').value = p.categoria_producao || 'Frito';
+      (p.ficha_tecnica_receitas||[]).forEach(r => adicionarLinhaFicha({ tipo: 'receita', id: r.receita_id, qtd: r.quantidade_necessaria }));
+      (p.ficha_tecnica_insumos||[]).forEach(i => adicionarLinhaFicha({ tipo: 'insumo', id: i.insumo_id, qtd: i.quantidade }));
     } else {
-      document.getElementById('drawer-titulo').innerText = 'Novo Produto';
+      document.getElementById('drawer-title').innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg> Novo Produto`;
       document.getElementById('form-produto').reset();
       document.getElementById('produto-id').value = '';
       adicionarLinhaFicha();
     }
+    document.getElementById('drawer-form').classList.add('open');
+    document.getElementById('drawer-backdrop').classList.add('open');
   }
 
-  function fecharDrawer() {
+  function closeDrawer() {
     document.getElementById('drawer-form').classList.remove('open');
+    document.getElementById('drawer-backdrop').classList.remove('open');
   }
 
   function adicionarLinhaFicha(dados = null) {
     const container = document.getElementById('ficha-container');
-    const rowId = 'row-' + Date.now() + '-' + Math.floor(Math.random() * 100);
-
+    const rowId = 'row-' + Date.now() + '-' + Math.random().toString(36).slice(2,6);
     const div = document.createElement('div');
-    div.className = 'ficha-row';
-    div.id = rowId;
-
+    div.className = 'ficha-row'; div.id = rowId;
     div.innerHTML = `
-      <select class="tipo-select" onchange="alternarTipoItem('${rowId}')">
+      <select class="tipo-select" onchange="popularOrigens('${rowId}', null)">
         <option value="receita" ${dados && dados.tipo === 'receita' ? 'selected' : ''}>Receita</option>
-        <option value="insumo" ${dados && dados.tipo === 'insumo' ? 'selected' : ''}>Insumo</option>
+        <option value="insumo"  ${dados && dados.tipo === 'insumo'  ? 'selected' : ''}>Insumo</option>
       </select>
-      <select class="origem-select" required>
-        <option value="">Selecione...</option>
-      </select>
+      <select class="origem-select" required><option value="">Selecione...</option></select>
       <input type="number" class="qtd-input" step="0.0001" value="${dados ? dados.qtd : ''}" placeholder="Qtd" required />
-      <button type="button" class="btn-icon text-red" onclick="removerLinhaFicha('${rowId}')" style="background:none;border:none;cursor:pointer;font-size:16px">&times;</button>
-    `;
-
+      <button type="button" class="row-remove-btn" onclick="document.getElementById('${rowId}').remove()">×</button>`;
     container.appendChild(div);
     popularOrigens(rowId, dados ? dados.id : null);
   }
 
-  function alternarTipoItem(rowId) {
-    popularOrigens(rowId, null);
-  }
-
-  function popularOrigens(rowId, selectedId = null) {
+  function popularOrigens(rowId, selectedId) {
     const row = document.getElementById(rowId);
     const tipo = row.querySelector('.tipo-select').value;
     const select = row.querySelector('.origem-select');
     select.innerHTML = '<option value="">Selecione...</option>';
-
-    if (tipo === 'receita') {
-      todasReceitas.forEach(r => {
-        select.innerHTML += `<option value="${r.id}" ${selectedId == r.id ? 'selected' : ''}>${r.nome} (${r.categoria})</option>`;
-      });
-    } else {
-      todosInsumos.forEach(i => {
-        select.innerHTML += `<option value="${i.id}" ${selectedId == i.id ? 'selected' : ''}>${i.nome} (${i.unidade_medida})</option>`;
-      });
-    }
-  }
-
-  function removerLinhaFicha(rowId) {
-    const el = document.getElementById(rowId);
-    if (el) el.remove();
+    if (tipo === 'receita') todasReceitas.forEach(r => select.innerHTML += `<option value="${r.id}" ${selectedId==r.id?'selected':''}>${r.nome} (${r.categoria})</option>`);
+    else todosInsumos.forEach(i => select.innerHTML += `<option value="${i.id}" ${selectedId==i.id?'selected':''}>${i.nome} (${i.unidade_medida})</option>`);
   }
 
   async function salvarProduto(e) {
     e.preventDefault();
     const id = document.getElementById('produto-id').value;
-
-    const rows = document.querySelectorAll('.ficha-row');
-    const fReceitas = [];
-    const fInsumos = [];
-
-    rows.forEach(row => {
+    const fReceitas = [], fInsumos = [];
+    document.querySelectorAll('.ficha-row').forEach(row => {
       const tipo = row.querySelector('.tipo-select').value;
       const val = parseInt(row.querySelector('.origem-select').value, 10);
       const qtd = parseFloat(row.querySelector('.qtd-input').value);
-
-      if (tipo === 'receita') {
-        fReceitas.push({ receita_id: val, quantidade_necessaria: qtd });
-      } else {
-        fInsumos.push({ insumo_id: val, quantidade: qtd });
-      }
+      if (tipo === 'receita') fReceitas.push({ receita_id: val, quantidade_necessaria: qtd });
+      else fInsumos.push({ insumo_id: val, quantidade: qtd });
     });
-
-    const body = {
-      nome: document.getElementById('produto-nome').value,
-      preco_venda: parseFloat(document.getElementById('produto-preco').value),
-      peso_produtividade: parseFloat(document.getElementById('produto-peso-prod').value),
-      categoria_producao: document.getElementById('produto-categoria').value,
-      ficha_tecnica_receitas: fReceitas,
-      ficha_tecnica_insumos: fInsumos,
-      ficha_tecnica_embalagens: []
-    };
-
+    const body = { nome: document.getElementById('produto-nome').value, preco_venda: parseFloat(document.getElementById('produto-preco').value), peso_produtividade: parseFloat(document.getElementById('produto-peso-prod').value), categoria_producao: document.getElementById('produto-categoria').value, ficha_tecnica_receitas: fReceitas, ficha_tecnica_insumos: fInsumos, ficha_tecnica_embalagens: [] };
     try {
-      let res;
-      if (id) {
-        res = await fetch(`${API_PRODUTOS}/${id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body)
-        });
-      } else {
-        res = await fetch(API_PRODUTOS, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body)
-        });
-      }
-
-      if (res.ok) {
-        fecharDrawer();
-        carregarDados();
-      } else {
-        const data = await res.json();
-        alert('Erro ao salvar produto: ' + data.erro);
-      }
-    } catch (err) {
-      console.error(err);
-      alert('Erro de conexão ao salvar.');
-    }
+      const res = id ? await fetch(`${API_PRODUTOS}/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }) : await fetch(API_PRODUTOS, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      if (res.ok) { showToast(id ? '✅ Produto atualizado!' : '✅ Produto criado!', 'success'); closeDrawer(); carregarDados(); }
+      else { const d = await res.json(); showToast('Erro: ' + d.erro, 'error'); }
+    } catch { showToast('Erro de conexão.', 'error'); }
   }
 
   async function excluirProduto(id) {
-    if (!confirm('Deseja realmente excluir este produto?')) return;
+    const p = todosProdutos.find(x => x.id === id);
+    if (!confirm(`Excluir "${p?.nome}"?`)) return;
     try {
       const res = await fetch(`${API_PRODUTOS}/${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        carregarDados();
-      } else {
-        const data = await res.json();
-        alert('Erro ao excluir: ' + data.erro);
-      }
-    } catch (err) {
-      console.error(err);
-    }
+      if (res.ok) { showToast('🗑️ Produto removido.'); carregarDados(); }
+      else { const d = await res.json(); showToast('Erro: ' + d.erro, 'error'); }
+    } catch { showToast('Erro de conexão.', 'error'); }
   }
 
   window.onload = carregarDados;

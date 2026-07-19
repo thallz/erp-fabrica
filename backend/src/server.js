@@ -10,6 +10,9 @@ const financeiroRoutes = require('./routes/financeiroRoutes');
 const receitaRoutes = require('./routes/receitaRoutes');
 const planejamentoRoutes = require('./routes/planejamentoRoutes');
 const colaboradorRoutes = require('./routes/colaboradorRoutes');
+const categoriaRoutes  = require('./routes/categoriaRoutes');
+
+const path = require('path');
 
 const app = express();
 const PORT = 3001;
@@ -19,6 +22,10 @@ app.use(cors());
 // Bruno e alguns clientes enviam body "null" em GET — strict:false evita crash
 app.use(express.json({ strict: false }));
 app.use(express.urlencoded({ extended: true }));
+
+// Serve o frontend estaticamente em http://localhost:3001/
+app.use(express.static(path.join(__dirname, '../../frontend')));
+
 app.use('/api/insumos', insumoRoutes);
 app.use('/api/produtos', produtoRoutes);
 app.use('/api/producao', producaoRoutes);
@@ -27,6 +34,7 @@ app.use('/api/financeiro', financeiroRoutes);
 app.use('/api/receitas', receitaRoutes);
 app.use('/api/planejamento', planejamentoRoutes);
 app.use('/api/colaboradores', colaboradorRoutes);
+app.use('/api/categorias',   categoriaRoutes);
 
 // ==========================================
 // ROTA DE TESTE (Para rodar no Bruno)

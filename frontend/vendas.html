@@ -7,21 +7,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/global.css" />
-  <style>
-    .toolbar {
-      display: flex; align-items: center; gap: 10px;
-      margin-bottom: 20px; flex-wrap: wrap;
-    }
-    .toolbar .search-bar { flex: 1; max-width: 380px; }
-    .toolbar-right { margin-left: auto; }
-
-    .badge-status { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 20px; text-transform: uppercase; }
-    .status-produzindo { background: #fef3c7; color: #d97706; }
-    .status-criado { background: #e0f2fe; color: #0369a1; }
-    .status-concluida { background: #dcfce7; color: #15803d; }
-  </style>
 </head>
 <body>
+
+<div id="toast-container"></div>
+
 <div class="erp-shell">
 
   <!-- SIDEBAR -->
@@ -54,245 +44,236 @@
       </a>
       <a href="planejamento.html" class="nav-link">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-        📅 Planejamento de Produção (Maestro)
+        📅 Planejamento (Maestro)
       </a>
     </nav>
   </aside>
 
-  <!-- MAIN WRAPPER -->
+  <!-- MAIN -->
   <div class="main-wrap">
     <header class="topbar">
-      <h2>💰 Lançar Vendas & Pedidos B2B</h2>
-      <div class="topbar-right">
-        <span class="badge-offline" id="connection-status">Online</span>
-      </div>
+      <div style="font-size:15px;font-weight:700">💰 Lançar Vendas</div>
+      <div class="topbar-right"><span class="badge-online">● Online</span></div>
     </header>
 
-    <div class="content-body">
-      <!-- Toolbar -->
-      <div class="toolbar">
-        <input type="text" id="input-busca" class="search-bar" placeholder="Buscar pedido por cliente..." oninput="filtrar()" />
-        <div class="toolbar-right">
-          <button class="btn btn-brand" onclick="abrirDrawer()">+ Novo Pedido</button>
+    <div class="page-content">
+      <div class="page-header">
+        <div class="page-header-left">
+          <h1>Pedidos B2B</h1>
+          <p>Lance pedidos para clientes. O sistema gera OPs automaticamente quando necessário.</p>
+        </div>
+        <div class="page-header-actions">
+          <div class="search-bar" style="width:260px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="input-busca" placeholder="Buscar por cliente..." oninput="filtrar()" />
+          </div>
+          <button class="btn btn-primary" onclick="openDrawer()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Novo Pedido
+          </button>
         </div>
       </div>
 
-      <!-- Tabela -->
+      <!-- Table card -->
       <div class="card">
-        <div class="card-body" style="padding:0">
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>ID Pedido</th>
-                  <th>Cliente</th>
-                  <th style="text-align:center">Data Entrega</th>
-                  <th style="text-align:right">Valor Total</th>
-                  <th style="text-align:center">Status</th>
-                </tr>
-              </thead>
-              <tbody id="pedidos-tbody">
-                <tr><td colspan="5" style="text-align:center;padding:30px;color:var(--text-muted)">Carregando...</td></tr>
-              </tbody>
-            </table>
-          </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:70px">Pedido</th>
+                <th>Cliente</th>
+                <th style="text-align:center">Data Entrega</th>
+                <th style="text-align:right">Valor Total</th>
+                <th style="text-align:center;width:120px">Status</th>
+              </tr>
+            </thead>
+            <tbody id="pedidos-tbody">
+              <tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text-muted)">
+                <div class="spinner" style="margin:0 auto 10px"></div>Carregando...
+              </td></tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
   </div>
+</div>
 
-  <!-- Drawer lateral para Lançamento de Pedido -->
-  <div class="slide-over" id="drawer-form">
-    <div class="slide-over-header">
-      <h3>Lançar Novo Pedido</h3>
-      <button class="slide-over-close" onclick="fecharDrawer()">&times;</button>
-    </div>
-    <div class="slide-over-body">
-      <form id="form-pedido" onsubmit="salvarPedido(event)">
-        
-        <div class="form-group">
-          <label>Cliente B2B</label>
-          <select id="pedido-cliente" required>
-            <option value="">Selecione o cliente...</option>
-          </select>
-        </div>
+<!-- BACKDROP -->
+<div class="drawer-backdrop" id="drawer-backdrop" onclick="closeDrawer()"></div>
 
-        <div class="form-group">
-          <label>Produto Final</label>
-          <select id="pedido-produto" required onchange="atualizarCustoTotal()">
-            <option value="">Selecione o produto...</option>
-          </select>
-        </div>
-
-        <div class="form-row cols-2">
-          <div class="form-group">
-            <label>Quantidade</label>
-            <input type="number" id="pedido-qtd" min="1" required placeholder="Qtd" oninput="atualizarCustoTotal()" />
-          </div>
-          <div class="form-group">
-            <label>Data de Entrega</label>
-            <input type="date" id="pedido-data" required />
-          </div>
-        </div>
-
-        <div style="background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding:12px; margin-top:16px">
-          <div style="display:flex; justify-content:space-between; font-size:13px">
-            <span>Preço Unitário:</span>
-            <strong id="label-preco-unitario">R$ 0,00</strong>
-          </div>
-          <div style="display:flex; justify-content:space-between; font-size:14px; margin-top:6px; border-top:1px solid var(--border-light); padding-top:6px">
-            <span>Valor Total:</span>
-            <strong style="color:var(--brand); font-size:16px" id="label-preco-total">R$ 0,00</strong>
-          </div>
-        </div>
-
-        <div style="margin-top: 24px; display:flex; gap:10px">
-          <button type="submit" class="btn btn-brand" style="flex:1">Lançar Pedido</button>
-          <button type="button" class="btn btn-outline" onclick="fecharDrawer()" style="flex:1">Cancelar</button>
-        </div>
-      </form>
-    </div>
+<!-- DRAWER -->
+<div class="drawer" id="drawer-form">
+  <div class="drawer-header">
+    <h2>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      Lançar Novo Pedido
+    </h2>
+    <p>Selecione cliente, produto e quantidade</p>
+    <button class="drawer-close" onclick="closeDrawer()">✕</button>
   </div>
 
+  <div class="drawer-body">
+    <form id="form-pedido" onsubmit="salvarPedido(event)">
+
+      <div class="form-group">
+        <label>Cliente B2B</label>
+        <select id="pedido-cliente" required>
+          <option value="">Selecione o cliente...</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Produto Final</label>
+        <select id="pedido-produto" required onchange="atualizarTotal()">
+          <option value="">Selecione o produto...</option>
+        </select>
+      </div>
+
+      <div class="form-row cols-2">
+        <div class="form-group">
+          <label>Quantidade (un)</label>
+          <input type="number" id="pedido-qtd" min="1" required placeholder="100" oninput="atualizarTotal()" />
+        </div>
+        <div class="form-group">
+          <label>Data de Entrega</label>
+          <input type="date" id="pedido-data" required />
+        </div>
+      </div>
+
+      <!-- Resumo de valor -->
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-top:8px">
+        <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--text-secondary)">
+          <span>Preço unitário:</span>
+          <strong id="label-preco-unitario" style="color:var(--text-primary)">R$ 0,00</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:15px;margin-top:8px;border-top:1px solid var(--border-light);padding-top:8px">
+          <span style="font-weight:600">Valor Total do Pedido:</span>
+          <strong style="color:var(--brand);font-size:18px" id="label-preco-total">R$ 0,00</strong>
+        </div>
+      </div>
+
+    </form>
+  </div>
+
+  <div class="drawer-footer">
+    <span class="hint">OPs são geradas automaticamente se necessário</span>
+    <button class="btn btn-outline" onclick="closeDrawer()">Cancelar</button>
+    <button class="btn btn-primary" onclick="document.getElementById('form-pedido').requestSubmit()">Lançar Pedido</button>
+  </div>
 </div>
 
 <script>
-  const API_PEDIDOS = 'http://localhost:3001/api/pedidos';
+  const API_PEDIDOS  = 'http://localhost:3001/api/pedidos';
   const API_CLIENTES = 'http://localhost:3001/api/clientes';
   const API_PRODUTOS = 'http://localhost:3001/api/produtos';
 
-  let todosPedidos = [];
-  let todosClientes = [];
-  let todosProdutos = [];
+  let todosPedidos = [], todosClientes = [], todosProdutos = [];
+
+  function showToast(msg, type = '') {
+    const el = document.createElement('div');
+    el.className = 'toast ' + type;
+    el.textContent = msg;
+    document.getElementById('toast-container').appendChild(el);
+    setTimeout(() => el.remove(), 3200);
+  }
 
   async function carregarDados() {
     try {
-      const [resPed, resCli, resProd] = await Promise.all([
-        fetch(API_PEDIDOS),
-        fetch(API_CLIENTES),
-        fetch(API_PRODUTOS)
-      ]);
-      todosPedidos = await resPed.json();
+      const [resPed, resCli, resProd] = await Promise.all([fetch(API_PEDIDOS), fetch(API_CLIENTES), fetch(API_PRODUTOS)]);
+      todosPedidos  = await resPed.json();
       todosClientes = await resCli.json();
       todosProdutos = await resProd.json();
       renderizar(todosPedidos);
-    } catch (e) {
-      console.error(e);
-      document.getElementById('pedidos-tbody').innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--red)">Erro ao carregar dados do servidor.</td></tr>`;
+    } catch {
+      document.getElementById('pedidos-tbody').innerHTML = `<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--red)">⚠️ Erro ao conectar com o servidor.</td></tr>`;
     }
+  }
+
+  function getStatusBadge(status) {
+    if (status === 'PRODUZINDO') return '<span class="badge badge-amber">PRODUZINDO</span>';
+    if (status === 'CONCLUIDO' || status === 'CONCLUIDA') return '<span class="badge badge-green">CONCLUÍDO</span>';
+    return '<span class="badge badge-blue">CRIADO</span>';
   }
 
   function renderizar(lista) {
     const tbody = document.getElementById('pedidos-tbody');
-    if (lista.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--text-muted)">Nenhum pedido lançado.</td></tr>`;
+    if (!lista.length) {
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text-muted)">Nenhum pedido lançado. Clique em <strong>+ Novo Pedido</strong> para começar.</td></tr>`;
       return;
     }
-
     tbody.innerHTML = lista.map(p => {
-      let statusClass = 'status-criado';
-      if (p.status === 'PRODUZINDO') statusClass = 'status-produzindo';
-      if (p.status === 'CONCLUIDO' || p.status === 'CONCLUIDA') statusClass = 'status-concluida';
-
-      const dataEnt = p.data_entrega ? new Date(p.data_entrega).toLocaleDateString('pt-BR', {timeZone: 'UTC'}) : '—';
-
-      return `
-        <tr>
-          <td><strong>#${p.id}</strong></td>
-          <td>${p.razao_social} <br/><span style="font-size:10px;color:var(--text-muted)">CNPJ: ${p.cnpj}</span></td>
-          <td style="text-align:center">${dataEnt}</td>
-          <td style="text-align:right;font-weight:700">R$ ${parseFloat(p.valor_total).toFixed(2)}</td>
-          <td style="text-align:center">
-            <span class="badge-status ${statusClass}">${p.status}</span>
-          </td>
-        </tr>
-      `;
+      const dataEnt = p.data_entrega ? new Date(p.data_entrega).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : '—';
+      return `<tr>
+        <td><span class="badge badge-gray">#${p.id}</span></td>
+        <td>
+          <strong>${p.razao_social}</strong>
+          <br/><span style="font-size:11px;color:var(--text-muted)">CNPJ: ${p.cnpj}</span>
+        </td>
+        <td style="text-align:center">${dataEnt}</td>
+        <td style="text-align:right;font-weight:700;color:var(--brand)">R$ ${parseFloat(p.valor_total).toFixed(2)}</td>
+        <td style="text-align:center">${getStatusBadge(p.status)}</td>
+      </tr>`;
     }).join('');
   }
 
   function filtrar() {
-    const query = document.getElementById('input-busca').value.toLowerCase();
-    const filtrados = todosPedidos.filter(p => p.razao_social.toLowerCase().includes(query));
-    renderizar(filtrados);
+    const q = document.getElementById('input-busca').value.toLowerCase();
+    renderizar(todosPedidos.filter(p => p.razao_social.toLowerCase().includes(q)));
   }
 
-  function abrirDrawer() {
-    const drawer = document.getElementById('drawer-form');
-    drawer.classList.add('open');
+  function openDrawer() {
     document.getElementById('form-pedido').reset();
-    
-    // Set tomorrow's date as default
+
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     document.getElementById('pedido-data').value = tomorrow.toISOString().split('T')[0];
 
-    // Popular dropdowns
-    const selectCli = document.getElementById('pedido-cliente');
-    selectCli.innerHTML = '<option value="">Selecione o cliente...</option>';
-    todosClientes.forEach(c => {
-      selectCli.innerHTML += `<option value="${c.id}">${c.razao_social}</option>`;
-    });
+    const selCli = document.getElementById('pedido-cliente');
+    selCli.innerHTML = '<option value="">Selecione o cliente...</option>';
+    todosClientes.forEach(c => selCli.innerHTML += `<option value="${c.id}">${c.razao_social}</option>`);
 
-    const selectProd = document.getElementById('pedido-produto');
-    selectProd.innerHTML = '<option value="">Selecione o produto...</option>';
-    todosProdutos.forEach(p => {
-      selectProd.innerHTML += `<option value="${p.id}" data-price="${p.preco_venda}">${p.nome}</option>`;
-    });
+    const selProd = document.getElementById('pedido-produto');
+    selProd.innerHTML = '<option value="">Selecione o produto...</option>';
+    todosProdutos.forEach(p => selProd.innerHTML += `<option value="${p.id}" data-price="${p.preco_venda}">${p.nome}</option>`);
 
-    atualizarCustoTotal();
+    atualizarTotal();
+    document.getElementById('drawer-form').classList.add('open');
+    document.getElementById('drawer-backdrop').classList.add('open');
   }
 
-  function fecharDrawer() {
+  function closeDrawer() {
     document.getElementById('drawer-form').classList.remove('open');
+    document.getElementById('drawer-backdrop').classList.remove('open');
   }
 
-  function atualizarCustoTotal() {
-    const selectProd = document.getElementById('pedido-produto');
-    const opt = selectProd.options[selectProd.selectedIndex];
+  function atualizarTotal() {
+    const sel = document.getElementById('pedido-produto');
+    const opt = sel.options[sel.selectedIndex];
     const price = opt ? parseFloat(opt.getAttribute('data-price') || 0) : 0;
     const qtd = parseInt(document.getElementById('pedido-qtd').value || 0, 10);
-
-    document.getElementById('label-preco-unitario').innerText = 'R$ ' + price.toFixed(2);
-    document.getElementById('label-preco-total').innerText = 'R$ ' + (price * qtd).toFixed(2);
+    document.getElementById('label-preco-unitario').innerText = `R$ ${price.toFixed(2)}`;
+    document.getElementById('label-preco-total').innerText = `R$ ${(price * qtd).toFixed(2)}`;
   }
 
   async function salvarPedido(e) {
     e.preventDefault();
-    
-    const selectProd = document.getElementById('pedido-produto');
-    const opt = selectProd.options[selectProd.selectedIndex];
+    const sel = document.getElementById('pedido-produto');
+    const opt = sel.options[sel.selectedIndex];
     const price = opt ? parseFloat(opt.getAttribute('data-price') || 0) : 0;
-    
     const body = {
       cliente_id: parseInt(document.getElementById('pedido-cliente').value, 10),
       data_entrega: document.getElementById('pedido-data').value,
-      itens: [
-        {
-          produto_id: parseInt(selectProd.value, 10),
-          quantidade: parseInt(document.getElementById('pedido-qtd').value, 10),
-          preco_unitario: price
-        }
-      ]
+      itens: [{ produto_id: parseInt(sel.value, 10), quantidade: parseInt(document.getElementById('pedido-qtd').value, 10), preco_unitario: price }]
     };
-
     try {
-      const res = await fetch(API_PEDIDOS, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
-
+      const res = await fetch(API_PEDIDOS, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       if (res.ok) {
-        fecharDrawer();
-        carregarDados();
-      } else {
         const data = await res.json();
-        alert('Erro ao lançar pedido: ' + data.erro);
-      }
-    } catch (err) {
-      console.error(err);
-      alert('Erro de conexão.');
-    }
+        showToast(data.mensagem || '✅ Pedido lançado com sucesso!', 'success');
+        closeDrawer(); carregarDados();
+      } else { const d = await res.json(); showToast('Erro: ' + d.erro, 'error'); }
+    } catch { showToast('Erro de conexão.', 'error'); }
   }
 
   window.onload = carregarDados;

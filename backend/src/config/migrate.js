@@ -33,6 +33,7 @@ async function runMigrations() {
         ALTER TABLE colaborador ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'Ativo';
         ALTER TABLE ordem_producao ADD COLUMN IF NOT EXISTS categoria_producao VARCHAR(50);
         ALTER TABLE ordem_producao ADD COLUMN IF NOT EXISTS data_programada DATE;
+        ALTER TABLE insumo ADD COLUMN IF NOT EXISTS categoria VARCHAR(50) DEFAULT 'Outros';
     `);
     await pool.query(`
         CREATE TABLE IF NOT EXISTS ficha_tecnica_receita (
@@ -107,6 +108,40 @@ async function runMigrations() {
     }
 
     console.log('✅ Migrações verificadas (receitas, estoque produto, metas, eh_novato, categoria_producao e duas camadas)');
+
+    // Migration: tabela de categorias dinâmicas
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS categoria (
+            id   SERIAL PRIMARY KEY,
+            nome VARCHAR(50) NOT NULL,
+            tipo VARCHAR(20) NOT NULL CHECK (tipo IN ('INSUMO', 'RECEITA', 'PRODUTO')),
+            UNIQUE(nome, tipo)
+        );
+    `);
+
+    // Seeds padrão — inseridos apenas se ainda não existirem
+    await pool.query(`
+        INSERT INTO categoria (nome, tipo) VALUES
+            ('Farináceo',    'INSUMO'),
+            ('Proteína',     'INSUMO'),
+            ('Laticínio',    'INSUMO'),
+            ('Tempero',      'INSUMO'),
+            ('Gordura',      'INSUMO'),
+            ('Embalagem',    'INSUMO'),
+            ('Outros',       'INSUMO'),
+            ('Massa',        'RECEITA'),
+            ('Recheio',      'RECEITA'),
+            ('Molho',        'RECEITA'),
+            ('Tempero',      'RECEITA'),
+            ('Frito',        'PRODUTO'),
+            ('Assado',       'PRODUTO'),
+            ('Mini',         'PRODUTO'),
+            ('Doce',         'PRODUTO'),
+            ('Outros',       'PRODUTO')
+        ON CONFLICT (nome, tipo) DO NOTHING;
+    `);
+
+    console.log('✅ Tabela de categorias dinâmicas verificada');
 }
 
 module.exports = { runMigrations };
