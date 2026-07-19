@@ -9,12 +9,12 @@ const produtoController = {
         try {
             await client.query('BEGIN'); // Trava o banco: "Comece a gravar, mas só salve se eu mandar"
             
-            const { nome, preco_venda, cmv_estimado, margem_contribuicao, ficha_tecnica } = req.body;
+            const { nome, preco_venda, cmv_estimado, margem_contribuicao, categoria, peso_produtividade, ficha_tecnica } = req.body;
             
             // Passo A: Gravar o Produto Final
             const resultProd = await client.query(
-                'INSERT INTO produto (nome, preco_venda, cmv_estimado, margem_contribuicao) VALUES ($1, $2, $3, $4) RETURNING id',
-                [nome, preco_venda, cmv_estimado, margem_contribuicao]
+                'INSERT INTO produto (nome, preco_venda, cmv_estimado, margem_contribuicao, categoria, peso_produtividade) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
+                [nome, preco_venda, cmv_estimado, margem_contribuicao, categoria || 'Geral', parseFloat(peso_produtividade) || 1.0]
             );
             const produtoId = resultProd.rows[0].id;
 
@@ -60,13 +60,13 @@ const produtoController = {
         try {
             await client.query('BEGIN');
             const { id } = req.params;
-            const { nome, preco_venda, cmv_estimado, margem_contribuicao, ficha_tecnica } = req.body;
+            const { nome, preco_venda, cmv_estimado, margem_contribuicao, categoria, peso_produtividade, ficha_tecnica } = req.body;
 
             const result = await client.query(
                 `UPDATE produto
-                 SET nome = $1, preco_venda = $2, cmv_estimado = $3, margem_contribuicao = $4
-                 WHERE id = $5 RETURNING id`,
-                [nome, preco_venda, cmv_estimado, margem_contribuicao, id]
+                 SET nome = $1, preco_venda = $2, cmv_estimado = $3, margem_contribuicao = $4, categoria = $5, peso_produtividade = $6
+                 WHERE id = $7 RETURNING id`,
+                [nome, preco_venda, cmv_estimado, margem_contribuicao, categoria || 'Geral', parseFloat(peso_produtividade) || 1.0, id]
             );
             if (result.rows.length === 0) {
                 await client.query('ROLLBACK');
@@ -121,6 +121,39 @@ const produtoController = {
                 return res.status(404).json({ status: 'erro', erro: 'Produto não encontrado' });
             }
             res.json({ status: 'sucesso', id: result.rows[0].id });
+        } catch (error) {
+            res.status(500).json({ status: 'erro', erro: error.message });
+        }
+    },
+
+    // 6. OBTER POR ID COM FICHA TÉCNICA E DETALHES
+    obterPorId: async (req, res) => {
+        try {
+            const { id } = req.params;
+            const prod = await pool.query('SELECT * FROM produto WHERE id = $1', [id]);
+            if (prod.rows.length === 0) {
+                return res.status(404).json({ status: 'erro', erro: 'Produto não encontrado' });
+            }
+            
+            const insumos = await pool.query(`
+                SELECT fti.insumo_id, fti.quantidade, i.nome, i.unidade_medida, i.estoque_atual
+                FROM ficha_tecnica_insumo fti
+                JOIN insumo i ON i.id = fti.insumo_id
+                WHERE fti.produto_id = $1
+            `, [id]);
+            
+            const embalagens = await pool.query(`
+                SELECT fte.embalagem_id, fte.quantidade, e.nome, e.estoque_atual
+                FROM ficha_tecnica_embalagem fte
+                JOIN embalagem e ON e.id = fte.embalagem_id
+                WHERE fte.produto_id = $1
+            `, [id]);
+
+            res.json({
+                ...prod.rows[0],
+                ficha_tecnica_insumos: insumos.rows,
+                ficha_tecnica_embalagens: embalagens.rows
+            });
         } catch (error) {
             res.status(500).json({ status: 'erro', erro: error.message });
         }

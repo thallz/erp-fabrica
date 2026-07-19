@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Planejamento Semanal — ERP Fabrica</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/global.css" />
+  <style>
+    .weekly-kanban-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 12px;
+      margin-bottom: 24px;
+      overflow-x: auto;
+      align-items: start;
+    }
+
+    .kanban-col {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 12px;
+      min-height: 450px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .kanban-col-header {
+      border-bottom: 1px solid var(--border-light);
+      padding-bottom: 8px;
+      margin-bottom: 4px;
+    }
+
+    .kanban-day-name {
+      font-weight: 700;
+      font-size: 13px;
+      color: var(--text-primary);
+    }
+
+    .kanban-day-date {
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    .kanban-day-pts {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--brand);
+      margin-top: 2px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .op-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px;
+      font-size: 12.5px;
+      cursor: pointer;
+      transition: box-shadow .15s, transform .15s;
+      position: relative;
+    }
+
+    .op-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow);
+    }
+
+    .op-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+
+    .op-card-op {
+      font-weight: 700;
+      color: var(--brand);
+    }
+
+    .op-card-tag {
+      font-size: 9.5px;
+      padding: 1px 6px;
+      border-radius: 10px;
+      font-weight: 700;
+    }
+
+    .tag-fermentado { background: #e0e7ff; color: #3730a3; }
+    .tag-assado     { background: #fef3c7; color: #b45309; }
+    .tag-frito      { background: #fee2e2; color: #991b1b; }
+    .tag-geral      { background: #e2e8f0; color: #475569; }
+
+    .op-card-prod {
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 6px;
+    }
+
+    .op-card-meta {
+      font-size: 11px;
+      color: var(--text-secondary);
+      border-top: 1px dashed var(--border);
+      padding-top: 6px;
+      margin-top: 6px;
+    }
+
+    .op-card-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .op-card-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      cursor: pointer;
+      color: var(--text-secondary);
+    }
+    .op-card-btn:hover {
+      border-color: var(--brand);
+      color: var(--brand);
+    }
+
+    .planner-layout {
+      display: grid;
+      grid-template-columns: 1fr 300px;
+      gap: 20px;
+    }
+
+    .unplanned-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      max-height: 600px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .unplanned-header {
+      font-weight: 700;
+      font-size: 14px;
+      border-bottom: 1px solid var(--border-light);
+      padding-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .unplanned-list {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(17, 24, 39, 0.7);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+
+    .modal-box {
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      width: 90%;
+      max-width: 480px;
+      padding: 24px;
+      box-shadow: var(--shadow-md);
+      position: relative;
+    }
+
+    .modal-box h3 {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 14px;
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 18px; right: 18px;
+      background: none; border: none;
+      font-size: 18px; cursor: pointer;
+      color: var(--text-muted);
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+    .form-group label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+    .form-group select, .form-group input {
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      outline: none;
+      font-family: inherit;
+    }
+
+    .capacity-indicator {
+      background: var(--brand-light);
+      border: 1px solid #c7d2fe;
+      padding: 12px;
+      border-radius: var(--radius);
+      margin-bottom: 16px;
+      font-size: 12.5px;
+    }
+
+    .capacity-warn {
+      background: var(--amber-bg);
+      border: 1px solid #fde68a;
+      color: #92400e;
+    }
+
+    .split-section {
+      border: 1px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 12px;
+      background: var(--bg);
+      margin-top: 10px;
+    }
+
+    .week-nav {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 8px 16px;
+      border-radius: var(--radius);
+      width: fit-content;
+    }
+
+    .week-nav button {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      padding: 4px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+    .week-nav button:hover {
+      background: var(--brand-light);
+      color: var(--brand);
+    }
+
+    .mrp-section {
+      margin-top: 24px;
+    }
+
+    .mrp-table-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      margin-top: 12px;
+    }
+
+    .mrp-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .mrp-table th {
+      background: var(--border-light);
+      text-align: left;
+      padding: 10px 14px;
+      font-weight: 700;
+      color: var(--text-secondary);
+    }
+    .mrp-table td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border-light);
+    }
+    .mrp-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .critical-buy {
+      background: var(--red-bg);
+      color: var(--red);
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 11px;
+      display: inline-block;
+    }
+    
+    .ok-stock {
+      background: var(--green-bg);
+      color: var(--green);
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 11px;
+      display: inline-block;
+    }
+
+    .dialog-buttons {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    .btn {
+      padding: 10px 16px;
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+    }
+    .btn-primary { background: var(--brand); color: white; }
+    .btn-primary:hover { background: var(--brand-hover); }
+    .btn-outline { background: white; border: 1px solid var(--border); color: var(--text-secondary); }
+    .btn-outline:hover { background: var(--bg); }
+    .btn-warning { background: var(--amber); color: white; }
+    .btn-warning:hover { background: #b45309; }
+  </style>
+</head>
+<body>
+<div class="erp-shell">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <span>ERP Fabrica</span>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-label">Menu Principal</div>
+      <a href="index.html" class="nav-link">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        Dashboard
+      </a>
+      <a href="vendas.html" class="nav-link">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Comercial/Clientes
+      </a>
+      <a href="estoque_vendas.html" class="nav-link">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+        Câmara Fria (Vendas)
+      </a>
+      <a href="producao.html" class="nav-link">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+        Almoxarifado
+      </a>
+      <a href="planejamento.html" class="nav-link active">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Planejamento Semanal
+      </a>
+      <a href="financeiro.html" class="nav-link">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        Financeiro
+      </a>
+    </nav>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main-wrap">
+    <header class="topbar">
+      <div class="topbar-search">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        Busca global (Alt + S)
+      </div>
+      <div class="topbar-right">
+        <span class="badge-offline" id="connection-status">Verificando...</span>
+        <div class="user-chip">
+          <div><strong>Admin Fabrica</strong><span>Administrador</span></div>
+          <div class="user-avatar">AF</div>
+        </div>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <div class="page-header">
+        <div class="page-header-left">
+          <h1>Planejamento Semanal de Produção</h1>
+          <p>Organize metas diárias, capacidade de equipe e atenda demandas de pedidos B2B.</p>
+        </div>
+        <div class="page-header-actions">
+          <button class="btn btn-outline" onclick="abrirModalSugestao()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+            Sugerir Distribuição Semanal
+          </button>
+        </div>
+      </div>
+
+      <!-- WEEK NAVIGATION -->
+      <div class="week-nav">
+        <button onclick="mudarSemana(-7)">← Anterior</button>
+        <strong id="week-label">Carregando semana...</strong>
+        <button onclick="mudarSemana(7)">Próxima →</button>
+      </div>
+
+      <!-- KANBAN PLANNER LAYOUT -->
+      <div class="planner-layout">
+        <div>
+          <!-- KANBAN BOARD -->
+          <div class="weekly-kanban-grid" id="kanban-grid">
+            <!-- Columns mapped dynamically -->
+          </div>
+        </div>
+
+        <!-- UNPLANNED SIDEBAR PANEL -->
+        <div class="unplanned-panel">
+          <div class="unplanned-header">
+            <span>Fila (Sem Agendamento)</span>
+            <span class="badge" id="unplanned-count" style="background:var(--brand-light);color:var(--brand);font-weight:700">0 OPs</span>
+          </div>
+          <div class="unplanned-list" id="unplanned-list">
+            <!-- Unplanned cards go here -->
+          </div>
+        </div>
+      </div>
+
+      <!-- MRP TABLE SECTION -->
+      <div class="mrp-section card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
+          <h2 style="font-size:15px; font-weight:700">Resumo de Insumos da Semana (MRP)</h2>
+          <span style="font-size:12px; color:var(--text-secondary)">Explosão de receitas x Saldo do Almoxarifado</span>
+        </div>
+        <div class="mrp-table-wrap">
+          <table class="mrp-table">
+            <thead>
+              <tr>
+                <th>Insumo / Embalagem</th>
+                <th>Tipo</th>
+                <th style="text-align:right">Demanda da Semana</th>
+                <th style="text-align:right">Estoque Almoxarifado</th>
+                <th style="text-align:right">Falta de Estoque</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="mrp-tbody">
+              <tr>
+                <td colspan="6" style="text-align:center; color:var(--text-muted); padding:20px">Nenhum planejamento carregado para esta semana.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- ALLOCATION MODAL -->
+<div class="modal-overlay" id="alloc-modal">
+  <div class="modal-box">
+    <button class="modal-close" onclick="fecharModalAlloc()">×</button>
+    <h3 id="modal-title">Agendar Ordem de Produção</h3>
+    <form id="alloc-form" onsubmit="salvarAlocacao(event)">
+      <input type="hidden" id="alloc-op-id" />
+      <input type="hidden" id="alloc-peso" />
+      <input type="hidden" id="alloc-qtd" />
+
+      <div class="form-group">
+        <label>Produto / Qtd</label>
+        <input type="text" id="alloc-prod-info" disabled style="background:var(--bg);" />
+      </div>
+
+      <div class="form-group">
+        <label>Colaborador Responsável</label>
+        <select id="alloc-colab" onchange="verificarPontosCapacidade()" required>
+          <option value="">Selecione...</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Data Programada</label>
+        <input type="date" id="alloc-data" onchange="verificarPontosCapacidade()" required />
+      </div>
+
+      <!-- CAPACITY WIDGET -->
+      <div class="capacity-indicator" id="capacity-indicator" style="display:none">
+        <!-- Filled dynamically -->
+      </div>
+
+      <!-- SPLIT FORM SECTION -->
+      <div class="split-section" id="split-section" style="display:none">
+        <h4 style="font-size:12px; font-weight:700; margin-bottom:8px; color:var(--amber)">Dividir OP para Evitar Sobrecarga</h4>
+        <p style="font-size:11px; color:var(--text-secondary); margin-bottom:10px">
+          Deseja alocar a capacidade restante ao atual colaborador e criar uma nova OP com o saldo para outro colaborador?
+        </p>
+        
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px">
+          <div class="form-group" style="margin:0">
+            <label>Qtd p/ Atual (Máx)</label>
+            <input type="number" id="split-qtd-1" min="1" oninput="ajustarSplitSaldo()" />
+          </div>
+          <div class="form-group" style="margin:0">
+            <label>Saldo p/ Outro</label>
+            <input type="number" id="split-qtd-2" disabled style="background:var(--bg);" />
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom:0">
+          <label>Alocar Saldo p/ Colaborador</label>
+          <select id="split-colab-2">
+            <option value="">Colocar na fila (não agendar)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="dialog-buttons">
+        <button type="button" class="btn btn-outline" onclick="fecharModalAlloc()">Cancelar</button>
+        <button type="button" class="btn btn-warning" id="btn-split-confirm" style="display:none" onclick="executarDivisaoOP()">Confirmar e Dividir</button>
+        <button type="submit" class="btn btn-primary" id="btn-submit">Salvar Agendamento</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- AUTO SUGGESTION REVIEW MODAL -->
+<div class="modal-overlay" id="sugestao-modal">
+  <div class="modal-box" style="max-width: 580px;">
+    <button class="modal-close" onclick="fecharModalSugestao()">×</button>
+    <h3>Sugestão Semanal de Produção</h3>
+    <p style="font-size:12px; color:var(--text-secondary); margin-bottom:14px">
+      Cruzamos todos os pedidos em status <strong>'CRIADO'</strong> com o estoque atual da <strong>Câmara Fria</strong> e distribuímos a produção conforme a especialidade de cada dia.
+    </p>
+
+    <div style="max-height:350px; overflow-y:auto; border:1px solid var(--border); border-radius:var(--radius); padding:10px; background:var(--bg)" id="sugestao-conteudo">
+      <!-- Mapped dynamically -->
+    </div>
+
+    <div class="dialog-buttons">
+      <button class="btn btn-outline" onclick="fecharModalSugestao()">Fechar</button>
+      <button class="btn btn-primary" id="btn-aplicar-sugestao" onclick="aplicarSugestaoEmLote()">Aplicar Planejamento</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script>
+  const API = 'http://localhost:3001/api';
+  let dataReferencia = new Date(); // Inicia com hoje
+  let colaboradores = [];
+  let todasOps = [];
+  let sugestaoSemanalTemp = null;
+
+  // Formatar BRL
+  function fmtBRL(v) {
+    return Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  }
+
+  // Toast notifications
+  function toast(msg, type = '') {
+    const el = document.createElement('div');
+    el.className = 'toast ' + type;
+    el.textContent = msg;
+    document.getElementById('toast-container').appendChild(el);
+    setTimeout(() => el.remove(), 3500);
+  }
+
+  // Obter datas da semana comercial (Segunda a Sábado) baseadas na data de referência
+  function obterDatasSemana(dataRef) {
+    const d = new Date(dataRef);
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Ajusta para segunda-feira
+    
+    const segunda = new Date(d.setDate(diff));
+    const datas = [];
+    
+    for (let i = 0; i < 6; i++) {
+      const temp = new Date(segunda);
+      temp.setDate(segunda.getDate() + i);
+      datas.push(temp);
+    }
+    return datas;
+  }
+
+  // Formatar data para YYYY-MM-DD local
+  function formatarYYYYMMDD(data) {
+    const ano = data.getFullYear();
+    const mes = String(data.getMonth() + 1).padStart(2, '0');
+    const dia = String(data.getDate()).padStart(2, '0');
+    return `${ano}-${mes}-${dia}`;
+  }
+
+  // Formatar data curta para exibição (dd/mm)
+  function formatarDDMM(data) {
+    const dia = String(data.getDate()).padStart(2, '0');
+    const mes = String(data.getMonth() + 1).padStart(2, '0');
+    return `${dia}/${mes}`;
+  }
+
+  // Inicializar a tela
+  async function init() {
+    await testarConexao();
+    await carregarColaboradores();
+    await carregarPlanejamento();
+  }
+
+  // Testar conexão com o servidor
+  async function testarConexao() {
+    const indicator = document.getElementById('connection-status');
+    try {
+      const res = await fetch(`${API}/status`);
+      if (res.ok) {
+        indicator.textContent = 'API Online';
+        indicator.className = 'api-status api-online';
+      } else {
+        throw new Error();
+      }
+    } catch {
+      indicator.textContent = 'Modo Offline (Servidor Desconectado)';
+      indicator.className = 'api-status api-offline';
+      toast('Não foi possível conectar ao servidor backend na porta 3001.', 'error');
+    }
+  }
+
+  // Carregar colaboradores do backend
+  async function carregarColaboradores() {
+    try {
+      const res = await fetch(`${API}/producao/colaboradores`);
+      if (!res.ok) throw new Error();
+      colaboradores = await res.json();
+      
+      // Popular select modal
+      const select = document.getElementById('alloc-colab');
+      select.innerHTML = '<option value="">Selecione...</option>' + 
+        colaboradores.map(c => `<option value="${c.id}">${c.nome} (Meta: ${c.meta_diaria_individual} pts)</option>`).join('');
+
+      // Popular select split
+      const selectSplit = document.getElementById('split-colab-2');
+      selectSplit.innerHTML = '<option value="">Colocar na fila (não agendar)</option>' + 
+        colaboradores.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
+    } catch {
+      colaboradores = [
+        { id: 1, nome: 'Maria Silva', meta_diaria_individual: 350 },
+        { id: 2, nome: 'João Santos', meta_diaria_individual: 400 },
+        { id: 3, nome: 'Ana Costa', meta_diaria_individual: 350 }
+      ];
+    }
+  }
+
+  // Mudar semana
+  function mudarSemana(dias) {
+    dataReferencia.setDate(dataReferencia.getDate() + dias);
+    carregarPlanejamento();
+  }
+
+  // Carregar dados de planejamento e preencher os Kanban/MRP
+  async function carregarPlanejamento() {
+    const datasSemana = obterDatasSemana(dataReferencia);
+    const startStr = formatarYYYYMMDD(datasSemana[0]);
+    const endStr = formatarYYYYMMDD(datasSemana[5]);
+
+    document.getElementById('week-label').textContent = `Semana de ${formatarDDMM(datasSemana[0])} a ${formatarDDMM(datasSemana[5])}`;
+
+    try {
+      // 1. Carregar OPs da Fila
+      const resOps = await fetch(`${API}/producao/fila`);
+      if (!resOps.ok) throw new Error();
+      todasOps = await resOps.json();
+    } catch {
+      todasOps = [
+        { numero_op: 1, produto: 'Coxinha de Frango', produto_id: 1, quantidade_planejada: 150, status: 'FILA', data_programada: null, peso_produtividade: 1.0, categoria_producao: 'Frito' },
+        { numero_op: 2, produto: 'Bolinho de Queijo', produto_id: 2, quantidade_planejada: 100, status: 'FILA', data_programada: null, peso_produtividade: 1.0, categoria_producao: 'Frito' },
+        { numero_op: 3, produto: 'Pão de Queijo', produto_id: 3, quantidade_planejada: 200, status: 'FILA', data_programada: null, peso_produtividade: 0.8, categoria_producao: 'Assado' },
+        { numero_op: 4, produto: 'Kibe Especial', produto_id: 4, quantidade_planejada: 80, status: 'FILA', data_programada: null, peso_produtividade: 1.2, categoria_producao: 'Frito' }
+      ];
+    }
+
+    renderKanban(datasSemana);
+    await carregarMRPSemanal(startStr, endStr);
+  }
+
+  // Renderizar o tabuleiro Kanban
+  function renderKanban(datasSemana) {
+    const grid = document.getElementById('kanban-grid');
+    grid.innerHTML = '';
+
+    const diasNomes = ['Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+
+    // Mapeamento de OPs programadas por data
+    const mapOpsPorData = {};
+    const unallocated = [];
+
+    todasOps.forEach(op => {
+      if (op.data_programada) {
+        // Normaliza string da data para comparar (extrai yyyy-mm-dd)
+        const dStr = op.data_programada.substring(0, 10);
+        if (!mapOpsPorData[dStr]) mapOpsPorData[dStr] = [];
+        mapOpsPorData[dStr].push(op);
+      } else {
+        unallocated.push(op);
+      }
+    });
+
+    // 1. Renderizar Colunas Semanais
+    diasNomes.forEach((nomeDia, index) => {
+      const dataDia = datasSemana[index];
+      const dStr = formatarYYYYMMDD(dataDia);
+      const opsDia = mapOpsPorData[dStr] || [];
+
+      // Calcular pontos acumulados na coluna
+      const ptsAcumulados = opsDia.reduce((sum, op) => sum + (op.quantidade_planejada * (op.peso_produtividade || 1.0)), 0);
+
+      const colHtml = document.createElement('div');
+      colHtml.className = 'kanban-col';
+      colHtml.innerHTML = `
+        <div class="kanban-col-header">
+          <div class="kanban-day-name">${nomeDia}</div>
+          <div class="kanban-day-date">${formatarDDMM(dataDia)}</div>
+          <div class="kanban-day-pts">
+            <span>Pontuação:</span>
+            <strong>${ptsAcumulados.toFixed(1)} pts</strong>
+          </div>
+        </div>
+        <div class="kanban-col-cards" style="display:flex; flex-direction:column; gap:8px;" id="col-${dStr}">
+          ${opsDia.map(op => renderOPCard(op, true)).join('')}
+          ${opsDia.length === 0 ? '<div style="font-size:11px;color:var(--text-muted);text-align:center;padding:20px 0;border:1px dashed var(--border);border-radius:var(--radius)">Sem agendamentos</div>' : ''}
+        </div>
+      `;
+      grid.appendChild(colHtml);
+    });
+
+    // 2. Renderizar Fila lateral (Desprogramadas)
+    const unplannedCount = document.getElementById('unplanned-count');
+    unplannedCount.textContent = `${unallocated.length} OPs`;
+
+    const listHtml = document.getElementById('unplanned-list');
+    if (unallocated.length === 0) {
+      listHtml.innerHTML = '<div style="color:var(--text-muted);font-size:12px;text-align:center;padding:40px 10px;">Nenhuma OP pendente na fila.</div>';
+    } else {
+      listHtml.innerHTML = unallocated.map(op => renderOPCard(op, false)).join('');
+    }
+  }
+
+  // Renderizar card individual de OP
+  function renderOPCard(op, programada) {
+    const catClass = 'tag-' + (op.categoria_producao || 'Geral').trim().toLowerCase();
+    const peso = parseFloat(op.peso_produtividade || 1.0);
+    const pontos = op.quantidade_planejada * peso;
+
+    return `
+      <div class="op-card" onclick="${programada ? '' : `abrirModalAlloc(${op.numero_op}, '${op.produto}', ${op.quantidade_planejada}, ${peso})`}">
+        <div class="op-card-header">
+          <span class="op-card-op">OP-${String(op.numero_op).padStart(3, '0')}</span>
+          <span class="op-card-tag ${catClass}">${op.categoria_producao || 'Geral'}</span>
+        </div>
+        <div class="op-card-prod">${op.produto}</div>
+        <div style="font-weight:600">Qtd: ${op.quantidade_planejada} un</div>
+        <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">
+          Pontos: <strong>${pontos.toFixed(1)}</strong> <span style="color:var(--text-muted)">(${peso.toFixed(1)}x)</span>
+        </div>
+        ${programada ? `
+          <div class="op-card-meta">
+            👤 Responsável: <strong>${op.colaborador_nome || 'Não definido'}</strong>
+          </div>
+          <div class="op-card-actions">
+            <button class="op-card-btn" onclick="desagendarOP(${op.numero_op})">Desagendar</button>
+          </div>
+        ` : `
+          <div class="op-card-actions">
+            <button class="op-card-btn" style="border-color:var(--brand);color:var(--brand);font-weight:600;">Agendar OP</button>
+          </div>
+        `}
+      </div>
+    `;
+  }
+
+  // Desagendar uma OP (remover data e colaborador)
+  async function desagendarOP(opId) {
+    try {
+      const res = await fetch(`${API}/producao/planejar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          colaborador_id: null,
+          data_programada: null,
+          ops_ids: [opId]
+        })
+      });
+      if (!res.ok) throw new Error();
+      toast('OP removida do planejamento semanal.', 'success');
+      await carregarPlanejamento();
+    } catch {
+      // Mock local
+      const op = todasOps.find(o => o.numero_op === opId);
+      if (op) {
+        op.data_programada = null;
+        op.colaborador_nome = null;
+        op.colaborador_id = null;
+      }
+      toast('Removido localmente (servidor offline).', 'warning');
+      const datasSemana = obterDatasSemana(dataReferencia);
+      renderKanban(datasSemana);
+    }
+  }
+
+  // Abrir modal de agendamento de OP
+  function abrirModalAlloc(opId, produto, quantidade, peso) {
+    document.getElementById('alloc-op-id').value = opId;
+    document.getElementById('alloc-peso').value = peso;
+    document.getElementById('alloc-qtd').value = quantidade;
+    document.getElementById('alloc-prod-info').value = `${produto} (${quantidade} un)`;
+    
+    // Set default date to the Monday of the selected week if today is out of week
+    const datas = obterDatasSemana(dataReferencia);
+    document.getElementById('alloc-data').value = formatarYYYYMMDD(datas[0]);
+    document.getElementById('alloc-colab').value = '';
+    
+    document.getElementById('capacity-indicator').style.display = 'none';
+    document.getElementById('split-section').style.display = 'none';
+    document.getElementById('btn-split-confirm').style.display = 'none';
+    document.getElementById('btn-submit').style.display = 'inline-block';
+
+    document.getElementById('alloc-modal').classList.add('open');
+  }
+
+  // Fechar modal de agendamento
+  function fecharModalAlloc() {
+    document.getElementById('alloc-modal').classList.remove('open');
+  }
+
+  // Verificar capacidade do colaborador selecionado em tempo real
+  async function verificarPontosCapacidade() {
+    const colabId = document.getElementById('alloc-colab').value;
+    const dataProg = document.getElementById('alloc-data').value;
+    const opId = document.getElementById('alloc-op-id').value;
+    const qty = parseInt(document.getElementById('alloc-qtd').value, 10);
+    const peso = parseFloat(document.getElementById('alloc-peso').value);
+
+    const indicator = document.getElementById('capacity-indicator');
+    const splitSection = document.getElementById('split-section');
+    const btnSplitConfirm = document.getElementById('btn-split-confirm');
+    const btnSubmit = document.getElementById('btn-submit');
+
+    if (!colabId || !dataProg) {
+      indicator.style.display = 'none';
+      splitSection.style.display = 'none';
+      btnSplitConfirm.style.display = 'none';
+      btnSubmit.style.display = 'inline-block';
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API}/planejamento/validar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          colaborador_id: colabId,
+          data_programada: dataProg,
+          ops: [{ op_id: opId }]
+        })
+      });
+      if (!res.ok) throw new Error();
+      const val = await res.json();
+
+      indicator.style.display = 'block';
+      
+      const pontosDisponiveis = val.capacidade_restante_pontos;
+      const pontosRequisitados = val.proposta_pontos;
+
+      if (val.ultrapassa_meta) {
+        indicator.className = 'capacity-indicator capacity-warn';
+        indicator.innerHTML = `
+          <strong>Excesso de Capacidade!</strong><br/>
+          Capacidade atual agendada: ${val.capacidade_atual_pontos.toFixed(1)} / ${val.meta_diaria_individual} pts.<br/>
+          Esta OP necessita de: ${pontosRequisitados.toFixed(1)} pts.<br/>
+          <strong>Sobrecarga: ${(val.novo_total_pontos - val.meta_diaria_individual).toFixed(1)} pontos.</strong>
+        `;
+        
+        // Exibir opção de divisão/split
+        splitSection.style.display = 'block';
+        btnSplitConfirm.style.display = 'inline-block';
+        btnSubmit.textContent = 'Ignorar e Agendar Mesmo Assim';
+
+        // Sugerir divisão ideal
+        const qtdIdealParaMeta = Math.floor(pontosDisponiveis / peso);
+        document.getElementById('split-qtd-1').value = Math.max(1, qtdIdealParaMeta);
+        ajustarSplitSaldo();
+      } else {
+        indicator.className = 'capacity-indicator';
+        indicator.innerHTML = `
+          <strong>Capacidade OK</strong><br/>
+          Capacidade atual agendada: ${val.capacidade_atual_pontos.toFixed(1)} / ${val.meta_diaria_individual} pts.<br/>
+          Esta OP consumirá: ${pontosRequisitados.toFixed(1)} pts.<br/>
+          Capacidade restante após alocação: ${(val.meta_diaria_individual - val.novo_total_pontos).toFixed(1)} pts.
+        `;
+        
+        splitSection.style.display = 'none';
+        btnSplitConfirm.style.display = 'none';
+        btnSubmit.textContent = 'Salvar Agendamento';
+        btnSubmit.style.display = 'inline-block';
+      }
+    } catch {
+      indicator.style.display = 'none';
+      splitSection.style.display = 'none';
+      btnSplitConfirm.style.display = 'none';
+      btnSubmit.style.display = 'inline-block';
+    }
+  }
+
+  // Ajustar quantidade de divisão
+  function ajustarSplitSaldo() {
+    const qtyTotal = parseInt(document.getElementById('alloc-qtd').value, 10);
+    const qty1 = parseInt(document.getElementById('split-qtd-1').value, 10) || 0;
+    
+    let colab1 = Math.min(qtyTotal - 1, qty1);
+    if (colab1 < 1) colab1 = 1;
+
+    document.getElementById('split-qtd-1').value = colab1;
+    document.getElementById('split-qtd-2').value = qtyTotal - colab1;
+  }
+
+  // Salvar alocação manual convencional (pode ignorar capacidade)
+  async function salvarAlocacao(e) {
+    e.preventDefault();
+    const opId = document.getElementById('alloc-op-id').value;
+    const colabId = document.getElementById('alloc-colab').value;
+    const dataProg = document.getElementById('alloc-data').value;
+
+    try {
+      const res = await fetch(`${API}/producao/planejar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          colaborador_id: colabId,
+          data_programada: dataProg,
+          ops_ids: [parseInt(opId, 10)]
+        })
+      });
+      if (!res.ok) throw new Error();
+      toast('OP planejada com sucesso.', 'success');
+      fecharModalAlloc();
+      await carregarPlanejamento();
+    } catch {
+      // Offline fallback
+      const op = todasOps.find(o => o.numero_op === parseInt(opId, 10));
+      const colab = colaboradores.find(c => c.id === parseInt(colabId, 10));
+      if (op && colab) {
+        op.data_programada = dataProg;
+        op.colaborador_id = colab.id;
+        op.colaborador_name = colab.nome;
+        op.colaborador_nome = colab.nome;
+      }
+      toast('Salvo localmente (servidor offline).', 'warning');
+      fecharModalAlloc();
+      const datasSemana = obterDatasSemana(dataReferencia);
+      renderKanban(datasSemana);
+    }
+  }
+
+  // Executar a divisão de OP (Split) e salvar
+  async function executarDivisaoOP() {
+    const opId = parseInt(document.getElementById('alloc-op-id').value, 10);
+    const colab1Id = parseInt(document.getElementById('alloc-colab').value, 10);
+    const data1 = document.getElementById('alloc-data').value;
+    const qty1 = parseInt(document.getElementById('split-qtd-1').value, 10);
+    const qty2 = parseInt(document.getElementById('split-qtd-2').value, 10);
+    const colab2Id = document.getElementById('split-colab-2').value;
+
+    const payload = {
+      op_id: opId,
+      quantidade_colaborador_1: qty1,
+      colaborador_1_id: colab1Id,
+      data_1: data1,
+      quantidade_colaborador_2: qty2,
+      colaborador_2_id: colab2Id ? parseInt(colab2Id, 10) : null,
+      data_2: colab2Id ? data1 : null // Se agendado, usa a mesma data
+    };
+
+    try {
+      const res = await fetch(`${API}/planejamento/split-op`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error();
+      toast('OP dividida e alocada com sucesso!', 'success');
+      fecharModalAlloc();
+      await carregarPlanejamento();
+    } catch {
+      toast('Erro de conexão ao dividir OP no servidor.', 'error');
+    }
+  }
+
+  // Carregar MRP de insumos da semana
+  async function carregarMRPSemanal(startStr, endStr) {
+    const tbody = document.getElementById('mrp-tbody');
+    try {
+      const res = await fetch(`${API}/planejamento/insumos-semana?data_inicio=${startStr}&data_fim=${endStr}`);
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      const itens = data.itens || [];
+
+      if (itens.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:20px">Nenhum insumo faltante para a demanda desta semana. Estoque OK!</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = itens.map(i => {
+        const badge = i.comprar_urgente 
+          ? `<span class="critical-buy">COMPRAR URGENTE (Falta: ${i.falta} ${i.unidade})</span>` 
+          : `<span class="ok-stock">Estoque Suficiente</span>`;
+        
+        return `
+          <tr>
+            <td><strong>${i.nome}</strong></td>
+            <td><span style="font-size:11px; text-transform:uppercase; font-weight:700; color:var(--text-secondary)">${i.tipo}</span></td>
+            <td align="right">${i.demanda} ${i.unidade}</td>
+            <td align="right">${i.estoque_atual} ${i.unidade}</td>
+            <td align="right" style="${i.comprar_urgente ? 'color:var(--red); font-weight:700;' : ''}">${i.falta > 0 ? `${i.falta} ${i.unidade}` : '—'}</td>
+            <td>${badge}</td>
+          </tr>
+        `;
+      }).join('');
+    } catch {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:20px">Não foi possível carregar o MRP (Servidor Offline).</td></tr>';
+    }
+  }
+
+  // Abrir modal de sugestões semanais
+  async function abrirModalSugestao() {
+    const div = document.getElementById('sugestao-conteudo');
+    const btn = document.getElementById('btn-aplicar-sugestao');
+    div.innerHTML = '<div style="text-align:center;padding:20px;">Carregando sugestões da inteligência de planejamento...</div>';
+    btn.style.display = 'none';
+
+    document.getElementById('sugestao-modal').classList.add('open');
+
+    try {
+      const res = await fetch(`${API}/planejamento/sugestao-semanal`);
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      sugestaoSemanalTemp = data.sugestao;
+
+      let html = '';
+      let hasData = false;
+
+      const dias = Object.keys(sugestaoSemanalTemp);
+      const datasSemana = obterDatasSemana(dataReferencia);
+
+      dias.forEach((dia, index) => {
+        const ops = sugestaoSemanalTemp[dia] || [];
+        if (ops.length > 0) {
+          hasData = true;
+          // Anexar data estimada
+          const dStr = formatarDDMM(datasSemana[index] || new Date());
+          html += `
+            <div style="margin-bottom:14px; background:white; padding:10px; border-radius:var(--radius); border:1px solid var(--border)">
+              <h4 style="font-weight:700; font-size:13px; color:var(--brand); margin-bottom:6px;">${dia} (${dStr})</h4>
+              <ul style="padding-left:16px; font-size:12px; display:flex; flex-direction:column; gap:4px;">
+                ${ops.map(o => `<li><strong>${o.produto_nome}</strong>: produzir <strong>${o.quantidade} un</strong> <span style="color:var(--text-secondary)">(${o.categoria})</span></li>`).join('')}
+              </ul>
+            </div>
+          `;
+        }
+      });
+
+      if (!hasData) {
+        div.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-secondary)">Nenhum pedido em aberto ("CRIADO") necessita de produção. Todos cobertos pelo estoque da Câmara Fria!</div>';
+        btn.style.display = 'none';
+      } else {
+        div.innerHTML = html;
+        btn.style.display = 'inline-block';
+      }
+    } catch {
+      div.innerHTML = '<div style="text-align:center;padding:20px;color:var(--red)">Falha de conexão com o servidor. Verifique a API.</div>';
+      btn.style.display = 'none';
+    }
+  }
+
+  // Fechar modal de sugestão
+  function fecharModalSugestao() {
+    document.getElementById('sugestao-modal').classList.remove('open');
+  }
+
+  // Aplicar sugestões em lote
+  async function aplicarSugestaoEmLote() {
+    if (!sugestaoSemanalTemp) return;
+    
+    const datasSemana = obterDatasSemana(dataReferencia);
+    const dias = ['Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+    const atribuicoes = [];
+
+    dias.forEach((dia, index) => {
+      const dataDia = datasSemana[index];
+      const dataStr = formatarYYYYMMDD(dataDia);
+      const ops = sugestaoSemanalTemp[dia] || [];
+      ops.forEach(op => {
+        atribuicoes.push({
+          produto_id: op.produto_id,
+          quantidade: op.quantidade,
+          data_programada: dataStr
+        });
+      });
+    });
+
+    try {
+      const res = await fetch(`${API}/planejamento/aplicar-sugestao`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ atribuicoes })
+      });
+      if (!res.ok) throw new Error();
+      toast('Sugestões aplicadas e integradas à fila semanal!', 'success');
+      fecharModalSugestao();
+      await carregarPlanejamento();
+    } catch {
+      toast('Erro de conexão ao salvar sugestão em lote.', 'error');
+    }
+  }
+
+  window.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

@@ -1,140 +1,605 @@
 <!DOCTYPE html>
-<html lang="pt">
+<html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calculadora MRP | ERP Fábrica</title>
-    <style>
-        :root { --primary: #2563eb; --warning: #d97706; --bg: #f8fafc; --border: #e2e8f0; }
-        body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); margin: 0; padding-bottom: 40px; }
-        nav { background: white; border-bottom: 1px solid var(--border); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; }
-        .container { max-width: 1100px; margin: 2rem auto; padding: 0 1rem; }
-        .card { background: white; border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 20px; }
-        h1 { margin: 0; font-size: 1.3rem; color: var(--primary); }
-        button { border: none; padding: 10px 18px; border-radius: 8px; cursor: pointer; font-weight: 600; }
-        .btn-primary { background: var(--primary); color: white; }
-        .btn-config { background: #e2e8f0; color: #475569; }
-        .btn-wa { background: #25D366; color: white; }
-        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-        th, td { padding: 10px; border-bottom: 1px solid #f1f5f9; text-align: left; }
-        th { background: #f8fafc; color: #475569; }
-        .alert { background: #eff6ff; border: 1px solid #bfdbfe; padding: 12px; border-radius: 8px; margin-bottom: 15px; font-size: 0.9rem; }
-        .warn { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 10px; border-radius: 8px; margin-bottom: 8px; font-size: 0.85rem; }
-        @media print { nav button { display: none; } }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calculadora de Bateladas — Chão de Fábrica</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --primary: #5b4be3;
+      --primary-hover: #4a3bc7;
+      --bg: #f3f4f7;
+      --surface: #ffffff;
+      --border: #e4e6ed;
+      --text: #111827;
+      --text-muted: #6b7280;
+      --green: #16a34a;
+      --amber: #d97706;
+      --radius: 12px;
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 24px;
+      line-height: 1.5;
+    }
+
+    header {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      margin-bottom: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: var(--shadow);
+    }
+
+    h1 {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .date-selector {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .date-selector input[type="date"] {
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 14px;
+      outline: none;
+      font-weight: 600;
+    }
+    .btn-refresh {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .btn-refresh:hover {
+      background: var(--primary-hover);
+    }
+
+    .layout-grid {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+    }
+
+    .panel-title {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      color: var(--text);
+      border-bottom: 2px solid var(--bg);
+      padding-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .ops-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-height: 600px;
+      overflow-y: auto;
+    }
+
+    .op-item {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: var(--surface);
+    }
+    .op-item:hover {
+      border-color: var(--primary);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    }
+    .op-item.active {
+      border-color: var(--primary);
+      background: #eff6ff;
+      border-left: 5px solid var(--primary);
+    }
+
+    .op-id {
+      font-weight: 800;
+      color: var(--primary);
+      font-size: 13px;
+      margin-bottom: 4px;
+    }
+    .op-product {
+      font-weight: 700;
+      font-size: 15px;
+      margin-bottom: 6px;
+    }
+    .op-details {
+      font-size: 12px;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .no-ops {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    .calc-box {
+      min-height: 400px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      color: var(--text-muted);
+    }
+
+    .details-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .detail-card {
+      background: var(--bg);
+      border-radius: 8px;
+      padding: 12px 16px;
+    }
+    .detail-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+    .detail-val {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .batelada-config-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      padding: 16px;
+      border-radius: 8px;
+      margin-bottom: 24px;
+    }
+
+    .batelada-config-row label {
+      font-weight: 700;
+      font-size: 14px;
+      color: #1e3a8a;
+    }
+    .batelada-config-row input {
+      width: 100px;
+      padding: 8px 12px;
+      border: 1px solid #93c5fd;
+      border-radius: 6px;
+      font-size: 16px;
+      font-weight: 700;
+      text-align: center;
+      outline: none;
+    }
+
+    .bateladas-result-container {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .batelada-card {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .batelada-header {
+      background: var(--bg);
+      padding: 10px 16px;
+      font-weight: 700;
+      font-size: 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .ingredient-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .ingredient-table th {
+      background: var(--surface);
+      text-align: left;
+      padding: 8px 16px;
+      font-size: 11px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+    }
+    .ingredient-table td {
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border-light);
+      font-size: 13.5px;
+    }
+    .ingredient-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .btn-print {
+      background: #10b981;
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-print:hover {
+      background: #059669;
+    }
+
+    #api-status {
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 20px;
+    }
+    .api-online { background: #dcfce7; color: #166534; }
+    .api-offline { background: #fee2e2; color: #991b1b; }
+
+    @media print {
+      body { background: white; color: black; padding: 0; }
+      header, .date-selector, .btn-refresh, .panel:first-child, .batelada-config-row, .btn-print {
+        display: none !important;
+      }
+      .layout-grid {
+        grid-template-columns: 1fr;
+      }
+      .panel {
+        border: none;
+        box-shadow: none;
+        padding: 0;
+      }
+      .batelada-card {
+        page-break-inside: avoid;
+        margin-bottom: 20px;
+      }
+    }
+  </style>
 </head>
 <body>
-<nav>
-    <h1>🧮 Calculadora MRP — Lista de Compras</h1>
-    <div style="display:flex;gap:10px;align-items:center;">
-        <span id="api-status" style="font-size:0.75rem;padding:4px 10px;border-radius:20px;background:#fee2e2;color:#991b1b;">API offline</span>
-        <button class="btn-config" onclick="location.href='index.html'">← Voltar ao ERP</button>
-    </div>
-</nav>
 
-<div class="container">
-    <div class="alert">
-        <strong>Automático:</strong> A lista é calculada no servidor cruzando a <strong>Fila de Produção (OPs)</strong> com o estoque do <strong>Almoxarifado</strong>. Só aparecem itens com quantidade a comprar &gt; 0.
+  <header>
+    <h1>🧮 Calculadora de Bateladas (Chão de Fábrica)</h1>
+    <div style="display:flex; gap:16px; align-items:center;">
+      <span id="api-status" class="api-offline">Verificando API...</span>
+      <div class="date-selector">
+        <input type="date" id="data-busca" onchange="carregarOPsDoDia()" />
+        <button class="btn-refresh" onclick="carregarOPsDoDia()">🔄 Recarregar</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout-grid">
+    <!-- LEFT PANEL: TODAY'S OPS -->
+    <div class="panel">
+      <div class="panel-title">
+        <span>OPs Programadas</span>
+        <span id="ops-count" style="font-size:12px; color:var(--text-muted)">0</span>
+      </div>
+      <div class="ops-list" id="ops-list">
+        <div class="no-ops">Carregando ordens...</div>
+      </div>
     </div>
 
-    <div class="card">
-        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:15px;">
-            <h2 style="margin:0;">OPs na Fila</h2>
-            <div style="display:flex;gap:10px;align-items:center;">
-                <label>Margem de perda:
-                    <select id="margem" onchange="carregar()" style="padding:8px;border-radius:6px;margin-left:6px;">
-                        <option value="0">0%</option>
-                        <option value="0.05" selected>5%</option>
-                        <option value="0.10">10%</option>
-                    </select>
-                </label>
-                <button class="btn-config" onclick="carregar()">🔄 Atualizar</button>
-            </div>
+    <!-- RIGHT PANEL: CALCULATION DETAILS -->
+    <div class="panel" id="calc-panel">
+      <div class="calc-box" id="calc-placeholder">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--text-muted); margin-bottom:12px;"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>
+        <p>Selecione uma Ordem de Produção (OP) ao lado para realizar a divisão em panelas/bateladas.</p>
+      </div>
+
+      <div id="calc-content" style="display:none">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 20px;">
+          <div>
+            <h2 id="calc-title" style="font-size:22px; font-weight:800;">Nome do Produto</h2>
+            <p id="calc-op-info" style="color:var(--text-muted); font-size:13px; font-weight:600;">OP #000</p>
+          </div>
+          <button class="btn-print" onclick="window.print()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+            Imprimir Ficha de Batelada
+          </button>
         </div>
-        <div id="ops-lista"></div>
-    </div>
 
-    <div class="card" style="border-left:4px solid var(--warning);">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:15px;">
-            <div>
-                <h2 style="margin:0;">Lista de Compras</h2>
-                <p style="color:#64748b;font-size:0.85rem;margin:4px 0 0;">Demanda das OPs − estoque do almoxarifado</p>
-            </div>
-            <div style="display:flex;gap:8px;">
-                <button class="btn-wa" onclick="whatsapp()">📱 WhatsApp</button>
-                <button class="btn-config" onclick="window.print()">🖨️ Imprimir</button>
-            </div>
+        <div class="details-grid">
+          <div class="detail-card">
+            <div class="detail-label">Quantidade Planejada</div>
+            <div class="detail-val" id="detail-qtd">0 un</div>
+          </div>
+          <div class="detail-card">
+            <div class="detail-label">Responsável / Meta</div>
+            <div class="detail-val" id="detail-colab">Maria Silva (350 un)</div>
+          </div>
         </div>
-        <div id="avisos"></div>
-        <div id="tabela-compras"></div>
-    </div>
-</div>
 
-<script>
+        <!-- BATCH SIZE CONFIG -->
+        <div class="batelada-config-row">
+          <label for="batch-cap">Capacidade Máxima por Panela (un):</label>
+          <input type="number" id="batch-cap" value="50" min="1" oninput="calcularDivisaoBateladas()" />
+          <span style="font-size:12px; color:#1e40af; font-weight:600">Ajuste o tamanho de acordo com o misturador/panela</span>
+        </div>
+
+        <!-- CALCULATION RESULTS -->
+        <div>
+          <h3 style="font-size:15px; font-weight:700; margin-bottom:12px;">Divisão em Panelas (Bateladas)</h3>
+          <div class="bateladas-result-container" id="bateladas-container">
+            <!-- Batelada Cards Rendered Dynamically -->
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
     const API_URL = 'http://localhost:3001/api';
-    let textoWA = '';
+    let OPsHoje = [];
+    let OPSelecionada = null;
+    let produtoSelecionado = null;
 
-    async function carregar() {
-        const status = document.getElementById('api-status');
-        const margem = document.getElementById('margem').value;
-        try {
-            const [resStatus, resMrp] = await Promise.all([
-                fetch(`${API_URL}/status`),
-                fetch(`${API_URL}/producao/necessidade-compras?margem=${margem}`)
-            ]);
-            status.textContent = resStatus.ok ? 'API online' : 'API offline';
-            status.style.background = resStatus.ok ? '#dcfce7' : '#fee2e2';
-            status.style.color = resStatus.ok ? '#166534' : '#991b1b';
-            if (!resMrp.ok) throw new Error();
+    // Inicializar data
+    document.getElementById('data-busca').value = new Date().toISOString().split('T')[0];
 
-            const data = await resMrp.json();
-            document.getElementById('avisos').innerHTML = (data.avisos || []).map(a => `<div class="warn">⚠️ ${a}</div>`).join('');
+    async function init() {
+      await testarConexao();
+      await carregarOPsDoDia();
+    }
 
-            const ops = data.detalhe_ops || [];
-            document.getElementById('ops-lista').innerHTML = ops.length
-                ? '<table><thead><tr><th>OP</th><th>Produto</th><th>Qtd</th></tr></thead><tbody>' +
-                  ops.map(o => `<tr><td>#${o.op_id}</td><td>${o.produto}</td><td><strong>${o.quantidade_planejada} un</strong></td></tr>`).join('') +
-                  '</tbody></table>'
-                : '<p style="color:#64748b">Nenhuma OP na fila.</p>';
-
-            const itens = data.itens_comprar || [];
-            if (!itens.length) {
-                document.getElementById('tabela-compras').innerHTML = '<p style="color:#64748b">Almoxarifado cobre toda a demanda. Nada a comprar.</p>';
-                textoWA = '';
-                return;
-            }
-
-            let total = 0;
-            const rows = itens.map(i => {
-                total += i.custo_estimado;
-                return `<tr>
-                    <td>${i.nome}</td>
-                    <td align="right">${i.demanda_total.toFixed(3)} ${i.unidade_medida}</td>
-                    <td align="right">${i.estoque_atual}</td>
-                    <td align="right"><strong>${i.quantidade_comprar.toFixed(3)} ${i.unidade_medida}</strong></td>
-                    <td align="right">R$ ${i.custo_estimado.toFixed(2)}</td>
-                </tr>`;
-            }).join('');
-
-            document.getElementById('tabela-compras').innerHTML = `
-                <table>
-                    <thead><tr><th>Insumo</th><th align="right">Demanda</th><th align="right">Estoque</th><th align="right">Comprar</th><th align="right">Custo</th></tr></thead>
-                    <tbody>${rows}</tbody>
-                    <tfoot><tr style="font-weight:bold;background:#f8fafc;"><td colspan="4" align="right">Total</td><td align="right">R$ ${total.toFixed(2)}</td></tr></tfoot>
-                </table>`;
-
-            textoWA = '🛒 *COMPRAS — ERP Fábrica*\n' + itens.map(i => `• ${i.nome}: ${i.quantidade_comprar.toFixed(3)} ${i.unidade_medida}`).join('\n');
-        } catch (e) {
-            document.getElementById('tabela-compras').innerHTML = '<p style="color:#ef4444">Erro ao conectar na API (porta 3001).</p>';
+    async function testarConexao() {
+      const status = document.getElementById('api-status');
+      try {
+        const res = await fetch(`${API_URL}/status`);
+        if (res.ok) {
+          status.textContent = 'API Online';
+          status.className = 'api-online';
+        } else {
+          throw new Error();
         }
+      } catch {
+        status.textContent = 'API Offline (Modo Demo)';
+        status.className = 'api-offline';
+      }
     }
 
-    function whatsapp() {
-        if (!textoWA) return alert('Nada para enviar.');
-        window.open('https://wa.me/?text=' + encodeURIComponent(textoWA), '_blank');
+    // Carregar OPs programadas para a data selecionada
+    async function carregarOPsDoDia() {
+      const dataStr = document.getElementById('data-busca').value;
+      const listEl = document.getElementById('ops-list');
+      const countEl = document.getElementById('ops-count');
+
+      try {
+        const res = await fetch(`${API_URL}/producao/programadas-hoje?data=${dataStr}`);
+        if (!res.ok) throw new Error();
+        OPsHoje = await res.json();
+      } catch (e) {
+        // Fallback demo
+        OPsHoje = [
+          { op_id: 10, produto: 'Coxinha de Frango', produto_id: 1, quantidade_planejada: 220, colaborador_nome: 'Maria Silva', meta_diaria_individual: 350, peso_produtividade: 1.0 },
+          { op_id: 12, produto: 'Pão de Queijo', produto_id: 3, quantidade_planejada: 150, colaborador_nome: 'João Santos', meta_diaria_individual: 400, peso_produtividade: 0.8 },
+          { op_id: 15, produto: 'Pastel de Carne', produto_id: 5, quantidade_planejada: 80, colaborador_nome: 'Ana Costa', meta_diaria_individual: 350, peso_produtividade: 1.0 }
+        ];
+      }
+
+      countEl.textContent = `${OPsHoje.length} OPs`;
+
+      if (OPsHoje.length === 0) {
+        listEl.innerHTML = '<div class="no-ops">Nenhuma OP programada para hoje.</div>';
+        resetCalculadora();
+        return;
+      }
+
+      listEl.innerHTML = OPsHoje.map(op => `
+        <div class="op-item" id="op-item-${op.op_id}" onclick="selecionarOP(${op.op_id})">
+          <div class="op-id">OP-${String(op.op_id).padStart(3, '0')}</div>
+          <div class="op-product">${op.produto}</div>
+          <div class="op-details">
+            <span>Qtd: <strong>${op.quantidade_planejada} un</strong></span>
+            <span>👤 ${op.colaborador_nome || 'Sem operador'}</span>
+          </div>
+        </div>
+      `).join('');
+
+      // Auto-seleciona a primeira OP
+      selecionarOP(OPsHoje[0].op_id);
     }
 
-    carregar();
-</script>
+    // Resetar view da calculadora
+    function resetCalculadora() {
+      document.getElementById('calc-placeholder').style.display = 'flex';
+      document.getElementById('calc-content').style.display = 'none';
+      OPSelecionada = null;
+      produtoSelecionado = null;
+    }
+
+    // Selecionar uma OP
+    async function selecionarOP(opId) {
+      // Remove class active de todos
+      document.querySelectorAll('.op-item').forEach(el => el.classList.remove('active'));
+      const activeEl = document.getElementById(`op-item-${opId}`);
+      if (activeEl) activeEl.classList.add('active');
+
+      OPSelecionada = OPsHoje.find(op => op.op_id === opId);
+      if (!OPSelecionada) return;
+
+      // Buscar produto com ficha técnica do backend
+      try {
+        const res = await fetch(`${API_URL}/produtos/${OPSelecionada.produto_id}`);
+        if (!res.ok) throw new Error();
+        produtoSelecionado = await res.json();
+      } catch (e) {
+        // Fallback demo ficha técnica
+        produtoSelecionado = {
+          id: OPSelecionada.produto_id,
+          nome: OPSelecionada.produto,
+          ficha_tecnica_insumos: [
+            { insumo_id: 1, nome: 'Farinha de Trigo', quantidade: 0.05, unidade_medida: 'kg' },
+            { insumo_id: 2, nome: 'Água', quantidade: 0.03, unidade_medida: 'l' },
+            { insumo_id: 3, nome: 'Recheio de Frango Temperado', quantidade: 0.04, unidade_medida: 'kg' }
+          ],
+          ficha_tecnica_embalagens: [
+            { embalagem_id: 1, nome: 'Caixa de Salgados Congelados (Cap: 50 un)', quantidade: 1 }
+          ]
+        };
+      }
+
+      // Preencher campos
+      document.getElementById('calc-title').textContent = OPSelecionada.produto;
+      document.getElementById('calc-op-info').textContent = `ORDEM DE PRODUÇÃO: OP-${String(OPSelecionada.op_id).padStart(3, '0')} · CATEGORIA: ${OPSelecionada.categoria_producao || 'Geral'}`;
+      document.getElementById('detail-qtd').textContent = `${OPSelecionada.quantidade_planejada} unidades`;
+      document.getElementById('detail-colab').textContent = `${OPSelecionada.colaborador_nome || 'Não alocado'} (Meta: ${OPSelecionada.meta_diaria_individual || 350} pts)`;
+
+      document.getElementById('calc-placeholder').style.display = 'none';
+      document.getElementById('calc-content').style.display = 'block';
+
+      calcularDivisaoBateladas();
+    }
+
+    // Calcular bateladas/panelas e explodir ingredientes
+    function calcularDivisaoBateladas() {
+      if (!OPSelecionada || !produtoSelecionado) return;
+
+      const qtdTotal = OPSelecionada.quantidade_planejada;
+      const capBatelada = parseInt(document.getElementById('batch-cap').value, 10) || 50;
+
+      const container = document.getElementById('bateladas-container');
+      container.innerHTML = '';
+
+      const numBateladasInteiras = Math.floor(qtdTotal / capBatelada);
+      const saldoRestante = qtdTotal % capBatelada;
+
+      let indexPanela = 1;
+
+      // 1. Bateladas Padrão
+      for (let i = 0; i < numBateladasInteiras; i++) {
+        container.appendChild(criarBateladaCard(indexPanela++, capBatelada));
+      }
+
+      // 2. Batelada de Saldo (se sobrar)
+      if (saldoRestante > 0) {
+        container.appendChild(criarBateladaCard(indexPanela, saldoRestante, true));
+      }
+    }
+
+    // Criar o card HTML de uma batelada e sua explosão de insumos
+    function criarBateladaCard(index, quantidade, isSaldo = false) {
+      const card = document.createElement('div');
+      card.className = 'batelada-card';
+      
+      const title = isSaldo 
+        ? `Panela #${index} — Saldo Final (${quantidade} un)` 
+        : `Panela #${index} — Batelada Padrão (${quantidade} un)`;
+
+      let rowsHtml = '';
+
+      // Insumos
+      const insumos = produtoSelecionado.ficha_tecnica_insumos || [];
+      insumos.forEach(ins => {
+        const totalKgG = ins.quantidade * quantidade; // Qtd por un * qtd batelada
+        let displayQtd = `${totalKgG.toFixed(3)} ${ins.unidade_medida}`;
+        
+        // Converte kg para g se for pequeno para ajudar a balança do chão de fábrica
+        if (ins.unidade_medida === 'kg' && totalKgG < 1.0) {
+          displayQtd = `${(totalKgG * 1000).toFixed(1)} g`;
+        }
+        
+        rowsHtml += `
+          <tr>
+            <td><strong>${ins.nome}</strong></td>
+            <td>Matéria-prima</td>
+            <td><strong>${displayQtd}</strong></td>
+          </tr>
+        `;
+      });
+
+      // Embalagens (opcional, só mostra se a capacidade coincidir ou se fizer sentido embalar)
+      const embalagens = produtoSelecionado.ficha_tecnica_embalagens || [];
+      embalagens.forEach(emb => {
+        // Se a embalagem é por unidade, faz a multiplicação normal
+        const totalEmb = Math.ceil(emb.quantidade * quantidade);
+        rowsHtml += `
+          <tr>
+            <td><strong>${emb.nome}</strong></td>
+            <td>Embalagem</td>
+            <td><strong>${totalEmb} un</strong></td>
+          </tr>
+        `;
+      });
+
+      card.innerHTML = `
+        <div class="batelada-header">
+          <span>${title}</span>
+          <span style="color:var(--primary)">Produzir batelada de ${quantidade} salgados</span>
+        </div>
+        <table class="ingredient-table">
+          <thead>
+            <tr>
+              <th>Ingrediente</th>
+              <th>Tipo</th>
+              <th>Peso / Qtd Necessária para esta panela</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml || '<tr><td colspan="3" align="center" style="color:var(--text-muted)">Sem ficha técnica cadastrada para este produto.</td></tr>'}
+          </tbody>
+        </table>
+      `;
+
+      return card;
+    }
+
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
 </body>
 </html>

@@ -128,7 +128,7 @@ const comercialController = {
                 valorTotal += item.quantidade * item.preco_unitario;
 
                 const prodResult = await client.query(
-                    'SELECT id, nome, COALESCE(estoque_atual, 0) AS estoque_atual FROM produto WHERE id = $1 FOR UPDATE',
+                    'SELECT id, nome, COALESCE(estoque_atual, 0) AS estoque_atual, categoria FROM produto WHERE id = $1 FOR UPDATE',
                     [item.produto_id]
                 );
                 if (prodResult.rows.length === 0) {
@@ -176,9 +176,9 @@ const comercialController = {
                     }
 
                     const opResult = await client.query(
-                        `INSERT INTO ordem_producao (produto_id, quantidade_planejada, status)
-                         VALUES ($1, $2, 'FILA') RETURNING id`,
-                        [item.produto_id, quantidadeFaltante]
+                        `INSERT INTO ordem_producao (produto_id, quantidade_planejada, status, categoria_producao)
+                         VALUES ($1, $2, 'FILA', $3) RETURNING id`,
+                        [item.produto_id, quantidadeFaltante, produto.categoria || 'Geral']
                     );
 
                     opsGeradas.push({

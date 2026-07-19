@@ -25,8 +25,19 @@ async function runMigrations() {
     `);
     await pool.query(`
         ALTER TABLE produto ADD COLUMN IF NOT EXISTS estoque_atual INT DEFAULT 0;
+        ALTER TABLE produto ADD COLUMN IF NOT EXISTS peso_produtividade FLOAT DEFAULT 1.0;
+        ALTER TABLE produto ADD COLUMN IF NOT EXISTS categoria VARCHAR(50) DEFAULT 'Geral';
+        ALTER TABLE colaborador ADD COLUMN IF NOT EXISTS meta_diaria_individual INT DEFAULT 350;
+        ALTER TABLE ordem_producao ADD COLUMN IF NOT EXISTS categoria_producao VARCHAR(50);
+        ALTER TABLE ordem_producao ADD COLUMN IF NOT EXISTS data_programada DATE;
     `);
-    console.log('✅ Migrações verificadas (receitas, estoque produto)');
+    await pool.query(`
+        UPDATE colaborador SET meta_diaria_individual = meta_diaria WHERE meta_diaria_individual IS NULL;
+        UPDATE ordem_producao SET categoria_producao = (
+            SELECT COALESCE(p.categoria, 'Geral') FROM produto p WHERE p.id = ordem_producao.produto_id
+        ) WHERE categoria_producao IS NULL;
+    `);
+    console.log('✅ Migrações verificadas (receitas, estoque produto, metas e categorias)');
 }
 
 module.exports = { runMigrations };

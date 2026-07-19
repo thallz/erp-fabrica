@@ -33,9 +33,12 @@ const producaoController = {
             const fila = await pool.query(`
                 SELECT op.id AS numero_op, op.produto_id, p.nome AS produto,
                        op.quantidade_planejada, op.status, op.criado_em,
-                       p.estoque_atual AS estoque_camara_fria
+                       p.estoque_atual AS estoque_camara_fria,
+                       op.data_programada, op.colaborador_id, op.categoria_producao,
+                       c.nome AS colaborador_nome, p.peso_produtividade
                 FROM ordem_producao op
                 JOIN produto p ON op.produto_id = p.id
+                LEFT JOIN colaborador c ON op.colaborador_id = c.id
                 WHERE op.status IN ('FILA', 'PRODUZINDO')
                 ORDER BY op.criado_em ASC
             `);
@@ -193,9 +196,9 @@ const producaoController = {
                 });
             }
 
-            // Buscar a meta diária do colaborador
+            // Buscar a meta diária do colaborador (individual)
             const colaborador = await pool.query(
-                'SELECT nome, meta_diaria FROM colaborador WHERE id = $1 AND ativo = TRUE',
+                'SELECT nome, meta_diaria_individual FROM colaborador WHERE id = $1 AND ativo = TRUE',
                 [colaborador_id]
             );
 
@@ -206,26 +209,28 @@ const producaoController = {
                 });
             }
 
-            const metaDiaria = colaborador.rows[0].meta_diaria;
+            const metaDiariaIndividual = colaborador.rows[0].meta_diaria_individual;
             const nomeColaborador = colaborador.rows[0].nome;
 
-            // Buscar quantidade já planejada para o colaborador na data
+            // Buscar quantidade planejada calculada em pontos (qtd * peso) para o colaborador na data
             const opsExistentes = await pool.query(
-                `SELECT SUM(quantidade_planejada) as total_planejado
-                 FROM ordem_producao
-                 WHERE colaborador_id = $1
-                 AND data_programada = $2
-                 AND status != 'CONCLUIDA'`,
+                `SELECT SUM(op.quantidade_planejada * COALESCE(p.peso_produtividade, 1.0)) as total_planejado
+                 FROM ordem_producao op
+                 JOIN produto p ON p.id = op.produto_id
+                 WHERE op.colaborador_id = $1
+                 AND op.data_programada = $2
+                 AND op.status != 'CONCLUIDA'`,
                 [colaborador_id, data_programada]
             );
 
-            const totalPlanejado = parseInt(opsExistentes.rows[0].total_planejado || 0);
+            const totalPlanejado = parseFloat(opsExistentes.rows[0].total_planejado || 0);
 
-            // Buscar quantidade das novas OPs
+            // Buscar quantidade das novas OPs com peso_produtividade
             const novasOps = await pool.query(
-                `SELECT id, quantidade_planejada, produto_id
-                 FROM ordem_producao
-                 WHERE id = ANY($1)`,
+                `SELECT op.id, op.quantidade_planejada, op.produto_id, COALESCE(p.peso_produtividade, 1.0) as peso_produtividade
+                 FROM ordem_producao op
+                 JOIN produto p ON p.id = op.produto_id
+                 WHERE op.id = ANY($1)`,
                 [ops_ids]
             );
 
@@ -236,13 +241,13 @@ const producaoController = {
                 });
             }
 
-            const totalNovasOps = novasOps.rows.reduce((sum, op) => sum + op.quantidade_planejada, 0);
+            const totalNovasOps = novasOps.rows.reduce((sum, op) => sum + (op.quantidade_planejada * parseFloat(op.peso_produtividade)), 0);
             const novoTotal = totalPlanejado + totalNovasOps;
 
             // Verificar se ultrapassa a meta
-            const ultrapassaMeta = novoTotal > metaDiaria;
+            const ultrapassaMeta = novoTotal > metaDiariaIndividual;
             const aviso = ultrapassaMeta
-                ? `⚠️ ALERTA: Alocação ultrapassa meta diária! Atual: ${totalPlanejado}, Novas: ${totalNovasOps}, Total: ${novoTotal}, Meta: ${metaDiaria}. Sobrecarga de ${novoTotal - metaDiaria} unidades.`
+                ? `⚠️ ALERTA: Alocação ultrapassa meta diária! Pontos Planejados: ${totalPlanejado.toFixed(1)}, Novas OPs: ${totalNovasOps.toFixed(1)}, Total: ${novoTotal.toFixed(1)}, Meta: ${metaDiariaIndividual}. Sobrecarga de ${(novoTotal - metaDiariaIndividual).toFixed(1)} pontos.`
                 : null;
 
             // Atualizar as OPs com o colaborador e data programada
@@ -263,7 +268,7 @@ const producaoController = {
                 mensagem: 'Produção planejada com sucesso.',
                 colaborador: nomeColaborador,
                 data_programada,
-                meta_diaria: metaDiaria,
+                meta_diaria_individual: metaDiariaIndividual,
                 total_planejado_anterior: totalPlanejado,
                 total_novas_ops: totalNovasOps,
                 total_geral: novoTotal,
@@ -385,6 +390,37 @@ const producaoController = {
                 itens_comprar,
                 custo_total_estimado
             });
+        } catch (error) {
+            res.status(500).json({ status: 'erro', erro: error.message });
+        }
+    },
+
+    // 7. LISTAR COLABORADORES DA EQUIPE
+    listarColaboradores: async (req, res) => {
+        try {
+            const team = await pool.query('SELECT * FROM colaborador WHERE ativo = TRUE ORDER BY nome ASC');
+            res.json(team.rows);
+        } catch (error) {
+            res.status(500).json({ status: 'erro', erro: error.message });
+        }
+    },
+
+    // 8. LISTAR ORDENS PROGRAMADAS PARA HOJE
+    listarProgramadasHoje: async (req, res) => {
+        try {
+            const data = req.query.data || new Date().toISOString().split('T')[0];
+            const ops = await pool.query(`
+                SELECT op.id AS op_id, op.produto_id, p.nome AS produto,
+                       op.quantidade_planejada, op.status, op.data_programada,
+                       c.nome AS colaborador_nome, c.meta_diaria_individual,
+                       p.peso_produtividade
+                FROM ordem_producao op
+                JOIN produto p ON op.produto_id = p.id
+                LEFT JOIN colaborador c ON op.colaborador_id = c.id
+                WHERE op.data_programada = $1
+                ORDER BY op.id ASC
+            `, [data]);
+            res.json(ops.rows);
         } catch (error) {
             res.status(500).json({ status: 'erro', erro: error.message });
         }

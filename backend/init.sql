@@ -27,7 +27,9 @@ CREATE TABLE produto (
     preco_venda DECIMAL(10, 2) NOT NULL,
     cmv_estimado DECIMAL(10, 2), -- Atualizado via API toda vez que um insumo muda de preço
     margem_contribuicao DECIMAL(5, 2), -- Porcentagem (%)
-    estoque_atual INT DEFAULT 0 -- Câmara Fria (produto acabado)
+    estoque_atual INT DEFAULT 0, -- Câmara Fria (produto acabado)
+    peso_produtividade FLOAT DEFAULT 1.0,
+    categoria VARCHAR(50) DEFAULT 'Geral'
 );
 
 -- 4. FICHAS TÉCNICAS (A "Receita" do Produto para Cálculo em Cascata)
@@ -86,6 +88,7 @@ CREATE TABLE colaborador (
     id SERIAL PRIMARY KEY,
     nome VARCHAR(100) NOT NULL,
     meta_diaria INT DEFAULT 350, -- Meta padrão de 350 unidades por dia
+    meta_diaria_individual INT DEFAULT 350,
     ativo BOOLEAN DEFAULT TRUE,
     criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -107,6 +110,7 @@ CREATE TABLE ordem_producao (
     data_fim TIMESTAMP,
     colaborador_id INT REFERENCES colaborador(id), -- Colaborador responsável
     data_programada DATE, -- Data planejada para produção
+    categoria_producao VARCHAR(50),
     criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
