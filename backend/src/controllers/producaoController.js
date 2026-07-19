@@ -1,5 +1,31 @@
 const pool = require('../config/db');
 
+async function explodirReceitaRec(client, receitaId, pesoNecessarioKg, insumosAcumulados = {}) {
+    const items = await client.query(
+        'SELECT * FROM receita_item WHERE receita_id = $1',
+        [receitaId]
+    );
+    const recRes = await client.query('SELECT peso_total FROM receita WHERE id = $1', [receitaId]);
+    const pesoTotalReceita = parseFloat(recRes.rows[0]?.peso_total || 10.0);
+    const scaleFactor = pesoTotalReceita > 0 ? (pesoNecessarioKg / pesoTotalReceita) : 0;
+
+    for (const item of items.rows) {
+        const qtdKg = (parseFloat(item.quantidade_gramas) / 1000.0) * scaleFactor;
+        if (item.tipo_origem === 'materia') {
+            if (!insumosAcumulados[item.origem_id]) {
+                insumosAcumulados[item.origem_id] = {
+                    nome: item.nome,
+                    quantidade_total: 0
+                };
+            }
+            insumosAcumulados[item.origem_id].quantidade_total += qtdKg;
+        } else if (item.tipo_origem === 'receita') {
+            await explodirReceitaRec(client, item.origem_id, qtdKg, insumosAcumulados);
+        }
+    }
+    return insumosAcumulados;
+}
+
 async function explodirEPrefabricarOPs(client, montagemOpId, produtoId, quantidadeMontagem) {
     const receitasExigidas = await client.query(
         `SELECT receita_id, quantidade_necessaria FROM ficha_tecnica_receita WHERE produto_id = $1`,
@@ -52,13 +78,16 @@ const producaoController = {
             const { produto_id, quantidade_planejada } = req.body;
 
             const ficha = await pool.query(
-                'SELECT COUNT(*)::int AS total FROM ficha_tecnica_insumo WHERE produto_id = $1',
+                `SELECT 
+                    (SELECT COUNT(*)::int FROM ficha_tecnica_insumo WHERE produto_id = $1) +
+                    (SELECT COUNT(*)::int FROM ficha_tecnica_embalagem WHERE produto_id = $1) +
+                    (SELECT COUNT(*)::int FROM ficha_tecnica_receita WHERE produto_id = $1) AS total`,
                 [produto_id]
             );
             if (ficha.rows[0].total === 0) {
                 return res.status(400).json({
                     status: 'erro',
-                    erro: 'Produto sem ficha técnica. Cadastre a engenharia antes de alocar produção.'
+                    erro: 'Produto sem ficha técnica cadastrada (receitas, insumos ou embalagens).'
                 });
             }
 
@@ -211,43 +240,92 @@ const producaoController = {
             }
 
             // Caso padrão: MONTAGEM (Produto Final)
+            // 1. Obter direct insumos
             const fichasInsumo = await pool.query(`
                 SELECT fti.insumo_id, fti.quantidade, i.nome, i.unidade_medida,
-                       i.estoque_atual, i.custo_unitario
+                       i.estoque_atual
                 FROM ficha_tecnica_insumo fti
                 JOIN insumo i ON i.id = fti.insumo_id
                 WHERE fti.produto_id = $1
             `, [opData.produto_id]);
 
+            // 2. Obter direct embalagens
             const fichasEmb = await pool.query(`
-                SELECT fte.embalagem_id, fte.quantidade, e.nome, e.estoque_atual, e.custo_unitario
+                SELECT fte.embalagem_id, fte.quantidade, e.nome, e.estoque_atual
                 FROM ficha_tecnica_embalagem fte
                 JOIN embalagem e ON e.id = fte.embalagem_id
                 WHERE fte.produto_id = $1
             `, [opData.produto_id]);
 
-            // Verificar insumos
-            for (const f of fichasInsumo.rows) {
-                const qtdNecessaria = parseFloat(f.quantidade) * opData.quantidade_planejada;
-                const qtdDisponivel = parseFloat(f.estoque_atual);
-                const falta = qtdNecessaria - qtdDisponivel;
+            // 3. Obter receitas e explodir recursivamente
+            const fichasReceita = await pool.query(`
+                SELECT receita_id, quantidade_necessaria 
+                FROM ficha_tecnica_receita 
+                WHERE produto_id = $1
+            `, [opData.produto_id]);
 
+            // Demanda acumulada de insumos
+            const demandasInsumos = {};
+            
+            // Adicionar insumos diretos
+            for (const f of fichasInsumo.rows) {
+                if (!demandasInsumos[f.insumo_id]) {
+                    demandasInsumos[f.insumo_id] = {
+                        nome: f.nome,
+                        quantidade_total: 0,
+                        estoque_atual: parseFloat(f.estoque_atual || 0),
+                        unidade_medida: f.unidade_medida || 'kg'
+                    };
+                }
+                demandasInsumos[f.insumo_id].quantidade_total += parseFloat(f.quantidade) * opData.quantidade_planejada;
+            }
+
+            // Explodir receitas
+            for (const r of fichasReceita.rows) {
+                const pesoReceitaKg = parseFloat(r.quantidade_necessaria) * opData.quantidade_planejada;
+                const acumulador = {};
+                await explodirReceitaRec(pool, r.receita_id, pesoReceitaKg, acumulador);
+
+                for (const insumoId of Object.keys(acumulador)) {
+                    const item = acumulador[insumoId];
+                    if (!demandasInsumos[insumoId]) {
+                        // Buscar estoque do insumo
+                        const insEst = await pool.query('SELECT nome, estoque_atual, unidade_medida FROM insumo WHERE id = $1', [insumoId]);
+                        if (insEst.rows.length > 0) {
+                            demandasInsumos[insumoId] = {
+                                nome: insEst.rows[0].nome,
+                                quantidade_total: 0,
+                                estoque_atual: parseFloat(insEst.rows[0].estoque_atual || 0),
+                                unidade_medida: insEst.rows[0].unidade_medida || 'kg'
+                            };
+                        }
+                    }
+                    if (demandasInsumos[insumoId]) {
+                        demandasInsumos[insumoId].quantidade_total += item.quantidade_total;
+                    }
+                }
+            }
+
+            // Verificar impedimentos dos insumos acumulados
+            for (const insumoId of Object.keys(demandasInsumos)) {
+                const item = demandasInsumos[insumoId];
+                const falta = item.quantidade_total - item.estoque_atual;
                 if (falta > 0) {
                     impedimentos.push({
                         tipo: 'insumo',
-                        nome: f.nome,
-                        necessario: qtdNecessaria.toFixed(4),
-                        disponivel: qtdDisponivel.toFixed(4),
+                        nome: item.nome,
+                        necessario: item.quantidade_total.toFixed(4),
+                        disponivel: item.estoque_atual.toFixed(4),
                         falta: falta.toFixed(4),
-                        unidade: f.unidade_medida
+                        unidade: item.unidade_medida
                     });
                 }
             }
 
-            // Verificar embalagens
+            // Verificar impedimentos das embalagens diretas
             for (const e of fichasEmb.rows) {
                 const qtdNecessaria = parseInt(e.quantidade, 10) * opData.quantidade_planejada;
-                const qtdDisponivel = parseInt(e.estoque_atual, 10);
+                const qtdDisponivel = parseInt(e.estoque_atual || 0, 10);
                 const falta = qtdNecessaria - qtdDisponivel;
 
                 if (falta > 0) {
@@ -262,9 +340,8 @@ const producaoController = {
                 }
             }
 
-            // Verificar se tem ficha técnica
-            if (fichasInsumo.rows.length === 0 && fichasEmb.rows.length === 0) {
-                avisos.push('Produto sem ficha técnica cadastrada');
+            if (fichasInsumo.rows.length === 0 && fichasEmb.rows.length === 0 && fichasReceita.rows.length === 0) {
+                avisos.push('Produto sem ficha técnica cadastrada.');
             }
 
             const temImpedimentos = impedimentos.length > 0;
@@ -415,7 +492,13 @@ const producaoController = {
                     WHERE fte.produto_id = $1
                 `, [op.produto_id]);
 
-                if (fichasInsumo.rows.length === 0 && fichasEmb.rows.length === 0) {
+                const fichasReceita = await pool.query(`
+                    SELECT receita_id, quantidade_necessaria 
+                    FROM ficha_tecnica_receita 
+                    WHERE produto_id = $1
+                `, [op.produto_id]);
+
+                if (fichasInsumo.rows.length === 0 && fichasEmb.rows.length === 0 && fichasReceita.rows.length === 0) {
                     avisos.push(`"${op.produto_nome}" (OP #${op.id}): sem ficha técnica — explosão ignorada.`);
                 }
 
@@ -425,6 +508,7 @@ const producaoController = {
                     quantidade_planejada: op.quantidade_planejada
                 });
 
+                // Insumos diretos
                 for (const f of fichasInsumo.rows) {
                     const qtdNecessaria = parseFloat(f.quantidade) * op.quantidade_planejada * multiplicador;
                     if (!demandaInsumos[f.insumo_id]) {
@@ -440,6 +524,35 @@ const producaoController = {
                     demandaInsumos[f.insumo_id].demanda_total += qtdNecessaria;
                 }
 
+                // Receitas explodidas
+                for (const r of fichasReceita.rows) {
+                    const pesoReceitaKg = parseFloat(r.quantidade_necessaria) * op.quantidade_planejada * multiplicador;
+                    const acumulador = {};
+                    await explodirReceitaRec(pool, r.receita_id, pesoReceitaKg, acumulador);
+
+                    for (const insumoId of Object.keys(acumulador)) {
+                        const item = acumulador[insumoId];
+                        if (!demandaInsumos[insumoId]) {
+                            // Buscar estoque e custo do insumo
+                            const insEst = await pool.query('SELECT nome, estoque_atual, custo_unitario, unidade_medida FROM insumo WHERE id = $1', [insumoId]);
+                            if (insEst.rows.length > 0) {
+                                demandaInsumos[insumoId] = {
+                                    insumo_id: parseInt(insumoId, 10),
+                                    nome: insEst.rows[0].nome,
+                                    unidade_medida: insEst.rows[0].unidade_medida || 'kg',
+                                    estoque_atual: parseFloat(insEst.rows[0].estoque_atual || 0),
+                                    custo_unitario: parseFloat(insEst.rows[0].custo_unitario || 0),
+                                    demanda_total: 0
+                                };
+                            }
+                        }
+                        if (demandaInsumos[insumoId]) {
+                            demandaInsumos[insumoId].demanda_total += item.quantidade_total;
+                        }
+                    }
+                }
+
+                // Embalagens diretas
                 for (const e of fichasEmb.rows) {
                     const qtdNecessaria = parseInt(e.quantidade, 10) * op.quantidade_planejada * multiplicador;
                     if (!demandaEmbalagens[e.embalagem_id]) {
@@ -447,8 +560,8 @@ const producaoController = {
                             embalagem_id: e.embalagem_id,
                             nome: e.nome,
                             unidade_medida: 'un',
-                            estoque_atual: parseInt(e.estoque_atual, 10),
-                            custo_unitario: parseFloat(e.custo_unitario),
+                            estoque_atual: parseInt(e.estoque_atual || 0, 10),
+                            custo_unitario: parseFloat(e.custo_unitario || 0),
                             demanda_total: 0
                         };
                     }

@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Clientes — ERP Fabrica</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/global.css" />
+  <style>
+    .toolbar {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 20px; flex-wrap: wrap;
+    }
+    .toolbar .search-bar { flex: 1; max-width: 380px; }
+    .toolbar-right { margin-left: auto; }
+
+    .action-icons { display: flex; gap: 8px; }
+    .action-icons button {
+      width: 28px; height: 28px;
+      display: flex; align-items: center; justify-content: center;
+      border: 1px solid var(--border); border-radius: 6px;
+      background: var(--surface); cursor: pointer;
+      color: var(--text-secondary);
+      transition: all 0.12s;
+    }
+    .action-icons button:hover { border-color: var(--brand); color: var(--brand); }
+    .action-icons button.red:hover { border-color: var(--red); color: var(--red); }
+  </style>
+</head>
+<body>
+<div class="erp-shell">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <span>ERP Fabrica</span>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-label">Menu Principal</div>
+      <a href="almoxarifado.html" class="nav-link">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+        📦 Almoxarifado
+      </a>
+      <a href="receitas.html" class="nav-link">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+        👨🍳 Receitas
+      </a>
+      <a href="produtos.html" class="nav-link">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+        🍰 Produtos Finais
+      </a>
+      <a href="clientes.html" class="nav-link active">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        👥 Clientes
+      </a>
+      <a href="vendas.html" class="nav-link">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        💰 Lançar Vendas
+      </a>
+      <a href="planejamento.html" class="nav-link">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        📅 Planejamento de Produção (Maestro)
+      </a>
+    </nav>
+  </aside>
+
+  <!-- MAIN WRAPPER -->
+  <div class="main-wrap">
+    <header class="topbar">
+      <h2>👥 Clientes (Cadastro Geral)</h2>
+      <div class="topbar-right">
+        <span class="badge-offline" id="connection-status">Online</span>
+      </div>
+    </header>
+
+    <div class="content-body">
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <input type="text" id="input-busca" class="search-bar" placeholder="Buscar cliente..." oninput="filtrar()" />
+        <div class="toolbar-right">
+          <button class="btn btn-brand" onclick="abrirDrawer()">+ Novo Cliente</button>
+        </div>
+      </div>
+
+      <!-- Tabela -->
+      <div class="card">
+        <div class="card-body" style="padding:0">
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Razão Social</th>
+                  <th>CNPJ</th>
+                  <th>Telefone</th>
+                  <th style="text-align:center; width:120px">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="clientes-tbody">
+                <tr><td colspan="5" style="text-align:center;padding:30px;color:var(--text-muted)">Carregando...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Drawer lateral para Cadastro / Edição -->
+  <div class="slide-over" id="drawer-form">
+    <div class="slide-over-header">
+      <h3 id="drawer-titulo">Novo Cliente</h3>
+      <button class="slide-over-close" onclick="fecharDrawer()">&times;</button>
+    </div>
+    <div class="slide-over-body">
+      <form id="form-cliente" onsubmit="salvarCliente(event)">
+        <input type="hidden" id="cliente-id" />
+        
+        <div class="form-group">
+          <label>Razão Social / Nome</label>
+          <input type="text" id="cliente-razao" required placeholder="Ex: Padaria Bella Vista Ltda" />
+        </div>
+
+        <div class="form-group">
+          <label>CNPJ</label>
+          <input type="text" id="cliente-cnpj" required placeholder="Ex: 00.000.000/0001-00" />
+        </div>
+
+        <div class="form-group">
+          <label>Telefone</label>
+          <input type="text" id="cliente-telefone" required placeholder="Ex: (11) 99999-9999" />
+        </div>
+
+        <div style="margin-top: 24px; display:flex; gap:10px">
+          <button type="submit" class="btn btn-brand" style="flex:1">Salvar</button>
+          <button type="button" class="btn btn-outline" onclick="fecharDrawer()" style="flex:1">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const API_URL = 'http://localhost:3001/api/clientes';
+  let todosClientes = [];
+
+  async function carregarClientes() {
+    try {
+      const res = await fetch(API_URL);
+      todosClientes = await res.json();
+      renderizar(todosClientes);
+    } catch (e) {
+      console.error(e);
+      document.getElementById('clientes-tbody').innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--red)">Erro ao carregar dados do servidor.</td></tr>`;
+    }
+  }
+
+  function renderizar(lista) {
+    const tbody = document.getElementById('clientes-tbody');
+    if (lista.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--text-muted)">Nenhum cliente cadastrado.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = lista.map(c => `
+      <tr>
+        <td><strong>#${c.id}</strong></td>
+        <td>${c.razao_social}</td>
+        <td><code>${c.cnpj}</code></td>
+        <td>${c.telefone}</td>
+        <td style="text-align:center">
+          <div class="action-icons" style="justify-content:center">
+            <button onclick="editarCliente(${c.id})" title="Editar"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+            <button class="red" onclick="excluirCliente(${c.id})" title="Excluir"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  function filtrar() {
+    const query = document.getElementById('input-busca').value.toLowerCase();
+    const filtrados = todosClientes.filter(c => c.razao_social.toLowerCase().includes(query) || c.cnpj.includes(query));
+    renderizar(filtrados);
+  }
+
+  function abrirDrawer(id = null) {
+    const drawer = document.getElementById('drawer-form');
+    drawer.classList.add('open');
+    
+    if (id) {
+      document.getElementById('drawer-titulo').innerText = 'Editar Cliente';
+      const item = todosClientes.find(c => c.id === id);
+      document.getElementById('cliente-id').value = item.id;
+      document.getElementById('cliente-razao').value = item.razao_social;
+      document.getElementById('cliente-cnpj').value = item.cnpj;
+      document.getElementById('cliente-telefone').value = item.telefone;
+    } else {
+      document.getElementById('drawer-titulo').innerText = 'Novo Cliente';
+      document.getElementById('form-cliente').reset();
+      document.getElementById('cliente-id').value = '';
+    }
+  }
+
+  fecharDrawer = () => {
+    document.getElementById('drawer-form').classList.remove('open');
+  }
+
+  async function salvarCliente(e) {
+    e.preventDefault();
+    const id = document.getElementById('cliente-id').value;
+    const body = {
+      razao_social: document.getElementById('cliente-razao').value,
+      cnpj: document.getElementById('cliente-cnpj').value,
+      telefone: document.getElementById('cliente-telefone').value
+    };
+
+    try {
+      let res;
+      if (id) {
+        res = await fetch(`${API_URL}/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+      } else {
+        res = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+      }
+
+      if (res.ok) {
+        fecharDrawer();
+        carregarClientes();
+      } else {
+        const data = await res.json();
+        alert('Erro ao salvar cliente: ' + data.erro);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Erro de conexão ao salvar.');
+    }
+  }
+
+  async function excluirCliente(id) {
+    if (!confirm('Deseja realmente excluir este cliente?')) return;
+    try {
+      const res = await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        carregarClientes();
+      } else {
+        const data = await res.json();
+        alert('Erro ao excluir: ' + data.erro);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  window.onload = carregarClientes;
+</script>
+</body>
+</html>

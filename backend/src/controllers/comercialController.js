@@ -89,6 +89,20 @@ const comercialController = {
         }
     },
 
+    // 2c. EXCLUIR CLIENTE
+    excluirCliente: async (req, res) => {
+        try {
+            const { id } = req.params;
+            const result = await pool.query('DELETE FROM cliente WHERE id = $1 RETURNING id', [id]);
+            if (result.rows.length === 0) {
+                return res.status(404).json({ status: 'erro', erro: 'Cliente não encontrado' });
+            }
+            res.json({ status: 'sucesso', id: result.rows[0].id });
+        } catch (error) {
+            res.status(500).json({ status: 'erro', erro: error.message });
+        }
+    },
+
     // 3. LISTAR PEDIDOS
     listarPedidos: async (req, res) => {
         try {
@@ -212,7 +226,10 @@ const comercialController = {
 
                 if (quantidadeFaltante > 0) {
                     const ficha = await client.query(
-                        'SELECT COUNT(*)::int AS total FROM ficha_tecnica_insumo WHERE produto_id = $1',
+                        `SELECT 
+                            (SELECT COUNT(*)::int FROM ficha_tecnica_insumo WHERE produto_id = $1) +
+                            (SELECT COUNT(*)::int FROM ficha_tecnica_embalagem WHERE produto_id = $1) +
+                            (SELECT COUNT(*)::int FROM ficha_tecnica_receita WHERE produto_id = $1) AS total`,
                         [item.produto_id]
                     );
                     if (ficha.rows[0].total === 0) {

@@ -1,5 +1,28 @@
 const pool = require('../config/db');
 
+async function explodirReceitaRec(client, receitaId, pesoNecessarioKg, insumosAcumulados = {}) {
+    const items = await client.query(
+        'SELECT * FROM receita_item WHERE receita_id = $1',
+        [receitaId]
+    );
+    const recRes = await client.query('SELECT peso_total FROM receita WHERE id = $1', [receitaId]);
+    const pesoTotalReceita = parseFloat(recRes.rows[0]?.peso_total || 10.0);
+    const scaleFactor = pesoTotalReceita > 0 ? (pesoNecessarioKg / pesoTotalReceita) : 0;
+
+    for (const item of items.rows) {
+        const qtdKg = (parseFloat(item.quantidade_gramas) / 1000.0) * scaleFactor;
+        if (item.tipo_origem === 'materia') {
+            if (!insumosAcumulados[item.origem_id]) {
+                insumosAcumulados[item.origem_id] = 0;
+            }
+            insumosAcumulados[item.origem_id] += qtdKg;
+        } else if (item.tipo_origem === 'receita') {
+            await explodirReceitaRec(client, item.origem_id, qtdKg, insumosAcumulados);
+        }
+    }
+    return insumosAcumulados;
+}
+
 async function explodirEPrefabricarOPs(client, montagemOpId, produtoId, quantidadeMontagem) {
     const receitasExigidas = await client.query(
         `SELECT receita_id, quantidade_necessaria FROM ficha_tecnica_receita WHERE produto_id = $1`,
@@ -239,66 +262,112 @@ const planejamentoController = {
                 return res.status(400).json({ status: 'erro', erro: 'data_inicio e data_fim (formato YYYY-MM-DD) são obrigatórios' });
             }
 
-            // Insumos
-            const insumosRes = await pool.query(`
-                SELECT fti.insumo_id AS id, i.nome, i.unidade_medida, 
-                       SUM(fti.quantidade * op.quantidade_planejada) AS demanda, 
-                       COALESCE(i.estoque_atual, 0.0) AS estoque_atual
-                FROM ordem_producao op
-                JOIN ficha_tecnica_insumo fti ON fti.produto_id = op.produto_id
-                JOIN insumo i ON i.id = fti.insumo_id
-                WHERE op.data_programada >= $1 AND op.data_programada <= $2
-                AND op.status != 'CONCLUIDA'
-                GROUP BY fti.insumo_id, i.nome, i.unidade_medida, i.estoque_atual
-                ORDER BY i.nome ASC
-            `, [data_inicio, data_fim]);
+            // 1. Obter todas as OPs agendadas no período e que não estão concluídas
+            const opsRes = await pool.query(
+                `SELECT id, produto_id, quantidade_planejada 
+                 FROM ordem_producao 
+                 WHERE data_programada >= $1 AND data_programada <= $2
+                 AND status != 'CONCLUIDA'`,
+                [data_inicio, data_fim]
+            );
 
-            // Embalagens
-            const embalagensRes = await pool.query(`
-                SELECT fte.embalagem_id AS id, e.nome, 
-                       SUM(fte.quantidade * op.quantidade_planejada) AS demanda, 
-                       COALESCE(e.estoque_atual, 0) AS estoque_atual
-                FROM ordem_producao op
-                JOIN ficha_tecnica_embalagem fte ON fte.produto_id = op.produto_id
-                JOIN embalagem e ON e.id = fte.embalagem_id
-                WHERE op.data_programada >= $1 AND op.data_programada <= $2
-                AND op.status != 'CONCLUIDA'
-                GROUP BY fte.embalagem_id, e.nome, e.estoque_atual
-                ORDER BY e.nome ASC
-            `, [data_inicio, data_fim]);
+            const demandasInsumos = {};
+            const demandasEmbalagens = {};
 
-            const itens = [];
-            
-            for (const r of insumosRes.rows) {
-                const demanda = parseFloat(r.demanda);
-                const estoque = parseFloat(r.estoque_atual);
-                const falta = Math.max(0, demanda - estoque);
-                itens.push({
-                    tipo: 'insumo',
-                    id: r.id,
-                    nome: r.nome,
-                    unidade: r.unidade_medida,
-                    demanda: parseFloat(demanda.toFixed(4)),
-                    estoque_atual: estoque,
-                    falta: parseFloat(falta.toFixed(4)),
-                    comprar_urgente: falta > 0
-                });
+            for (const op of opsRes.rows) {
+                const qtd = op.quantidade_planejada;
+
+                // Ficha técnica insumos diretos
+                const insumos = await pool.query(
+                    `SELECT insumo_id, quantidade FROM ficha_tecnica_insumo WHERE produto_id = $1`,
+                    [op.produto_id]
+                );
+                for (const ins of insumos.rows) {
+                    if (!demandasInsumos[ins.insumo_id]) {
+                        demandasInsumos[ins.insumo_id] = 0;
+                    }
+                    demandasInsumos[ins.insumo_id] += parseFloat(ins.quantidade) * qtd;
+                }
+
+                // Ficha técnica receitas (explosão recursiva)
+                const receitas = await pool.query(
+                    `SELECT receita_id, quantidade_necessaria FROM ficha_tecnica_receita WHERE produto_id = $1`,
+                    [op.produto_id]
+                );
+                for (const rec of receitas.rows) {
+                    const pesoReceitaKg = parseFloat(rec.quantidade_necessaria) * qtd;
+                    const acumulador = {};
+                    await explodirReceitaRec(pool, rec.receita_id, pesoReceitaKg, acumulador);
+
+                    for (const insumoId of Object.keys(acumulador)) {
+                        if (!demandasInsumos[insumoId]) {
+                            demandasInsumos[insumoId] = 0;
+                        }
+                        demandasInsumos[insumoId] += acumulador[insumoId];
+                    }
+                }
+
+                // Ficha técnica embalagens
+                const embalagens = await pool.query(
+                    `SELECT embalagem_id, quantidade FROM ficha_tecnica_embalagem WHERE produto_id = $1`,
+                    [op.produto_id]
+                );
+                for (const emb of embalagens.rows) {
+                    if (!demandasEmbalagens[emb.embalagem_id]) {
+                        demandasEmbalagens[emb.embalagem_id] = 0;
+                    }
+                    demandasEmbalagens[emb.embalagem_id] += parseFloat(emb.quantidade) * qtd;
+                }
             }
 
-            for (const r of embalagensRes.rows) {
-                const demanda = parseInt(r.demanda, 10);
-                const estoque = parseInt(r.estoque_atual, 10);
-                const falta = Math.max(0, demanda - estoque);
-                itens.push({
-                    tipo: 'embalagem',
-                    id: r.id,
-                    nome: r.nome,
-                    unidade: 'un',
-                    demanda,
-                    estoque_atual: estoque,
-                    falta,
-                    comprar_urgente: falta > 0
-                });
+            const itens = [];
+
+            // Buscar informações completas de insumos demandados
+            if (Object.keys(demandasInsumos).length > 0) {
+                const ids = Object.keys(demandasInsumos).map(Number);
+                const insumosInfo = await pool.query(
+                    `SELECT id, nome, estoque_atual, unidade_medida FROM insumo WHERE id = ANY($1) ORDER BY nome ASC`,
+                    [ids]
+                );
+                for (const r of insumosInfo.rows) {
+                    const demanda = demandasInsumos[r.id];
+                    const estoque = parseFloat(r.estoque_atual || 0);
+                    const falta = Math.max(0, demanda - estoque);
+                    itens.push({
+                        tipo: 'insumo',
+                        id: r.id,
+                        nome: r.nome,
+                        unidade: r.unidade_medida,
+                        demanda: parseFloat(demanda.toFixed(4)),
+                        estoque_atual: estoque,
+                        falta: parseFloat(falta.toFixed(4)),
+                        comprar_urgente: falta > 0
+                    });
+                }
+            }
+
+            // Buscar informações completas de embalagens demandadas
+            if (Object.keys(demandasEmbalagens).length > 0) {
+                const ids = Object.keys(demandasEmbalagens).map(Number);
+                const embalagensInfo = await pool.query(
+                    `SELECT id, nome, estoque_atual FROM embalagem WHERE id = ANY($1) ORDER BY nome ASC`,
+                    [ids]
+                );
+                for (const r of embalagensInfo.rows) {
+                    const demanda = demandasEmbalagens[r.id];
+                    const estoque = parseInt(r.estoque_atual || 0, 10);
+                    const falta = Math.max(0, demanda - estoque);
+                    itens.push({
+                        tipo: 'embalagem',
+                        id: r.id,
+                        nome: r.nome,
+                        unidade: 'un',
+                        demanda: parseFloat(demanda.toFixed(4)),
+                        estoque_atual: estoque,
+                        falta: parseFloat(falta.toFixed(4)),
+                        comprar_urgente: falta > 0
+                    });
+                }
             }
 
             res.json({
@@ -631,7 +700,7 @@ const planejamentoController = {
             for (const op of opsRes.rows) {
                 const qtd = op.quantidade_planejada;
 
-                // Ficha técnica insumos
+                // Ficha técnica insumos diretos
                 const insumos = await pool.query(
                     `SELECT insumo_id, quantidade FROM ficha_tecnica_insumo WHERE produto_id = $1`,
                     [op.produto_id]
@@ -641,6 +710,24 @@ const planejamentoController = {
                         demandasInsumos[ins.insumo_id] = 0;
                     }
                     demandasInsumos[ins.insumo_id] += parseFloat(ins.quantidade) * qtd;
+                }
+
+                // Ficha técnica receitas (explosão recursiva)
+                const receitas = await pool.query(
+                    `SELECT receita_id, quantidade_necessaria FROM ficha_tecnica_receita WHERE produto_id = $1`,
+                    [op.produto_id]
+                );
+                for (const rec of receitas.rows) {
+                    const pesoReceitaKg = parseFloat(rec.quantidade_necessaria) * qtd;
+                    const acumulador = {};
+                    await explodirReceitaRec(pool, rec.receita_id, pesoReceitaKg, acumulador);
+
+                    for (const insumoId of Object.keys(acumulador)) {
+                        if (!demandasInsumos[insumoId]) {
+                            demandasInsumos[insumoId] = 0;
+                        }
+                        demandasInsumos[insumoId] += acumulador[insumoId];
+                    }
                 }
 
                 // Ficha técnica embalagens

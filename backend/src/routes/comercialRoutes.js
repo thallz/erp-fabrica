@@ -6,6 +6,7 @@ const comercialController = require('../controllers/comercialController');
 router.post('/clientes', comercialController.criarCliente);
 router.get('/clientes', comercialController.listarClientes);
 router.put('/clientes/:id', comercialController.atualizarCliente);
+router.delete('/clientes/:id', comercialController.excluirCliente);
 
 // Pedidos
 router.get('/pedidos', comercialController.listarPedidos);

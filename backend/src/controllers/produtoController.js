@@ -1,35 +1,67 @@
 const pool = require('../config/db');
 
 const produtoController = {
-    // 1. CRIAR PRODUTO + FICHA TÉCNICA
+    // 1. CRIAR PRODUTO + FICHAS TÉCNICAS
     criar: async (req, res) => {
-        // Inicia uma conexão exclusiva para a Transação
         const client = await pool.connect();
-        
         try {
-            await client.query('BEGIN'); // Trava o banco: "Comece a gravar, mas só salve se eu mandar"
+            await client.query('BEGIN');
             
-            const { nome, preco_venda, cmv_estimado, margem_contribuicao, categoria_producao, peso_produtividade, ficha_tecnica } = req.body;
+            const { 
+                nome, 
+                preco_venda, 
+                cmv_estimado, 
+                margem_contribuicao, 
+                categoria_producao, 
+                peso_produtividade, 
+                ficha_tecnica_receitas, 
+                ficha_tecnica_insumos, 
+                ficha_tecnica_embalagens 
+            } = req.body;
             
             // Passo A: Gravar o Produto Final
             const resultProd = await client.query(
-                'INSERT INTO produto (nome, preco_venda, cmv_estimado, margem_contribuicao, categoria, categoria_producao, peso_produtividade) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id',
-                [nome, preco_venda, cmv_estimado, margem_contribuicao, categoria_producao || 'Geral', categoria_producao || 'Geral', parseFloat(peso_produtividade) || 1.0]
+                `INSERT INTO produto (nome, preco_venda, cmv_estimado, margem_contribuicao, categoria, categoria_producao, peso_produtividade) 
+                 VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+                [
+                    nome, 
+                    preco_venda, 
+                    cmv_estimado || 0, 
+                    margem_contribuicao || 1, 
+                    categoria_producao || 'Geral', 
+                    categoria_producao || 'Geral', 
+                    parseFloat(peso_produtividade) || 1.0
+                ]
             );
             const produtoId = resultProd.rows[0].id;
 
-            // Passo B: Gravar a Ficha Técnica (Explosão da Receita)
-            // O frontend vai nos mandar um array (lista) de insumos usados neste produto
-            if (ficha_tecnica && ficha_tecnica.length > 0) {
-                for (const item of ficha_tecnica) {
+            // Passo B: Gravar as Fichas Técnicas (Receitas, Insumos Diretos, Embalagens)
+            if (ficha_tecnica_receitas && ficha_tecnica_receitas.length > 0) {
+                for (const item of ficha_tecnica_receitas) {
+                    await client.query(
+                        'INSERT INTO ficha_tecnica_receita (produto_id, receita_id, quantidade_necessaria) VALUES ($1, $2, $3)',
+                        [produtoId, item.receita_id, item.quantidade_necessaria]
+                    );
+                }
+            }
+            if (ficha_tecnica_insumos && ficha_tecnica_insumos.length > 0) {
+                for (const item of ficha_tecnica_insumos) {
                     await client.query(
                         'INSERT INTO ficha_tecnica_insumo (produto_id, insumo_id, quantidade) VALUES ($1, $2, $3)',
                         [produtoId, item.insumo_id, item.quantidade]
                     );
                 }
             }
+            if (ficha_tecnica_embalagens && ficha_tecnica_embalagens.length > 0) {
+                for (const item of ficha_tecnica_embalagens) {
+                    await client.query(
+                        'INSERT INTO ficha_tecnica_embalagem (produto_id, embalagem_id, quantidade) VALUES ($1, $2, $3)',
+                        [produtoId, item.embalagem_id, item.quantidade]
+                    );
+                }
+            }
 
-            await client.query('COMMIT'); // Tudo certo! Salva definitivamente.
+            await client.query('COMMIT');
             res.status(201).json({ 
                 status: 'sucesso', 
                 produto_id: produtoId, 
@@ -37,10 +69,10 @@ const produtoController = {
             });
 
         } catch (error) {
-            await client.query('ROLLBACK'); // Deu erro? Cancela tudo para não sujar o banco.
+            await client.query('ROLLBACK');
             res.status(500).json({ status: 'erro', erro: error.message });
         } finally {
-            client.release(); // Libera a conexão
+            client.release();
         }
     },
 
@@ -54,31 +86,71 @@ const produtoController = {
         }
     },
 
-    // 3. ATUALIZAR PRODUTO + FICHA TÉCNICA
+    // 3. ATUALIZAR PRODUTO + FICHAS TÉCNICAS
     atualizar: async (req, res) => {
         const client = await pool.connect();
         try {
             await client.query('BEGIN');
             const { id } = req.params;
-            const { nome, preco_venda, cmv_estimado, margem_contribuicao, categoria_producao, peso_produtividade, ficha_tecnica } = req.body;
+            const { 
+                nome, 
+                preco_venda, 
+                cmv_estimado, 
+                margem_contribuicao, 
+                categoria_producao, 
+                peso_produtividade, 
+                ficha_tecnica_receitas, 
+                ficha_tecnica_insumos, 
+                ficha_tecnica_embalagens 
+            } = req.body;
 
             const result = await client.query(
                 `UPDATE produto
                  SET nome = $1, preco_venda = $2, cmv_estimado = $3, margem_contribuicao = $4, categoria = $5, categoria_producao = $6, peso_produtividade = $7
                  WHERE id = $8 RETURNING id`,
-                [nome, preco_venda, cmv_estimado, margem_contribuicao, categoria_producao || 'Geral', categoria_producao || 'Geral', parseFloat(peso_produtividade) || 1.0, id]
+                [
+                    nome, 
+                    preco_venda, 
+                    cmv_estimado || 0, 
+                    margem_contribuicao || 1, 
+                    categoria_producao || 'Geral', 
+                    categoria_producao || 'Geral', 
+                    parseFloat(peso_produtividade) || 1.0, 
+                    id
+                ]
             );
             if (result.rows.length === 0) {
                 await client.query('ROLLBACK');
                 return res.status(404).json({ status: 'erro', erro: 'Produto não encontrado' });
             }
 
+            // Excluir fichas antigas
+            await client.query('DELETE FROM ficha_tecnica_receita WHERE produto_id = $1', [id]);
             await client.query('DELETE FROM ficha_tecnica_insumo WHERE produto_id = $1', [id]);
-            if (ficha_tecnica && ficha_tecnica.length > 0) {
-                for (const item of ficha_tecnica) {
+            await client.query('DELETE FROM ficha_tecnica_embalagem WHERE produto_id = $1', [id]);
+
+            // Gravar novas fichas
+            if (ficha_tecnica_receitas && ficha_tecnica_receitas.length > 0) {
+                for (const item of ficha_tecnica_receitas) {
+                    await client.query(
+                        'INSERT INTO ficha_tecnica_receita (produto_id, receita_id, quantidade_necessaria) VALUES ($1, $2, $3)',
+                        [id, item.receita_id, item.quantidade_necessaria]
+                    );
+                }
+            }
+            if (ficha_tecnica_insumos && ficha_tecnica_insumos.length > 0) {
+                for (const item of ficha_tecnica_insumos) {
                     await client.query(
                         'INSERT INTO ficha_tecnica_insumo (produto_id, insumo_id, quantidade) VALUES ($1, $2, $3)',
                         [id, item.insumo_id, item.quantidade]
+                    );
+                }
+            }
+            if (ficha_tecnica_embalagens && ficha_tecnica_embalagens.length > 0) {
+                for (const item of ficha_tecnica_embalagens) {
+                    await client.query(
+                        'INSERT INTO ficha_tecnica_embalagem (produto_id, embalagem_id, quantidade) VALUES ($1, $2, $3)',
+                        [id, item.embalagem_id, item.quantidade]
                     );
                 }
             }
@@ -126,7 +198,7 @@ const produtoController = {
         }
     },
 
-    // 6. OBTER POR ID COM FICHA TÉCNICA E DETALHES
+    // 6. OBTER POR ID COM FICHAS TÉCNICAS E DETALHES
     obterPorId: async (req, res) => {
         try {
             const { id } = req.params;
@@ -135,6 +207,13 @@ const produtoController = {
                 return res.status(404).json({ status: 'erro', erro: 'Produto não encontrado' });
             }
             
+            const receitas = await pool.query(`
+                SELECT ftr.receita_id, ftr.quantidade_necessaria, r.nome, r.categoria, r.custo_por_kg
+                FROM ficha_tecnica_receita ftr
+                JOIN receita r ON r.id = ftr.receita_id
+                WHERE ftr.produto_id = $1
+            `, [id]);
+
             const insumos = await pool.query(`
                 SELECT fti.insumo_id, fti.quantidade, i.nome, i.unidade_medida, i.estoque_atual
                 FROM ficha_tecnica_insumo fti
@@ -151,6 +230,7 @@ const produtoController = {
 
             res.json({
                 ...prod.rows[0],
+                ficha_tecnica_receitas: receitas.rows,
                 ficha_tecnica_insumos: insumos.rows,
                 ficha_tecnica_embalagens: embalagens.rows
             });
