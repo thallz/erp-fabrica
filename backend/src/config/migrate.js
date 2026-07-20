@@ -28,12 +28,19 @@ async function runMigrations() {
         ALTER TABLE produto ADD COLUMN IF NOT EXISTS peso_produtividade FLOAT DEFAULT 1.0;
         ALTER TABLE produto ADD COLUMN IF NOT EXISTS categoria VARCHAR(50) DEFAULT 'Geral';
         ALTER TABLE produto ADD COLUMN IF NOT EXISTS categoria_producao VARCHAR(50) DEFAULT 'Geral';
+        ALTER TABLE produto ADD COLUMN IF NOT EXISTS embalagem_id INT REFERENCES insumo(id) ON DELETE SET NULL;
+        ALTER TABLE produto ADD COLUMN IF NOT EXISTS capacidade_embalagem DECIMAL(12, 4) DEFAULT 1;
+        ALTER TABLE produto ADD COLUMN IF NOT EXISTS rateio_embalagem DECIMAL(12, 4) DEFAULT 0;
         ALTER TABLE colaborador ADD COLUMN IF NOT EXISTS meta_diaria_individual INT DEFAULT 350;
         ALTER TABLE colaborador ADD COLUMN IF NOT EXISTS eh_novato BOOLEAN DEFAULT FALSE;
         ALTER TABLE colaborador ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'Ativo';
         ALTER TABLE ordem_producao ADD COLUMN IF NOT EXISTS categoria_producao VARCHAR(50);
         ALTER TABLE ordem_producao ADD COLUMN IF NOT EXISTS data_programada DATE;
         ALTER TABLE insumo ADD COLUMN IF NOT EXISTS categoria VARCHAR(50) DEFAULT 'Outros';
+        ALTER TABLE insumo ADD COLUMN IF NOT EXISTS preco_pago DECIMAL(12, 4) DEFAULT 0;
+        ALTER TABLE insumo ADD COLUMN IF NOT EXISTS peso_embalagem DECIMAL(12, 4) DEFAULT 1000;
+        ALTER TABLE insumo ADD COLUMN IF NOT EXISTS tipo_medida VARCHAR(20) DEFAULT 'Peso';
+        ALTER TABLE insumo ALTER COLUMN estoque_atual TYPE DECIMAL(12, 4);
     `);
     await pool.query(`
         CREATE TABLE IF NOT EXISTS ficha_tecnica_receita (
@@ -41,6 +48,13 @@ async function runMigrations() {
             receita_id INT REFERENCES receita(id) ON DELETE RESTRICT,
             quantidade_necessaria DECIMAL(12, 4) NOT NULL,
             PRIMARY KEY (produto_id, receita_id)
+        );
+
+        CREATE TABLE IF NOT EXISTS ficha_tecnica_produto (
+            id SERIAL PRIMARY KEY,
+            produto_id INT REFERENCES produto(id) ON DELETE CASCADE,
+            receita_id INT REFERENCES receita(id) ON DELETE CASCADE,
+            quantidade_gramas DECIMAL(10, 2) NOT NULL
         );
     `);
     await pool.query(`

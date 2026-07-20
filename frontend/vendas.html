@@ -190,6 +190,13 @@
     }
   }
 
+  function formatarMoeda(valor) {
+    return new Number(valor || 0).toLocaleString('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    });
+  }
+
   function getStatusBadge(status) {
     if (status === 'PRODUZINDO') return '<span class="badge badge-amber">PRODUZINDO</span>';
     if (status === 'CONCLUIDO' || status === 'CONCLUIDA') return '<span class="badge badge-green">CONCLUÍDO</span>';
@@ -211,7 +218,7 @@
           <br/><span style="font-size:11px;color:var(--text-muted)">CNPJ: ${p.cnpj}</span>
         </td>
         <td style="text-align:center">${dataEnt}</td>
-        <td style="text-align:right;font-weight:700;color:var(--brand)">R$ ${parseFloat(p.valor_total).toFixed(2)}</td>
+        <td style="text-align:right;font-weight:700;color:var(--brand)">${formatarMoeda(p.valor_total)}</td>
         <td style="text-align:center">${getStatusBadge(p.status)}</td>
       </tr>`;
     }).join('');
@@ -235,7 +242,7 @@
 
     const selProd = document.getElementById('pedido-produto');
     selProd.innerHTML = '<option value="">Selecione o produto...</option>';
-    todosProdutos.forEach(p => selProd.innerHTML += `<option value="${p.id}" data-price="${p.preco_venda}">${p.nome}</option>`);
+    todosProdutos.forEach(p => selProd.innerHTML += `<option value="${p.id}" data-price="${p.preco_venda}">${p.nome} (${formatarMoeda(p.preco_venda)})</option>`);
 
     atualizarTotal();
     document.getElementById('drawer-form').classList.add('open');
@@ -252,8 +259,8 @@
     const opt = sel.options[sel.selectedIndex];
     const price = opt ? parseFloat(opt.getAttribute('data-price') || 0) : 0;
     const qtd = parseInt(document.getElementById('pedido-qtd').value || 0, 10);
-    document.getElementById('label-preco-unitario').innerText = `R$ ${price.toFixed(2)}`;
-    document.getElementById('label-preco-total').innerText = `R$ ${(price * qtd).toFixed(2)}`;
+    document.getElementById('label-preco-unitario').innerText = formatarMoeda(price);
+    document.getElementById('label-preco-total').innerText = formatarMoeda(price * qtd);
   }
 
   async function salvarPedido(e) {

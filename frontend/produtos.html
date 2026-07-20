@@ -5,30 +5,43 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Produtos Finais — ERP Fabrica</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/global.css" />
   <style>
+    /* Grid de Cards de Produtos (Página Inteira - 320px minmax) */
     .prod-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 16px;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 18px;
     }
     .prod-card {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
+      border-radius: 12px;
       box-shadow: var(--shadow);
       padding: 18px;
-      display: flex; flex-direction: column;
-      transition: box-shadow .15s;
+      display: flex; flex-direction: column; justify-content: space-between;
+      transition: box-shadow .15s, transform .12s;
     }
-    .prod-card:hover { box-shadow: var(--shadow-md); }
+    .prod-card:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-2px);
+    }
     .prod-card-header {
       display: flex; justify-content: space-between; align-items: flex-start;
       margin-bottom: 12px;
     }
-    .prod-card-title { font-size: 15px; font-weight: 700; margin-top: 4px; }
+    .prod-card-title {
+      font-size: 16px;
+      font-weight: 800;
+      margin-top: 4px;
+      color: var(--text-primary);
+      white-space: normal;
+      word-wrap: break-word;
+      line-height: 1.3;
+    }
     .prod-meta { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+    
     .ficha-resumo {
       font-size: 12.5px; color: var(--text-secondary);
       border-top: 1px dashed var(--border-light);
@@ -36,26 +49,157 @@
     }
     .ficha-item { display: flex; justify-content: space-between; padding: 3px 0; }
 
-    /* Form items */
-    .ficha-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+    /* Form items no modal */
+    .drawer-section-block {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 16px;
+    }
+    .drawer-section-title {
+      font-size: 12px; font-weight: 700; color: var(--brand);
+      text-transform: uppercase; letter-spacing: .05em;
+      margin-bottom: 12px; display: flex; align-items: center; gap: 6px;
+    }
+
+    .ficha-list { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
     .ficha-row {
       display: grid;
-      grid-template-columns: 80px 1fr 74px 26px;
+      grid-template-columns: 1fr 90px 95px 28px;
       gap: 6px; align-items: center;
+      background: var(--surface);
+      border: 1px solid var(--border-light);
+      border-radius: 8px;
+      padding: 6px 8px;
     }
     .ficha-row select, .ficha-row input { padding: 6px 8px; font-size: 12.5px; }
+    
     .row-remove-btn {
       background: none; border: none; cursor: pointer;
       color: var(--text-muted); font-size: 18px; line-height: 1;
       display: flex; align-items: center; justify-content: center;
+      transition: color .12s;
     }
     .row-remove-btn:hover { color: var(--red); }
+    
     .btn-add-row {
       background: none; border: none; cursor: pointer;
-      color: var(--brand); font-size: 12px; font-weight: 600;
-      margin-top: 8px; padding: 0; display: flex; align-items: center; gap: 4px;
+      color: var(--brand); font-size: 12.5px; font-weight: 600;
+      display: inline-flex; align-items: center; gap: 4px;
+      margin-top: 10px; padding: 0;
     }
     .btn-add-row:hover { text-decoration: underline; }
+
+    /* Bloco Colorido de Resumo de Margem no Final */
+    .summary-card-block {
+      border-radius: 12px;
+      padding: 16px;
+      margin-top: 18px;
+      transition: background .2s, border-color .2s;
+    }
+    .summary-card-block.green {
+      background: var(--green-bg);
+      border: 1px solid var(--green-border);
+      color: var(--green);
+    }
+    .summary-card-block.amber {
+      background: var(--amber-bg);
+      border: 1px solid var(--amber-border);
+      color: var(--amber);
+    }
+    .summary-card-block.red {
+      background: var(--red-bg);
+      border: 1px solid var(--red-border);
+      color: var(--red);
+    }
+
+    .summary-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px;
+      font-size: 13px; margin-top: 6px;
+    }
+    .summary-item { display: flex; flex-direction: column; }
+    .summary-item label { font-size: 11px; text-transform: uppercase; font-weight: 600; opacity: 0.8; margin-bottom: 2px; }
+    .summary-item strong { font-size: 16px; font-weight: 700; }
+
+    /* =========== MODAL CENTRALIZADO PADRONIZADO =========== */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.5);
+      z-index: 1100;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none;
+      transition: opacity .2s;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+
+    .modal-box {
+      background: var(--surface);
+      border-radius: 16px;
+      box-shadow: var(--shadow-lg);
+      width: 440px;
+      max-width: calc(100vw - 32px);
+      max-height: 90vh;
+      display: flex; flex-direction: column;
+      transform: translateY(12px) scale(.97);
+      transition: transform .2s;
+    }
+    .modal-box.modal-lg {
+      width: 650px;
+    }
+    .modal-overlay.open .modal-box { transform: none; }
+
+    .modal-header {
+      padding: 20px 24px 14px;
+      border-bottom: 1px solid var(--border-light);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .modal-header h3 { font-size: 16.5px; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 8px; }
+    .modal-close {
+      background: none; border: none; cursor: pointer;
+      font-size: 20px; color: var(--text-muted);
+      line-height: 1; padding: 2px 6px; border-radius: 4px;
+      transition: background .12s;
+    }
+    .modal-close:hover { background: var(--bg); color: var(--text-primary); }
+
+    .modal-body { padding: 20px 24px; overflow-y: auto; flex: 1; }
+    .modal-footer {
+      padding: 14px 24px 18px;
+      border-top: 1px solid var(--border-light);
+      display: flex; justify-content: flex-end; gap: 8px; align-items: center;
+    }
+
+    .cat-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+    .cat-item {
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 8px; padding: 9px 14px;
+      font-size: 13.5px; font-weight: 500;
+    }
+    .cat-item .cat-del {
+      background: none; border: none; cursor: pointer;
+      color: var(--text-muted); font-size: 18px; line-height: 1;
+      padding: 0 4px; border-radius: 4px; transition: color .12s;
+    }
+    .cat-item .cat-del:hover { color: var(--red); }
+
+    .cat-add-row { display: flex; gap: 8px; margin-top: 14px; }
+    .cat-add-row input { flex: 1; }
+    .cat-empty { text-align: center; padding: 24px; color: var(--text-muted); font-size: 13px; }
+
+    .field-with-action { display: flex; gap: 8px; align-items: center; }
+    .field-with-action select { flex: 1; }
+    .btn-gear {
+      flex-shrink: 0;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 8px; padding: 0 10px; height: 38px;
+      cursor: pointer; font-size: 15px;
+      display: flex; align-items: center; justify-content: center;
+      transition: border-color .12s, background .12s;
+      color: var(--text-secondary);
+    }
+    .btn-gear:hover { border-color: var(--brand); color: var(--brand); background: var(--brand-light); }
   </style>
 </head>
 <body>
@@ -64,45 +208,21 @@
 
 <div class="erp-shell">
 
-  <!-- SIDEBAR -->
-  <aside class="sidebar">
-    <div class="sidebar-logo">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-      <span>ERP Fabrica</span>
-    </div>
-    <nav class="sidebar-nav">
-      <div class="sidebar-section-label">Menu Principal</div>
-      <a href="almoxarifado.html" class="nav-link">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
-        📦 Almoxarifado
-      </a>
-      <a href="receitas.html" class="nav-link">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-        👨🍳 Receitas
-      </a>
-      <a href="produtos.html" class="nav-link active">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-        🍰 Produtos Finais
-      </a>
-      <a href="clientes.html" class="nav-link">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-        👥 Clientes
-      </a>
-      <a href="vendas.html" class="nav-link">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-        💰 Lançar Vendas
-      </a>
-      <a href="planejamento.html" class="nav-link">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-        📅 Planejamento (Maestro)
-      </a>
-    </nav>
-  </aside>
-
-  <!-- MAIN -->
+  <!-- MAIN (PÁGINA INTEIRA 100%) -->
   <div class="main-wrap">
     <header class="topbar">
-      <div style="font-size:15px;font-weight:700">🍰 Produtos Finais</div>
+      <a href="produtos.html" class="topbar-logo">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        <span>ERP Fabrica</span>
+      </a>
+      <nav class="topbar-nav">
+        <a href="almoxarifado.html">📦 Almoxarifado</a>
+        <a href="receitas.html">👨🍳 Receitas</a>
+        <a href="produtos.html" class="active">🍰 Produtos Finais</a>
+        <a href="clientes.html">👥 Clientes</a>
+        <a href="vendas.html">💰 Lançar Vendas</a>
+        <a href="planejamento.html">📅 Planejamento</a>
+      </nav>
       <div class="topbar-right"><span class="badge-online">● Online</span></div>
     </header>
 
@@ -110,14 +230,14 @@
       <div class="page-header">
         <div class="page-header-left">
           <h1>Engenharia de Produtos</h1>
-          <p>Ficha técnica mista — receitas, insumos diretos e embalagens.</p>
+          <p>Ficha técnica completa — composição de receitas e rateio de embalagem.</p>
         </div>
         <div class="page-header-actions">
           <div class="search-bar" style="width:260px">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             <input type="text" id="input-busca" placeholder="Buscar produto..." oninput="filtrar()" />
           </div>
-          <button class="btn btn-primary" onclick="openDrawer()">
+          <button class="btn btn-primary" onclick="openProdutoModal()">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Novo Produto
           </button>
@@ -133,68 +253,182 @@
   </div>
 </div>
 
-<!-- BACKDROP -->
-<div class="drawer-backdrop" id="drawer-backdrop" onclick="closeDrawer()"></div>
+<!-- ==================== MODAL CENTRALIZADO DE PRODUTO (650px) ==================== -->
+<div class="modal-overlay" id="produto-modal-overlay" onclick="closeProdutoModalOnBackdrop(event)">
+  <div class="modal-box modal-lg">
+    <div class="modal-header">
+      <h3 id="produto-modal-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+        Novo Produto
+      </h3>
+      <button class="modal-close" onclick="closeProdutoModal()">✕</button>
+    </div>
 
-<!-- DRAWER -->
-<div class="drawer" id="drawer-form">
-  <div class="drawer-header">
-    <h2 id="drawer-title">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-      Novo Produto
-    </h2>
-    <p>Preencha a ficha técnica do produto final</p>
-    <button class="drawer-close" onclick="closeDrawer()">✕</button>
-  </div>
+    <div class="modal-body">
+      <form id="form-produto" onsubmit="salvarProduto(event)">
+        <input type="hidden" id="produto-id" />
 
-  <div class="drawer-body">
-    <form id="form-produto" onsubmit="salvarProduto(event)">
-      <input type="hidden" id="produto-id" />
+        <!-- BLOCO 1: INFORMAÇÕES BÁSICAS -->
+        <div class="drawer-section-block">
+          <div class="drawer-section-title">📌 1. Informações Básicas</div>
 
-      <div class="form-group">
-        <label>Nome do Produto</label>
-        <input type="text" id="produto-nome" required placeholder="Ex: Coxinha de Frango com Catupiry" />
-      </div>
+          <div class="form-group">
+            <label>Nome do Produto *</label>
+            <input type="text" id="produto-nome" required placeholder="Ex: Coxinha de Frango com Catupiry" />
+          </div>
 
-      <div class="form-row cols-2">
-        <div class="form-group">
-          <label>Preço de Venda (R$)</label>
-          <input type="number" id="produto-preco" step="0.01" min="0" required placeholder="8,50" />
+          <div class="form-row cols-2">
+            <div class="form-group">
+              <label>Preço de Venda (R$) *</label>
+              <input type="number" id="produto-preco" step="0.01" min="0" required placeholder="8,50" oninput="recalcFinancialSummary()" />
+            </div>
+            <div class="form-group">
+              <label>Produtividade (Pts) *</label>
+              <input type="number" id="produto-peso-prod" step="0.1" min="0.1" required value="1.0" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label style="display:flex;align-items:center;justify-content:space-between">
+              <span>Categoria de Produção *</span>
+              <button type="button" class="btn-link" onclick="openCatModal('PRODUTO')"
+                style="font-size:11.5px;color:var(--brand);background:none;border:none;cursor:pointer;font-weight:600">
+                ⚙️ Gerenciar
+              </button>
+            </label>
+            <div class="field-with-action">
+              <select id="produto-categoria" required>
+                <option value="">Carregando...</option>
+              </select>
+              <button type="button" class="btn-gear" title="Gerenciar categorias" onclick="openCatModal('PRODUTO')">⚙️</button>
+            </div>
+          </div>
         </div>
-        <div class="form-group">
-          <label>Produtividade (Pts)</label>
-          <input type="number" id="produto-peso-prod" step="0.1" min="0.1" required value="1.0" />
+
+        <!-- BLOCO 2: COMPONENTES (RECEITAS) -->
+        <div class="drawer-section-block">
+          <div class="drawer-section-title">👨🍳 2. Componentes da Ficha Técnica</div>
+
+          <div style="display:grid;grid-template-columns:1fr 90px 95px 28px;gap:6px;padding:0 4px;margin-bottom:4px">
+            <span style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase">Receita</span>
+            <span style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase">Peso (g)</span>
+            <span style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;text-align:right">Custo</span>
+            <span></span>
+          </div>
+
+          <div class="ficha-list" id="ficha-container"></div>
+
+          <button type="button" class="btn-add-row" onclick="adicionarLinhaFicha()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Adicionar Componente
+          </button>
         </div>
-      </div>
 
-      <div class="form-group">
-        <label>Categoria de Produção</label>
-        <select id="produto-categoria" required>
-          <option value="Frito">Frito</option>
-          <option value="Assado">Assado</option>
-          <option value="Mini">Mini</option>
-        </select>
-      </div>
+        <!-- BLOCO 3: EMBALAGEM & RATEIO -->
+        <div class="drawer-section-block">
+          <div class="drawer-section-title">📦 3. Embalagem & Rateio</div>
 
-      <div class="form-section-title">Composição (Ficha Técnica)</div>
-      <div class="ficha-list" id="ficha-container"></div>
-      <button type="button" class="btn-add-row" onclick="adicionarLinhaFicha()">+ Adicionar componente</button>
-    </form>
+          <div class="form-row cols-2">
+            <div class="form-group">
+              <label>Caixa / Embalagem</label>
+              <select id="produto-embalagem" onchange="recalcFinancialSummary()">
+                <option value="">Nenhuma embalagem</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Capacidade (unidades)</label>
+              <input type="number" id="produto-capacidade-emb" step="1" min="1" value="1" placeholder="Ex: 100" oninput="recalcFinancialSummary()" />
+            </div>
+          </div>
+
+          <div style="display:flex;justify-content:space-between;align-items:center;font-size:12.5px;padding-top:4px">
+            <span class="text-muted">Rateio de Embalagem por Salgado:</span>
+            <strong id="label-rateio-emb" style="color:var(--text-primary)">R$ 0,00</strong>
+          </div>
+        </div>
+
+        <!-- BLOCO COLORIDO NO FINAL: RESUMO DE MARGEM & PREÇO SUGERIDO -->
+        <div class="summary-card-block green" id="summary-card-block">
+          <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">
+            📊 Resumo Financeiro & Margem
+          </div>
+          <div class="summary-grid">
+            <div class="summary-item">
+              <label>Peso Total Unitário</label>
+              <strong id="summary-peso">0g</strong>
+            </div>
+            <div class="summary-item">
+              <label>Custo Total (Ingr + Rateio)</label>
+              <strong id="summary-custo">R$ 0,00</strong>
+            </div>
+            <div class="summary-item">
+              <label>Preço Sugerido (2.5x)</label>
+              <strong id="summary-preco-sugerido">R$ 0,00</strong>
+            </div>
+            <div class="summary-item">
+              <label>Margem Real (%)</label>
+              <strong id="summary-margem-pct">0.0%</strong>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-outline" type="button" onclick="closeProdutoModal()">Cancelar</button>
+      <button class="btn btn-primary" type="button" onclick="document.getElementById('form-produto').requestSubmit()">Salvar Produto</button>
+    </div>
   </div>
+</div>
 
-  <div class="drawer-footer">
-    <span class="hint">Qtd em kg para receitas, na unidade do insumo para insumos</span>
-    <button class="btn btn-outline" onclick="closeDrawer()">Cancelar</button>
-    <button class="btn btn-primary" onclick="document.getElementById('form-produto').requestSubmit()">Salvar Produto</button>
+<!-- MODAL CATEGORIAS -->
+<div class="modal-overlay" id="cat-modal-overlay" onclick="closeCatModalOnBackdrop(event)">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 id="cat-modal-title">⚙️ Categorias de Produto</h3>
+      <button class="modal-close" onclick="closeCatModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <ul class="cat-list" id="cat-list">
+        <li class="cat-empty">Carregando...</li>
+      </ul>
+      <div class="cat-add-row">
+        <input type="text" id="cat-nova-nome" placeholder="Nova categoria..." maxlength="50"
+               onkeydown="if(event.key==='Enter'){event.preventDefault();adicionarCategoria();}" />
+        <button class="btn btn-primary" type="button" onclick="adicionarCategoria()">+ Adicionar</button>
+      </div>
+    </div>
   </div>
 </div>
 
 <script>
-  const API_PRODUTOS = 'http://localhost:3001/api/produtos';
-  const API_RECEITAS = 'http://localhost:3001/api/receitas';
-  const API_INSUMOS  = 'http://localhost:3001/api/insumos';
+  const API_PRODUTOS   = 'http://localhost:3001/api/produtos';
+  const API_RECEITAS   = 'http://localhost:3001/api/receitas';
+  const API_INSUMOS    = 'http://localhost:3001/api/insumos';
+  const API_CATEGORIAS = 'http://localhost:3001/api/categorias';
 
   let todosProdutos = [], todasReceitas = [], todosInsumos = [];
+  let catTipoAtivo  = 'PRODUTO';
+
+  /* ======================== FUNÇÕES PADRÃO DE FORMATAÇÃO ======================== */
+  function formatarDinheiro(valor) {
+    const num = Number(valor || 0);
+    return num.toLocaleString('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    });
+  }
+
+  function formatarPeso(gramas) {
+    const g = parseFloat(gramas || 0);
+    if (g >= 1000) {
+      const kg = g / 1000.0;
+      return kg.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' kg';
+    }
+    return Math.round(g).toLocaleString('pt-BR') + 'g';
+  }
 
   function showToast(msg, type = '') {
     const el = document.createElement('div');
@@ -204,16 +438,110 @@
     setTimeout(() => el.remove(), 3200);
   }
 
+  /* ======================== CATEGORIAS ======================== */
+  async function carregarCategoriaSelect(tipo, selectId, valorSelecionado = '') {
+    const select = document.getElementById(selectId);
+    select.innerHTML = '<option value="">Selecione...</option>';
+    try {
+      const res  = await fetch(`${API_CATEGORIAS}?tipo=${tipo}`);
+      const cats = await res.json();
+      cats.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.nome;
+        opt.textContent = c.nome;
+        if (c.nome === valorSelecionado) opt.selected = true;
+        select.appendChild(opt);
+      });
+    } catch {
+      select.innerHTML = '<option value="">Erro ao carregar</option>';
+    }
+  }
+
+  function openCatModal(tipo) {
+    catTipoAtivo = tipo;
+    document.getElementById('cat-modal-title').textContent =
+      `⚙️ Categorias de ${tipo === 'INSUMO' ? 'Insumo' : tipo === 'RECEITA' ? 'Receita' : 'Produto'}`;
+    document.getElementById('cat-nova-nome').value = '';
+    document.getElementById('cat-modal-overlay').classList.add('open');
+    renderCatList();
+  }
+
+  function closeCatModal() {
+    document.getElementById('cat-modal-overlay').classList.remove('open');
+    const selectId = 'produto-categoria';
+    const atual = document.getElementById(selectId).value;
+    carregarCategoriaSelect(catTipoAtivo, selectId, atual);
+  }
+
+  function closeCatModalOnBackdrop(event) {
+    if (event.target === document.getElementById('cat-modal-overlay')) closeCatModal();
+  }
+
+  async function renderCatList() {
+    const ul = document.getElementById('cat-list');
+    ul.innerHTML = '<li class="cat-empty">Carregando...</li>';
+    try {
+      const res  = await fetch(`${API_CATEGORIAS}?tipo=${catTipoAtivo}`);
+      const cats = await res.json();
+      if (!cats.length) {
+        ul.innerHTML = '<li class="cat-empty">Nenhuma categoria cadastrada.</li>';
+        return;
+      }
+      ul.innerHTML = cats.map(c => `
+        <li class="cat-item">
+          <span>${c.nome}</span>
+          <button class="cat-del" title="Excluir" onclick="excluirCategoria(${c.id})">×</button>
+        </li>`).join('');
+    } catch {
+      ul.innerHTML = '<li class="cat-empty" style="color:var(--red)">Erro ao carregar.</li>';
+    }
+  }
+
+  async function adicionarCategoria() {
+    const nome = document.getElementById('cat-nova-nome').value.trim();
+    if (!nome) { showToast('Digite um nome para a categoria.', 'error'); return; }
+
+    try {
+      const res = await fetch(API_CATEGORIAS, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nome, tipo: catTipoAtivo })
+      });
+      if (res.ok) {
+        document.getElementById('cat-nova-nome').value = '';
+        showToast(`✅ Categoria "${nome}" adicionada!`, 'success');
+        renderCatList();
+      } else {
+        const d = await res.json();
+        showToast(d.erro || 'Erro ao adicionar.', 'error');
+      }
+    } catch {
+      showToast('Erro de conexão.', 'error');
+    }
+  }
+
+  async function excluirCategoria(id) {
+    if (!confirm('Excluir esta categoria?')) return;
+    try {
+      const res = await fetch(`${API_CATEGORIAS}/${id}`, { method: 'DELETE' });
+      if (res.ok) { showToast('🗑️ Categoria removida.'); renderCatList(); }
+      else { const d = await res.json(); showToast(d.erro, 'error'); }
+    } catch {
+      showToast('Erro de conexão.', 'error');
+    }
+  }
+
+  /* ======================== LOAD / RENDER CARDS ======================== */
   async function carregarDados() {
     try {
-      const [resProd, resRec, resIns] = await Promise.all([fetch(API_PRODUTOS), fetch(API_RECEITAS), fetch(API_INSUMOS)]);
+      const [resProd, resRec, resIns] = await Promise.all([
+        fetch(API_PRODUTOS),
+        fetch(API_RECEITAS),
+        fetch(API_INSUMOS)
+      ]);
       todosProdutos = await resProd.json();
       todasReceitas = await resRec.json();
       todosInsumos  = await resIns.json();
-      for (let i = 0; i < todosProdutos.length; i++) {
-        const d = await fetch(`${API_PRODUTOS}/${todosProdutos[i].id}`);
-        todosProdutos[i] = await d.json();
-      }
       renderizar(todosProdutos);
     } catch (e) {
       document.getElementById('product-list').innerHTML = `<p style="grid-column:1/-1;text-align:center;color:var(--red)">⚠️ Erro ao conectar com o servidor.</p>`;
@@ -226,62 +554,134 @@
       grid.innerHTML = `<p style="grid-column:1/-1;text-align:center;color:var(--text-muted);padding:40px">Nenhum produto cadastrado. Clique em <strong>+ Novo Produto</strong> para começar.</p>`;
       return;
     }
-    grid.innerHTML = lista.map(p => `
-      <div class="prod-card">
-        <div class="prod-card-header">
+    grid.innerHTML = lista.map(p => {
+      const preco = formatarDinheiro(p.preco_venda);
+      const custo = formatarDinheiro(p.custo_producao);
+      const margemPctNum = parseFloat(p.margem_contribuicao_pct || 0);
+      const margemPct = margemPctNum.toFixed(1);
+      const margemClass = margemPctNum < 0 ? 'badge-red' : margemPctNum < 50 ? 'badge-amber' : 'badge-green';
+
+      return `
+        <div class="prod-card">
           <div>
-            <span class="badge badge-purple">${p.categoria_producao || 'Geral'}</span>
+            <div class="prod-card-header">
+              <span class="badge badge-purple">${p.categoria_producao || p.categoria || 'Geral'}</span>
+            </div>
             <div class="prod-card-title">${p.nome}</div>
             <div class="prod-meta">
-              <span class="badge badge-green">R$ ${parseFloat(p.preco_venda).toFixed(2)}</span>
-              <span class="badge badge-gray">${parseFloat(p.peso_produtividade).toFixed(1)} pt</span>
+              <span class="badge badge-green">Venda: ${preco}</span>
+              <span class="badge badge-gray">Custo: ${custo}</span>
+              <span class="badge ${margemClass}">Margem Real: ${margemPct}%</span>
+              <span class="badge badge-gray">${parseFloat(p.peso_produtividade || 1).toFixed(1)} pt</span>
+            </div>
+
+            <div class="ficha-resumo">
+              <div style="font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">Composição do Produto</div>
+              ${p.ficha_tecnica_receitas && p.ficha_tecnica_receitas.length ? `
+                ${p.ficha_tecnica_receitas.map(r => {
+                  const g = r.quantidade_gramas ? parseFloat(r.quantidade_gramas) : (parseFloat(r.quantidade_necessaria || 0) * 1000);
+                  const custoItem = (g / 1000.0) * parseFloat(r.custo_por_kg || 0);
+                  return `<div class="ficha-item">
+                    <span>• ${r.nome} <span class="text-muted text-sm">(${formatarPeso(g)})</span></span>
+                    <strong>${formatarDinheiro(custoItem)}</strong>
+                  </div>`;
+                }).join('')}
+              ` : '<span class="text-muted">Sem receitas vinculadas.</span>'}
+
+              ${p.rateio_embalagem > 0 ? `
+                <div class="ficha-item" style="border-top:1px dashed var(--border-light);margin-top:4px;padding-top:4px">
+                  <span>📦 Embalagem (${p.embalagem_nome || 'Caixa'}):</span>
+                  <strong>+ ${formatarDinheiro(p.rateio_embalagem)} / un</strong>
+                </div>` : ''}
             </div>
           </div>
-          <div class="flex gap-2">
-            <button class="btn btn-outline btn-sm" onclick="openDrawer(${p.id})">Editar</button>
+
+          <div style="display:flex;justify-content:flex-end;gap:8px;align-items:center;border-top:1px dashed var(--border-light);padding-top:12px;margin-top:12px">
+            <button class="btn btn-outline btn-sm" onclick="openProdutoModal(${p.id})">Editar</button>
             <button class="btn btn-outline btn-sm" style="color:var(--red);border-color:var(--red)" onclick="excluirProduto(${p.id})">Excluir</button>
           </div>
-        </div>
-        <div class="ficha-resumo">
-          <div style="font-size:10.5px;font-weight:700;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em">Composição</div>
-          ${(p.ficha_tecnica_receitas && p.ficha_tecnica_receitas.length) || (p.ficha_tecnica_insumos && p.ficha_tecnica_insumos.length) ? `
-            ${(p.ficha_tecnica_receitas||[]).map(r => `<div class="ficha-item"><span>• ${r.nome} <span class="text-muted text-sm">(Receita)</span></span><strong>${parseFloat(r.quantidade_necessaria).toFixed(3)} kg</strong></div>`).join('')}
-            ${(p.ficha_tecnica_insumos||[]).map(i => `<div class="ficha-item"><span>• ${i.nome} <span class="text-muted text-sm">(Insumo)</span></span><strong>${parseFloat(i.quantidade).toFixed(3)} ${i.unidade_medida}</strong></div>`).join('')}
-          ` : '<span class="text-muted">Sem componentes na ficha técnica.</span>'}
-        </div>
-      </div>`).join('');
+        </div>`;
+    }).join('');
   }
 
   function filtrar() {
     const q = document.getElementById('input-busca').value.toLowerCase();
-    renderizar(todosProdutos.filter(p => p.nome.toLowerCase().includes(q)));
+    renderizar(todosProdutos.filter(p => p.nome.toLowerCase().includes(q) || (p.categoria_producao || p.categoria || '').toLowerCase().includes(q)));
   }
 
-  function openDrawer(id = null) {
+  /* ======================== MODAL CENTRALIZADO DE PRODUTO ======================== */
+  async function openProdutoModal(id = null) {
     document.getElementById('ficha-container').innerHTML = '';
+    document.getElementById('form-produto').reset();
+    document.getElementById('produto-id').value = '';
+
+    await carregarCategoriaSelect('PRODUTO', 'produto-categoria');
+    popularEmbalagemSelect();
+
     if (id) {
-      const p = todosProdutos.find(x => x.id === id);
-      document.getElementById('drawer-title').innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Editar Produto`;
-      document.getElementById('produto-id').value = p.id;
-      document.getElementById('produto-nome').value = p.nome;
-      document.getElementById('produto-preco').value = p.preco_venda;
-      document.getElementById('produto-peso-prod').value = p.peso_produtividade;
-      document.getElementById('produto-categoria').value = p.categoria_producao || 'Frito';
-      (p.ficha_tecnica_receitas||[]).forEach(r => adicionarLinhaFicha({ tipo: 'receita', id: r.receita_id, qtd: r.quantidade_necessaria }));
-      (p.ficha_tecnica_insumos||[]).forEach(i => adicionarLinhaFicha({ tipo: 'insumo', id: i.insumo_id, qtd: i.quantidade }));
+      try {
+        const res = await fetch(`${API_PRODUTOS}/${id}`);
+        const p = await res.json();
+
+        document.getElementById('produto-modal-title').innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Editar Produto`;
+        document.getElementById('produto-id').value = p.id;
+        document.getElementById('produto-nome').value = p.nome;
+        document.getElementById('produto-preco').value = parseFloat(p.preco_venda || 0);
+        document.getElementById('produto-peso-prod').value = parseFloat(p.peso_produtividade || 1.0);
+        document.getElementById('produto-embalagem').value = p.embalagem_id || '';
+        document.getElementById('produto-capacidade-emb').value = parseFloat(p.capacidade_embalagem || 1);
+
+        const valCat = p.categoria_producao || p.categoria || '';
+        const sel = document.getElementById('produto-categoria');
+        for (const opt of sel.options) {
+          if (opt.value === valCat) { opt.selected = true; break; }
+        }
+
+        if (p.ficha_tecnica_receitas && p.ficha_tecnica_receitas.length) {
+          p.ficha_tecnica_receitas.forEach(r => {
+            const g = r.quantidade_gramas ? parseFloat(r.quantidade_gramas) : (parseFloat(r.quantidade_necessaria || 0) * 1000);
+            adicionarLinhaFicha({ receita_id: r.receita_id, g });
+          });
+        } else {
+          adicionarLinhaFicha();
+        }
+      } catch {
+        showToast('Erro ao carregar dados do produto.', 'error');
+      }
     } else {
-      document.getElementById('drawer-title').innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg> Novo Produto`;
-      document.getElementById('form-produto').reset();
-      document.getElementById('produto-id').value = '';
+      document.getElementById('produto-modal-title').innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg> Novo Produto`;
       adicionarLinhaFicha();
     }
-    document.getElementById('drawer-form').classList.add('open');
-    document.getElementById('drawer-backdrop').classList.add('open');
+
+    recalcFinancialSummary();
+    document.getElementById('produto-modal-overlay').classList.add('open');
   }
 
-  function closeDrawer() {
-    document.getElementById('drawer-form').classList.remove('open');
-    document.getElementById('drawer-backdrop').classList.remove('open');
+  function openDrawer(id = null) { openProdutoModal(id); }
+
+  function closeProdutoModal() {
+    document.getElementById('produto-modal-overlay').classList.remove('open');
+  }
+  function closeDrawer() { closeProdutoModal(); }
+
+  function closeProdutoModalOnBackdrop(event) {
+    if (event.target === document.getElementById('produto-modal-overlay')) closeProdutoModal();
+  }
+
+  window.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      closeProdutoModal();
+      closeCatModal();
+    }
+  });
+
+  function popularEmbalagemSelect() {
+    const sel = document.getElementById('produto-embalagem');
+    sel.innerHTML = '<option value="">Nenhuma embalagem</option>';
+    todosInsumos.forEach(i => {
+      const pPago = parseFloat(i.preco_pago || i.custo_unitario || 0);
+      sel.innerHTML += `<option value="${i.id}" data-cost="${pPago}">${i.nome} (${formatarDinheiro(pPago)})</option>`;
+    });
   }
 
   function adicionarLinhaFicha(dados = null) {
@@ -289,44 +689,147 @@
     const rowId = 'row-' + Date.now() + '-' + Math.random().toString(36).slice(2,6);
     const div = document.createElement('div');
     div.className = 'ficha-row'; div.id = rowId;
+
+    const selectedRecId = dados ? dados.receita_id : null;
+    const gVal = dados ? parseFloat(dados.g || 0) : '';
+
+    let options = '<option value="">Selecione a receita...</option>';
+    todasReceitas.forEach(r => {
+      const isSel = selectedRecId == r.id ? 'selected' : '';
+      options += `<option value="${r.id}" data-cost-kg="${r.custoPorKg || 0}" ${isSel}>${r.nome} (${r.categoria})</option>`;
+    });
+
     div.innerHTML = `
-      <select class="tipo-select" onchange="popularOrigens('${rowId}', null)">
-        <option value="receita" ${dados && dados.tipo === 'receita' ? 'selected' : ''}>Receita</option>
-        <option value="insumo"  ${dados && dados.tipo === 'insumo'  ? 'selected' : ''}>Insumo</option>
+      <select class="receita-select" required onchange="updateFichaRowCost('${rowId}')">
+        ${options}
       </select>
-      <select class="origem-select" required><option value="">Selecione...</option></select>
-      <input type="number" class="qtd-input" step="0.0001" value="${dados ? dados.qtd : ''}" placeholder="Qtd" required />
-      <button type="button" class="row-remove-btn" onclick="document.getElementById('${rowId}').remove()">×</button>`;
+      <input type="number" class="qtd-input" step="0.1" min="0.1" value="${gVal}" placeholder="Ex: 60" required oninput="updateFichaRowCost('${rowId}')" />
+      <span class="row-cost-cell" style="font-size:12px;font-weight:600;text-align:right">R$ 0,00</span>
+      <button type="button" class="row-remove-btn" onclick="document.getElementById('${rowId}').remove(); recalcFinancialSummary()">×</button>`;
+    
     container.appendChild(div);
-    popularOrigens(rowId, dados ? dados.id : null);
+    updateFichaRowCost(rowId);
   }
 
-  function popularOrigens(rowId, selectedId) {
+  function updateFichaRowCost(rowId) {
     const row = document.getElementById(rowId);
-    const tipo = row.querySelector('.tipo-select').value;
-    const select = row.querySelector('.origem-select');
-    select.innerHTML = '<option value="">Selecione...</option>';
-    if (tipo === 'receita') todasReceitas.forEach(r => select.innerHTML += `<option value="${r.id}" ${selectedId==r.id?'selected':''}>${r.nome} (${r.categoria})</option>`);
-    else todosInsumos.forEach(i => select.innerHTML += `<option value="${i.id}" ${selectedId==i.id?'selected':''}>${i.nome} (${i.unidade_medida})</option>`);
+    if (!row) return;
+
+    const select = row.querySelector('.receita-select');
+    const opt    = select.options[select.selectedIndex];
+    const costKg = opt ? parseFloat(opt.dataset.costKg || 0) : 0;
+    const g      = parseFloat(row.querySelector('.qtd-input').value || 0);
+
+    const custoItem = (costKg / 1000.0) * g;
+    row.querySelector('.row-cost-cell').textContent = formatarDinheiro(custoItem);
+
+    recalcFinancialSummary();
+  }
+
+  function recalcFinancialSummary() {
+    let pesoTotalGramas     = 0;
+    let custoIngredientes   = 0;
+
+    document.querySelectorAll('.ficha-row').forEach(row => {
+      const select = row.querySelector('.receita-select');
+      const opt    = select.options[select.selectedIndex];
+      const costPerKg = opt ? parseFloat(opt.dataset.costKg || 0) : 0;
+      const g = parseFloat(row.querySelector('.qtd-input').value || 0);
+
+      pesoTotalGramas   += g;
+      custoIngredientes += (g / 1000.0) * costPerKg;
+    });
+
+    // Rateio de Embalagem
+    const selEmb = document.getElementById('produto-embalagem');
+    const optEmb = selEmb.options[selEmb.selectedIndex];
+    const custoCaixa = optEmb ? parseFloat(optEmb.dataset.cost || 0) : 0;
+    const capCaixa   = Math.max(1, parseFloat(document.getElementById('produto-capacidade-emb').value || 1));
+    const rateioEmb  = custoCaixa > 0 ? (custoCaixa / capCaixa) : 0;
+
+    document.getElementById('label-rateio-emb').textContent = `${formatarDinheiro(rateioEmb)} / un`;
+
+    const custoTotal   = custoIngredientes + rateioEmb;
+    const precoVenda   = parseFloat(document.getElementById('produto-preco').value || 0);
+    const precoSugerido = custoTotal * 2.5;
+
+    const margemBruta = precoVenda - custoTotal;
+    const margemPct   = precoVenda > 0 ? (margemBruta / precoVenda) * 100 : 0;
+
+    document.getElementById('summary-peso').textContent = formatarPeso(pesoTotalGramas);
+    document.getElementById('summary-custo').textContent = formatarDinheiro(custoTotal);
+    document.getElementById('summary-preco-sugerido').textContent = formatarDinheiro(precoSugerido);
+
+    const summaryPctEl = document.getElementById('summary-margem-pct');
+    summaryPctEl.textContent = `${margemPct.toFixed(1)}%`;
+
+    const cardBlock = document.getElementById('summary-card-block');
+    cardBlock.className = 'summary-card-block ';
+    if (margemPct < 0) cardBlock.className += 'red';
+    else if (margemPct < 50) cardBlock.className += 'amber';
+    else cardBlock.className += 'green';
   }
 
   async function salvarProduto(e) {
     e.preventDefault();
     const id = document.getElementById('produto-id').value;
-    const fReceitas = [], fInsumos = [];
-    document.querySelectorAll('.ficha-row').forEach(row => {
-      const tipo = row.querySelector('.tipo-select').value;
-      const val = parseInt(row.querySelector('.origem-select').value, 10);
-      const qtd = parseFloat(row.querySelector('.qtd-input').value);
-      if (tipo === 'receita') fReceitas.push({ receita_id: val, quantidade_necessaria: qtd });
-      else fInsumos.push({ insumo_id: val, quantidade: qtd });
+
+    const rows = document.querySelectorAll('.ficha-row');
+    const fReceitas = [];
+
+    rows.forEach(row => {
+      const recId = parseInt(row.querySelector('.receita-select').value, 10);
+      const g     = parseFloat(row.querySelector('.qtd-input').value);
+
+      if (recId && g) {
+        fReceitas.push({ receita_id: recId, quantidade_gramas: g, quantidade_necessaria: g / 1000.0 });
+      }
     });
-    const body = { nome: document.getElementById('produto-nome').value, preco_venda: parseFloat(document.getElementById('produto-preco').value), peso_produtividade: parseFloat(document.getElementById('produto-peso-prod').value), categoria_producao: document.getElementById('produto-categoria').value, ficha_tecnica_receitas: fReceitas, ficha_tecnica_insumos: fInsumos, ficha_tecnica_embalagens: [] };
+
+    if (!fReceitas.length) {
+      showToast('Adicione pelo menos uma receita à composição do produto.', 'error');
+      return;
+    }
+
+    const catValue = document.getElementById('produto-categoria').value;
+    const embId = document.getElementById('produto-embalagem').value;
+    const capEmb = parseFloat(document.getElementById('produto-capacidade-emb').value || 1);
+
+    const selEmb = document.getElementById('produto-embalagem');
+    const optEmb = selEmb.options[selEmb.selectedIndex];
+    const custoCaixa = optEmb ? parseFloat(optEmb.dataset.cost || 0) : 0;
+    const rateioEmb  = custoCaixa > 0 ? (custoCaixa / capEmb) : 0;
+
+    const body = {
+      nome: document.getElementById('produto-nome').value.trim(),
+      preco_venda: parseFloat(document.getElementById('produto-preco').value),
+      peso_produtividade: parseFloat(document.getElementById('produto-peso-prod').value),
+      categoria: catValue,
+      categoria_producao: catValue,
+      embalagem_id: embId ? parseInt(embId, 10) : null,
+      capacidade_embalagem: capEmb,
+      rateio_embalagem: rateioEmb,
+      ficha_tecnica_receitas: fReceitas,
+      ficha_tecnica_insumos: [],
+      ficha_tecnica_embalagens: []
+    };
+
     try {
-      const res = id ? await fetch(`${API_PRODUTOS}/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }) : await fetch(API_PRODUTOS, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-      if (res.ok) { showToast(id ? '✅ Produto atualizado!' : '✅ Produto criado!', 'success'); closeDrawer(); carregarDados(); }
-      else { const d = await res.json(); showToast('Erro: ' + d.erro, 'error'); }
-    } catch { showToast('Erro de conexão.', 'error'); }
+      const res = id
+        ? await fetch(`${API_PRODUTOS}/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+        : await fetch(API_PRODUTOS, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+
+      if (res.ok) {
+        showToast(id ? '✅ Produto atualizado!' : '✅ Produto criado com sucesso!', 'success');
+        closeProdutoModal();
+        carregarDados();
+      } else {
+        const d = await res.json();
+        showToast('Erro ao salvar: ' + (d.erro || 'Desconhecido'), 'error');
+      }
+    } catch {
+      showToast('Erro de conexão.', 'error');
+    }
   }
 
   async function excluirProduto(id) {
@@ -335,7 +838,7 @@
     try {
       const res = await fetch(`${API_PRODUTOS}/${id}`, { method: 'DELETE' });
       if (res.ok) { showToast('🗑️ Produto removido.'); carregarDados(); }
-      else { const d = await res.json(); showToast('Erro: ' + d.erro, 'error'); }
+      else { const d = await res.json(); showToast('Erro ao excluir.', 'error'); }
     } catch { showToast('Erro de conexão.', 'error'); }
   }
 

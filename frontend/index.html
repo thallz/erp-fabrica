@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
-    <script src="https://tailwindcss.com"></script>
+  <script src="https://tailwindcss.com"></script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard — ERP Fabrica</title>
@@ -16,416 +17,588 @@
       gap: 20px;
       margin-bottom: 24px;
     }
-    .chart-container { position: relative; height: 280px; }
-    canvas#salesChart { width: 100% !important; height: 100% !important; }
 
-    .queue-list { list-style: none; }
+    .chart-container {
+      position: relative;
+      height: 280px;
+    }
+
+    canvas#salesChart {
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    .queue-list {
+      list-style: none;
+    }
+
     .queue-item {
       padding: 12px 0;
       border-bottom: 1px solid var(--border-light);
     }
-    .queue-item:last-child { border-bottom: none; }
+
+    .queue-item:last-child {
+      border-bottom: none;
+    }
+
     .queue-item-header {
-      display: flex; align-items: center; justify-content: space-between;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
       margin-bottom: 3px;
     }
-    .queue-item-title { font-size: 13.5px; font-weight: 600; }
-    .queue-item-sub   { font-size: 12px; color: var(--text-muted); }
-    .queue-item-op    { font-size: 11.5px; font-weight: 600; color: var(--text-secondary); }
+
+    .queue-item-title {
+      font-size: 13.5px;
+      font-weight: 600;
+    }
+
+    .queue-item-sub {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .queue-item-op {
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
 
     .shortcuts-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 12px;
     }
+
     .shortcut-btn {
-      display: flex; flex-direction: column; align-items: center;
-      gap: 8px; padding: 20px 12px;
-      border: 1px solid var(--border); border-radius: var(--radius-lg);
-      background: var(--surface); cursor: pointer;
-      font-size: 12.5px; font-weight: 500; color: var(--text-secondary);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 20px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 12.5px;
+      font-weight: 500;
+      color: var(--text-secondary);
       transition: border-color .15s, color .15s, background .15s;
       text-decoration: none;
     }
+
     .shortcut-btn:first-child {
-      background: var(--brand); color: #fff; border-color: var(--brand);
+      background: var(--brand);
+      color: #fff;
+      border-color: var(--brand);
     }
-    .shortcut-btn:first-child:hover { background: var(--brand-hover); }
-    .shortcut-btn:not(:first-child):hover { border-color: var(--brand); color: var(--brand); background: var(--brand-light); }
+
+    .shortcut-btn:first-child:hover {
+      background: var(--brand-hover);
+    }
+
+    .shortcut-btn:not(:first-child):hover {
+      border-color: var(--brand);
+      color: var(--brand);
+      background: var(--brand-light);
+    }
 
     .period-input-wrap {
-      display: flex; align-items: center; gap: 8px;
-      border: 1px solid var(--border); border-radius: var(--radius);
-      padding: 8px 12px; background: var(--bg); font-size: 13px;
-      color: var(--text-secondary); margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 8px 12px;
+      background: var(--bg);
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 14px;
     }
-    .legend-dots { display: flex; gap: 14px; margin-top: 12px; font-size: 11.5px; }
-    .legend-dot { display: flex; align-items: center; gap: 5px; color: var(--text-muted); }
-    .dot { width: 8px; height: 8px; border-radius: 50%; }
+
+    .legend-dots {
+      display: flex;
+      gap: 14px;
+      margin-top: 12px;
+      font-size: 11.5px;
+    }
+
+    .legend-dot {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      color: var(--text-muted);
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
 
     @media (max-width: 900px) {
-      .dashboard-grid { grid-template-columns: 1fr; }
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
+
 <body>
-<div class="erp-shell">
+  <div class="erp-shell">
 
-  <!-- SIDEBAR -->
-  <aside class="sidebar">
-    <div class="sidebar-logo">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-      <span>ERP Fabrica</span>
-    </div>
-    <nav class="sidebar-nav">
-      <div class="sidebar-section-label">Menu Principal</div>
-      <a href="almoxarifado.html" class="nav-link">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
-        📦 Almoxarifado
-      </a>
-      <a href="receitas.html" class="nav-link">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-        👨🍳 Receitas
-      </a>
-      <a href="produtos.html" class="nav-link">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-        🍰 Produtos Finais
-      </a>
-      <a href="clientes.html" class="nav-link">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-        👥 Clientes
-      </a>
-      <a href="vendas.html" class="nav-link">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-        💰 Lançar Vendas
-      </a>
-      <a href="planejamento.html" class="nav-link">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-        📅 Planejamento de Produção (Maestro)
-      </a>
-    </nav>
-    <div class="sidebar-footer">
-      <a href="#">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-        Sair do Sistema
-      </a>
-      <div class="sidebar-version">v2.4.0-build.102</div>
-    </div>
-  </aside>
-
-  <!-- MAIN -->
-  <div class="main-wrap">
-
-    <!-- TOPBAR -->
-    <header class="topbar">
-      <div class="topbar-search">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        Busca global (Alt + S)
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+        </svg>
+        <span>ERP Fabrica</span>
       </div>
-      <div class="topbar-right">
-        <span class="badge-offline">Modo Offline</span>
-        <button class="topbar-icon-btn" title="Documentos">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-        </button>
-        <button class="topbar-icon-btn" title="Notificacoes">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-        </button>
-        <div class="user-chip">
-          <div>
-            <strong>Admin Fabrica</strong>
-            <span>Administrador</span>
-          </div>
-          <div class="user-avatar">AF</div>
-        </div>
+      <nav class="sidebar-nav">
+        <div class="sidebar-section-label">Menu Principal</div>
+        <a href="almoxarifado.html" class="nav-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="21 8 21 21 3 21 3 8" />
+            <rect x="1" y="3" width="22" height="5" />
+            <line x1="10" y1="12" x2="14" y2="12" />
+          </svg>
+          📦 Almoxarifado
+        </a>
+        <a href="receitas.html" class="nav-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2L2 7l10 5 10-5-10-5z" />
+            <path d="M2 17l10 5 10-5" />
+            <path d="M2 12l10 5 10-5" />
+          </svg>
+          👨🍳 Receitas
+        </a>
+        <a href="produtos.html" class="nav-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2L2 7l10 5 10-5-10-5z" />
+            <path d="M2 17l10 5 10-5" />
+            <path d="M2 12l10 5 10-5" />
+          </svg>
+          🍰 Produtos Finais
+        </a>
+        <a href="clientes.html" class="nav-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+          </svg>
+          👥 Clientes
+        </a>
+        <a href="vendas.html" class="nav-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="1" x2="12" y2="23" />
+            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+          </svg>
+          💰 Lançar Vendas
+        </a>
+        <a href="planejamento.html" class="nav-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+            <line x1="16" y1="2" x2="16" y2="6" />
+            <line x1="8" y1="2" x2="8" y2="6" />
+            <line x1="3" y1="10" x2="21" y2="10" />
+          </svg>
+          📅 Planejamento de Produção (Maestro)
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <a href="#">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <polyline points="16 17 21 12 16 7" />
+            <line x1="21" y1="12" x2="9" y2="12" />
+          </svg>
+          Sair do Sistema
+        </a>
+        <div class="sidebar-version">v2.4.0-build.102</div>
       </div>
-    </header>
+    </aside>
 
-    <!-- CONTENT -->
-    <main class="page-content">
-      <div class="page-header">
-        <div class="page-header-left">
-          <h1>Dashboard Operacional</h1>
-          <p>Bem-vindo ao centro de comando da ERP Fabrica.</p>
+    <!-- MAIN -->
+    <div class="main-wrap">
+
+      <!-- TOPBAR -->
+      <header class="topbar">
+        <div class="topbar-search">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          Busca global (Alt + S)
         </div>
-        <div class="page-header-actions">
-          <button class="btn btn-outline" onclick="loadDashboard()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-            Atualizar
+        <div class="topbar-right">
+          <span class="badge-offline">Modo Offline</span>
+          <button class="topbar-icon-btn" title="Documentos">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+            </svg>
           </button>
-          <button class="btn btn-outline">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-            Imprimir
+          <button class="topbar-icon-btn" title="Notificacoes">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+            </svg>
           </button>
-          <button class="btn btn-outline">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            Exportar CSV
-          </button>
+          <div class="user-chip">
+            <div>
+              <strong>Admin Fabrica</strong>
+              <span>Administrador</span>
+            </div>
+            <div class="user-avatar">AF</div>
+          </div>
         </div>
-      </div>
+      </header>
 
-      <!-- KPI CARDS -->
-      <div class="kpi-grid">
-        <div class="kpi-card accent-green">
-          <div class="kpi-label">Vendas Hoje</div>
-          <div class="kpi-value" id="kpi-faturamento">—</div>
-          <div class="kpi-sub" id="kpi-pedidos-sub">carregando...</div>
-          <div class="kpi-icon green">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+      <!-- CONTENT -->
+      <main class="page-content">
+        <div class="page-header">
+          <div class="page-header-left">
+            <h1>Dashboard Operacional</h1>
+            <p>Bem-vindo ao centro de comando da ERP Fabrica.</p>
+          </div>
+          <div class="page-header-actions">
+            <button class="btn btn-outline" onclick="loadDashboard()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="23 4 23 10 17 10" />
+                <polyline points="1 20 1 14 7 14" />
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+              </svg>
+              Atualizar
+            </button>
+            <button class="btn btn-outline">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="6 9 6 2 18 2 18 9" />
+                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+                <rect x="6" y="14" width="12" height="8" />
+              </svg>
+              Imprimir
+            </button>
+            <button class="btn btn-outline">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              Exportar CSV
+            </button>
           </div>
         </div>
-        <div class="kpi-card accent-blue">
-          <div class="kpi-label">Pedidos em Producao</div>
-          <div class="kpi-value" id="kpi-producao">—</div>
-          <div class="kpi-sub" id="kpi-producao-sub">carregando...</div>
-          <div class="kpi-icon blue">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-          </div>
-        </div>
-        <div class="kpi-card accent-red">
-          <div class="kpi-label">Contas Vencidas</div>
-          <div class="kpi-value" id="kpi-receber">—</div>
-          <div class="kpi-sub" id="kpi-receber-sub">carregando...</div>
-          <div class="kpi-icon red">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          </div>
-        </div>
-        <div class="kpi-card accent-amber">
-          <div class="kpi-label">Estoque Critico</div>
-          <div class="kpi-value" id="kpi-critico">—</div>
-          <div class="kpi-sub">Abaixo do estoque minimo</div>
-          <div class="kpi-icon amber">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
-          </div>
-        </div>
-      </div>
 
-      <!-- CHART + QUEUE -->
-      <div class="dashboard-grid">
-        <div class="card">
-          <div class="card-header">
-            <h2>Desempenho Semanal de Vendas</h2>
-            <p>Volume financeiro processado nos ultimos 6 dias uteis</p>
+        <!-- KPI CARDS -->
+        <div class="kpi-grid">
+          <div class="kpi-card accent-green">
+            <div class="kpi-label">Vendas Hoje</div>
+            <div class="kpi-value" id="kpi-faturamento">—</div>
+            <div class="kpi-sub" id="kpi-pedidos-sub">carregando...</div>
+            <div class="kpi-icon green">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+                <polyline points="17 6 23 6 23 12" />
+              </svg>
+            </div>
           </div>
-          <div class="card-body">
-            <div class="chart-container">
-              <canvas id="salesChart"></canvas>
+          <div class="kpi-card accent-blue">
+            <div class="kpi-label">Pedidos em Producao</div>
+            <div class="kpi-value" id="kpi-producao">—</div>
+            <div class="kpi-sub" id="kpi-producao-sub">carregando...</div>
+            <div class="kpi-icon blue">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="20" x2="18" y2="10" />
+                <line x1="12" y1="20" x2="12" y2="4" />
+                <line x1="6" y1="20" x2="6" y2="14" />
+              </svg>
+            </div>
+          </div>
+          <div class="kpi-card accent-red">
+            <div class="kpi-label">Contas Vencidas</div>
+            <div class="kpi-value" id="kpi-receber">—</div>
+            <div class="kpi-sub" id="kpi-receber-sub">carregando...</div>
+            <div class="kpi-icon red">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+            </div>
+          </div>
+          <div class="kpi-card accent-amber">
+            <div class="kpi-label">Estoque Critico</div>
+            <div class="kpi-value" id="kpi-critico">—</div>
+            <div class="kpi-sub">Abaixo do estoque minimo</div>
+            <div class="kpi-icon amber">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path
+                  d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+              </svg>
             </div>
           </div>
         </div>
 
-        <div class="card">
-          <div class="card-header">
-            <h2>Fila de Producao</h2>
-            <p>Ordens de producao prioritarias</p>
-          </div>
-          <div class="card-body" style="padding-top:12px">
-            <ul class="queue-list" id="queue-list">
-              <li style="color:var(--text-muted);font-size:13px">Carregando...</li>
-            </ul>
-            <div style="margin-top:12px;text-align:center">
-              <a href="producao.html" class="btn btn-outline btn-sm" style="width:100%;justify-content:center">Ver fila completa</a>
+        <!-- CHART + QUEUE -->
+        <div class="dashboard-grid">
+          <div class="card">
+            <div class="card-header">
+              <h2>Desempenho Semanal de Vendas</h2>
+              <p>Volume financeiro processado nos ultimos 6 dias uteis</p>
             </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- SHORTCUTS + REPORTS -->
-      <div class="dashboard-grid">
-        <div class="card">
-          <div class="card-header">
-            <h2>Atalhos Operacionais</h2>
-            <p>Acoes rapidas para produtividade</p>
-          </div>
-          <div class="card-body">
-            <div class="shortcuts-grid">
-              <a href="vendas.html" class="shortcut-btn">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-                Lancar Pedido
-              </a>
-              <a href="vendas.html" class="shortcut-btn">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
-                Novo Cliente
-              </a>
-              <a href="producao.html" class="shortcut-btn">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-                Gerar OP
-              </a>
-            </div>
-          </div>
-        </div>
-
-        <div class="card reports-card">
-          <div class="card-header">
-            <h2>Relatorios Rapidos</h2>
-            <p>Exportacao instantanea de documentos</p>
-          </div>
-          <div class="card-body">
-            <div class="form-group">
-              <label>Periodo</label>
-              <div class="period-input-wrap">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                01/05/2024 — 31/05/2024
+            <div class="card-body">
+              <div class="chart-container">
+                <canvas id="salesChart"></canvas>
               </div>
             </div>
-            <button class="btn btn-primary" style="width:100%;justify-content:center">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              Gerar PDF Diario
-            </button>
-            <div class="legend-dots">
-              <div class="legend-dot"><div class="dot" style="background:var(--green)"></div> Relatorio de Vendas</div>
-              <div class="legend-dot"><div class="dot" style="background:var(--blue)"></div> Movimentacao Estoque</div>
-              <div class="legend-dot"><div class="dot" style="background:var(--amber)"></div> Fluxo de Caixa</div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h2>Fila de Producao</h2>
+              <p>Ordens de producao prioritarias</p>
+            </div>
+            <div class="card-body" style="padding-top:12px">
+              <ul class="queue-list" id="queue-list">
+                <li style="color:var(--text-muted);font-size:13px">Carregando...</li>
+              </ul>
+              <div style="margin-top:12px;text-align:center">
+                <a href="producao.html" class="btn btn-outline btn-sm" style="width:100%;justify-content:center">Ver
+                  fila completa</a>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </main>
 
-    <!-- FOOTER -->
-    <footer class="site-footer">
-      <span>&copy; 2024 ERP Fabrica — Todos os direitos reservados &nbsp;&nbsp;<span class="status-dot"></span> Sistema Online (Sincronizado)</span>
-      <div class="footer-links">
-        <a href="#">Suporte Tecnico</a>
-        <a href="#">Documentacao</a>
-        <span>IP: 192.168.1.15</span>
-      </div>
-    </footer>
+        <!-- SHORTCUTS + REPORTS -->
+        <div class="dashboard-grid">
+          <div class="card">
+            <div class="card-header">
+              <h2>Atalhos Operacionais</h2>
+              <p>Acoes rapidas para produtividade</p>
+            </div>
+            <div class="card-body">
+              <div class="shortcuts-grid">
+                <a href="vendas.html" class="shortcut-btn">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="8" x2="12" y2="16" />
+                    <line x1="8" y1="12" x2="16" y2="12" />
+                  </svg>
+                  Lancar Pedido
+                </a>
+                <a href="vendas.html" class="shortcut-btn">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                    <circle cx="8.5" cy="7" r="4" />
+                    <line x1="20" y1="8" x2="20" y2="14" />
+                    <line x1="23" y1="11" x2="17" y2="11" />
+                  </svg>
+                  Novo Cliente
+                </a>
+                <a href="producao.html" class="shortcut-btn">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="20" x2="18" y2="10" />
+                    <line x1="12" y1="20" x2="12" y2="4" />
+                    <line x1="6" y1="20" x2="6" y2="14" />
+                  </svg>
+                  Gerar OP
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <div class="card reports-card">
+            <div class="card-header">
+              <h2>Relatorios Rapidos</h2>
+              <p>Exportacao instantanea de documentos</p>
+            </div>
+            <div class="card-body">
+              <div class="form-group">
+                <label>Periodo</label>
+                <div class="period-input-wrap">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
+                  </svg>
+                  01/05/2024 — 31/05/2024
+                </div>
+              </div>
+              <button class="btn btn-primary" style="width:100%;justify-content:center">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+                Gerar PDF Diario
+              </button>
+              <div class="legend-dots">
+                <div class="legend-dot">
+                  <div class="dot" style="background:var(--green)"></div> Relatorio de Vendas
+                </div>
+                <div class="legend-dot">
+                  <div class="dot" style="background:var(--blue)"></div> Movimentacao Estoque
+                </div>
+                <div class="legend-dot">
+                  <div class="dot" style="background:var(--amber)"></div> Fluxo de Caixa
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <!-- FOOTER -->
+      <footer class="site-footer">
+        <span>&copy; 2024 ERP Fabrica — Todos os direitos reservados &nbsp;&nbsp;<span class="status-dot"></span>
+          Sistema Online (Sincronizado)</span>
+        <div class="footer-links">
+          <a href="#">Suporte Tecnico</a>
+          <a href="#">Documentacao</a>
+          <span>IP: 192.168.1.15</span>
+        </div>
+      </footer>
+    </div>
   </div>
-</div>
 
-<!-- Toast container -->
-<div id="toast-container"></div>
+  <!-- Toast container -->
+  <div id="toast-container"></div>
 
-<!-- Chart.js CDN -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script>
-  const API = 'http://localhost:3001/api';
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script>
+    const API = 'http://localhost:3001/api';
 
-  function fmtBRL(v) {
-    return Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-  }
-
-  function toast(msg, type = '') {
-    const el = document.createElement('div');
-    el.className = 'toast ' + type;
-    el.textContent = msg;
-    document.getElementById('toast-container').appendChild(el);
-    setTimeout(() => el.remove(), 3500);
-  }
-
-  // --- Chart ---
-  let chart;
-  function initChart(data) {
-    const ctx = document.getElementById('salesChart').getContext('2d');
-    if (chart) chart.destroy();
-    chart = new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: data.labels,
-        datasets: [{
-          data: data.values,
-          backgroundColor: '#5b4be3',
-          borderRadius: 6,
-          borderSkipped: false,
-        }]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: false }, tooltip: {
-          callbacks: { label: ctx => fmtBRL(ctx.raw) }
-        }},
-        scales: {
-          x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 11 } } },
-          y: { grid: { color: '#f0f1f5' }, ticks: { font: { family: 'Inter', size: 11 }, callback: v => 'R$' + (v/1000).toFixed(0) + 'k' } }
-        }
-      }
-    });
-  }
-
-  // --- Queue render ---
-  function renderQueue(ops) {
-    const list = document.getElementById('queue-list');
-    if (!ops || !ops.length) {
-      list.innerHTML = '<li style="color:var(--text-muted);font-size:13px;padding:8px 0">Nenhuma OP na fila.</li>';
-      return;
+    function fmtBRL(v) {
+      return Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     }
-    const statusMap = {
-      'FILA':      { label: 'Aguardando',  cls: 'badge-amber' },
-      'PRODUZINDO':{ label: 'Em progresso',cls: 'badge-blue' },
-      'CONCLUIDA': { label: 'Concluida',   cls: 'badge-green' },
-      'PAUSADA':   { label: 'Pausada',     cls: 'badge-gray' },
-    };
-    list.innerHTML = ops.slice(0, 6).map(op => {
-      const s = statusMap[op.status] || { label: op.status, cls: 'badge-gray' };
-      return `
+
+    function toast(msg, type = '') {
+      const el = document.createElement('div');
+      el.className = 'toast ' + type;
+      el.textContent = msg;
+      document.getElementById('toast-container').appendChild(el);
+      setTimeout(() => el.remove(), 3500);
+    }
+
+    // --- Chart ---
+    let chart;
+    function initChart(data) {
+      const ctx = document.getElementById('salesChart').getContext('2d');
+      if (chart) chart.destroy();
+      chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: data.labels,
+          datasets: [{
+            data: data.values,
+            backgroundColor: '#5b4be3',
+            borderRadius: 6,
+            borderSkipped: false,
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }, tooltip: {
+              callbacks: { label: ctx => fmtBRL(ctx.raw) }
+            }
+          },
+          scales: {
+            x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 11 } } },
+            y: { grid: { color: '#f0f1f5' }, ticks: { font: { family: 'Inter', size: 11 }, callback: v => 'R$' + (v / 1000).toFixed(0) + 'k' } }
+          }
+        }
+      });
+    }
+
+    // --- Queue render ---
+    function renderQueue(ops) {
+      const list = document.getElementById('queue-list');
+      if (!ops || !ops.length) {
+        list.innerHTML = '<li style="color:var(--text-muted);font-size:13px;padding:8px 0">Nenhuma OP na fila.</li>';
+        return;
+      }
+      const statusMap = {
+        'FILA': { label: 'Aguardando', cls: 'badge-amber' },
+        'PRODUZINDO': { label: 'Em progresso', cls: 'badge-blue' },
+        'CONCLUIDA': { label: 'Concluida', cls: 'badge-green' },
+        'PAUSADA': { label: 'Pausada', cls: 'badge-gray' },
+      };
+      list.innerHTML = ops.slice(0, 6).map(op => {
+        const s = statusMap[op.status] || { label: op.status, cls: 'badge-gray' };
+        return `
         <li class="queue-item">
           <div class="queue-item-header">
-            <span class="queue-item-op">OP-${String(op.id).padStart(3,'0')}</span>
+            <span class="queue-item-op">OP-${String(op.id).padStart(3, '0')}</span>
             <span class="badge ${s.cls}" style="font-size:10px">${s.label}</span>
           </div>
           <div class="queue-item-title">${op.produto_nome || 'Produto #' + op.produto_id}</div>
           <div class="queue-item-sub">Qtd planejada: ${op.quantidade_planejada}</div>
         </li>`;
-    }).join('');
-  }
-
-  // --- Load all dashboard data ---
-  async function loadDashboard() {
-    try {
-      const [financeiro, ops] = await Promise.all([
-        fetch(`${API}/financeiro/resumo`).then(r => r.json()),
-        fetch(`${API}/producao/fila`).then(r => r.json()).catch(() => [])
-      ]);
-
-      document.getElementById('kpi-faturamento').textContent = fmtBRL(financeiro.faturamento_total);
-      document.getElementById('kpi-pedidos-sub').textContent = `${financeiro.total_pedidos} pedidos realizados`;
-
-      const produzindo = (financeiro.pedidos_por_status || []).find(s => s.status === 'PRODUZINDO');
-      document.getElementById('kpi-producao').textContent = produzindo ? produzindo.quantidade : '0';
-      document.getElementById('kpi-producao-sub').textContent = 'OPs para finalizar hoje';
-
-      document.getElementById('kpi-receber').textContent = fmtBRL(financeiro.a_receber);
-      document.getElementById('kpi-receber-sub').textContent = 'A receber de pedidos ativos';
-
-      // Estoque critico — mock enquanto endpoint nao existe
-      document.getElementById('kpi-critico').textContent = '—';
-
-      renderQueue(ops);
-
-      // Chart: últimos 6 dias baseado em pedidos_por_status mock
-      const days = ['Seg','Ter','Qua','Qui','Sex','Sab'];
-      const vals = [4500, 4800, 4600, 6000, 5800, 3100];
-      initChart({ labels: days, values: vals });
-
-    } catch (err) {
-      console.error('[ERP] Dashboard error:', err);
-      toast('Servidor offline — dados de demonstracao.', 'error');
-
-      // Fallback demo
-      document.getElementById('kpi-faturamento').textContent = 'R$ 12.450,00';
-      document.getElementById('kpi-pedidos-sub').textContent = '14 pedidos realizados';
-      document.getElementById('kpi-producao').textContent = '28';
-      document.getElementById('kpi-producao-sub').textContent = '8 OPs para finalizar hoje';
-      document.getElementById('kpi-receber').textContent = 'R$ 4.200,00';
-      document.getElementById('kpi-receber-sub').textContent = '3 titulos com +15 dias';
-      document.getElementById('kpi-critico').textContent = '12 itens';
-
-      const demoOps = [
-        { id:1, status:'PRODUZINDO', produto_nome:'Metalurgica Silva', quantidade_planejada: 200 },
-        { id:3, status:'FILA',       produto_nome:'Auto Pecas Central', quantidade_planejada: 80 },
-        { id:4, status:'PRODUZINDO', produto_nome:'Industrias Knorr',   quantidade_planejada: 50 },
-        { id:7, status:'FILA',       produto_nome:'Logistica Express',  quantidade_planejada: 120 },
-        { id:9, status:'FILA',       produto_nome:'Construtora Norte',  quantidade_planejada: 60 },
-      ];
-      renderQueue(demoOps);
-      initChart({ labels:['Seg','Ter','Qua','Qui','Sex','Sab'], values:[4500,4800,4600,6000,5800,3100] });
+      }).join('');
     }
-  }
 
-  document.addEventListener('DOMContentLoaded', loadDashboard);
-  document.addEventListener('keydown', e => {
-    if (e.altKey && e.key === 's') document.querySelector('.topbar-search').focus();
-  });
-</script>
+    // --- Load all dashboard data ---
+    async function loadDashboard() {
+      try {
+        const [financeiro, ops] = await Promise.all([
+          fetch(`${API}/financeiro/resumo`).then(r => r.json()),
+          fetch(`${API}/producao/fila`).then(r => r.json()).catch(() => [])
+        ]);
+
+        document.getElementById('kpi-faturamento').textContent = fmtBRL(financeiro.faturamento_total);
+        document.getElementById('kpi-pedidos-sub').textContent = `${financeiro.total_pedidos} pedidos realizados`;
+
+        const produzindo = (financeiro.pedidos_por_status || []).find(s => s.status === 'PRODUZINDO');
+        document.getElementById('kpi-producao').textContent = produzindo ? produzindo.quantidade : '0';
+        document.getElementById('kpi-producao-sub').textContent = 'OPs para finalizar hoje';
+
+        document.getElementById('kpi-receber').textContent = fmtBRL(financeiro.a_receber);
+        document.getElementById('kpi-receber-sub').textContent = 'A receber de pedidos ativos';
+
+        // Estoque critico — mock enquanto endpoint nao existe
+        document.getElementById('kpi-critico').textContent = '—';
+
+        renderQueue(ops);
+
+        // Chart: últimos 6 dias baseado em pedidos_por_status mock
+        const days = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
+        const vals = [4500, 4800, 4600, 6000, 5800, 3100];
+        initChart({ labels: days, values: vals });
+
+      } catch (err) {
+        console.error('[ERP] Dashboard error:', err);
+        toast('Servidor offline — dados de demonstracao.', 'error');
+
+        // Fallback demo
+        document.getElementById('kpi-faturamento').textContent = 'R$ 12.450,00';
+        document.getElementById('kpi-pedidos-sub').textContent = '14 pedidos realizados';
+        document.getElementById('kpi-producao').textContent = '28';
+        document.getElementById('kpi-producao-sub').textContent = '8 OPs para finalizar hoje';
+        document.getElementById('kpi-receber').textContent = 'R$ 4.200,00';
+        document.getElementById('kpi-receber-sub').textContent = '3 titulos com +15 dias';
+        document.getElementById('kpi-critico').textContent = '12 itens';
+
+        const demoOps = [
+          { id: 1, status: 'PRODUZINDO', produto_nome: 'Metalurgica Silva', quantidade_planejada: 200 },
+          { id: 3, status: 'FILA', produto_nome: 'Auto Pecas Central', quantidade_planejada: 80 },
+          { id: 4, status: 'PRODUZINDO', produto_nome: 'Industrias Knorr', quantidade_planejada: 50 },
+          { id: 7, status: 'FILA', produto_nome: 'Logistica Express', quantidade_planejada: 120 },
+          { id: 9, status: 'FILA', produto_nome: 'Construtora Norte', quantidade_planejada: 60 },
+        ];
+        renderQueue(demoOps);
+        initChart({ labels: ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'], values: [4500, 4800, 4600, 6000, 5800, 3100] });
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadDashboard);
+    document.addEventListener('keydown', e => {
+      if (e.altKey && e.key === 's') document.querySelector('.topbar-search').focus();
+    });
+  </script>
 </body>
+
 </html>

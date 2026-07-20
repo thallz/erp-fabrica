@@ -1,20 +1,21 @@
 const pool = require('../config/db');
+const { recalcularTodasReceitas } = require('../utils/recalcularCustos');
 
 function mapReceitaRow(row, itens) {
     return {
         id: row.id,
         nome: row.nome,
         categoria: row.categoria,
-        custo: parseFloat(row.custo_total),
-        pesoTotal: parseFloat(row.peso_total),
-        custoPorKg: parseFloat(row.custo_por_kg),
+        custo: parseFloat(row.custo_total || 0),
+        pesoTotal: parseFloat(row.peso_total || 0),
+        custoPorKg: parseFloat(row.custo_por_kg || 0),
         itens: itens.map(i => ({
             nome: i.nome,
             idOrigem: i.origem_id,
             tipoOrigem: i.tipo_origem,
-            g: parseFloat(i.quantidade_gramas),
-            custoUnitario: parseFloat(i.custo_unitario),
-            custo: parseFloat(i.custo)
+            g: parseFloat(i.quantidade_gramas || 0),
+            custoUnitario: parseFloat(i.custo_unitario || 0),
+            custo: parseFloat(i.custo || 0)
         }))
     };
 }
@@ -25,13 +26,6 @@ async function buscarItens(client, receitaId) {
         [receitaId]
     );
     return result.rows;
-}
-
-function calcularTotais(itens) {
-    const custo = itens.reduce((a, b) => a + parseFloat(b.custo || 0), 0);
-    const peso = itens.reduce((a, b) => a + parseFloat(b.g || b.quantidade_gramas || 0), 0);
-    const custoPorKg = peso > 0 ? (custo / peso) * 1000 : 0;
-    return { custo, peso, custoPorKg };
 }
 
 async function gravarItens(client, receitaId, itens) {
@@ -46,7 +40,7 @@ async function gravarItens(client, receitaId, itens) {
                 item.tipoOrigem || item.tipo_origem,
                 item.idOrigem || item.origem_id,
                 item.nome,
-                item.g || item.quantidade_gramas,
+                item.g || item.quantidade_gramas || 0,
                 item.custoUnitario || item.custo_unitario || 0,
                 item.custo || 0
             ]
@@ -57,6 +51,7 @@ async function gravarItens(client, receitaId, itens) {
 const receitaController = {
     listar: async (req, res) => {
         try {
+            await recalcularTodasReceitas();
             const receitas = await pool.query('SELECT * FROM receita ORDER BY nome ASC');
             const resultado = [];
             for (const row of receitas.rows) {
@@ -78,18 +73,22 @@ const receitaController = {
                 return res.status(400).json({ status: 'erro', erro: 'Nome e itens são obrigatórios' });
             }
 
-            const totais = calcularTotais(itens);
             const result = await client.query(
                 `INSERT INTO receita (nome, categoria, custo_total, peso_total, custo_por_kg)
-                 VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-                [nome, categoria || 'Geral', totais.custo, totais.peso, totais.custoPorKg]
+                 VALUES ($1, $2, 0, 0, 0) RETURNING *`,
+                [nome, categoria || 'Geral']
             );
             const receitaId = result.rows[0].id;
             await gravarItens(client, receitaId, itens);
 
             await client.query('COMMIT');
+
+            // Recalcular todas as receitas em cascata com transação fechada
+            await recalcularTodasReceitas();
+
+            const recResult = await pool.query('SELECT * FROM receita WHERE id = $1', [receitaId]);
             const itensSalvos = await buscarItens(pool, receitaId);
-            res.status(201).json(mapReceitaRow(result.rows[0], itensSalvos));
+            res.status(201).json(mapReceitaRow(recResult.rows[0], itensSalvos));
         } catch (error) {
             await client.query('ROLLBACK');
             res.status(500).json({ status: 'erro', erro: error.message });
@@ -108,12 +107,9 @@ const receitaController = {
                 return res.status(400).json({ status: 'erro', erro: 'Nome e itens são obrigatórios' });
             }
 
-            const totais = calcularTotais(itens);
             const result = await client.query(
-                `UPDATE receita
-                 SET nome = $1, categoria = $2, custo_total = $3, peso_total = $4, custo_por_kg = $5
-                 WHERE id = $6 RETURNING *`,
-                [nome, categoria || 'Geral', totais.custo, totais.peso, totais.custoPorKg, id]
+                `UPDATE receita SET nome = $1, categoria = $2 WHERE id = $3 RETURNING *`,
+                [nome, categoria || 'Geral', id]
             );
             if (result.rows.length === 0) {
                 await client.query('ROLLBACK');
@@ -123,8 +119,12 @@ const receitaController = {
             await gravarItens(client, id, itens);
             await client.query('COMMIT');
 
+            // Recalcular todas as receitas em cascata
+            await recalcularTodasReceitas();
+
+            const recResult = await pool.query('SELECT * FROM receita WHERE id = $1', [id]);
             const itensSalvos = await buscarItens(pool, id);
-            res.json(mapReceitaRow(result.rows[0], itensSalvos));
+            res.json(mapReceitaRow(recResult.rows[0], itensSalvos));
         } catch (error) {
             await client.query('ROLLBACK');
             res.status(500).json({ status: 'erro', erro: error.message });
@@ -140,6 +140,7 @@ const receitaController = {
             if (result.rows.length === 0) {
                 return res.status(404).json({ status: 'erro', erro: 'Receita não encontrada' });
             }
+            await recalcularTodasReceitas();
             res.json({ status: 'sucesso', id: result.rows[0].id });
         } catch (error) {
             res.status(500).json({ status: 'erro', erro: error.message });
@@ -174,7 +175,6 @@ const receitaController = {
                 const chave = String(item.idOrigem ?? item.origem_id);
                 if (tipo === 'materia') {
                     if (mapaInsumo[chave] != null) return true;
-                    // IDs já batem com o banco (backup parcial do ERP)
                     if (Object.keys(mapaInsumo).length === 0) return Number(item.idOrigem) > 0;
                     return false;
                 }
@@ -194,11 +194,10 @@ const receitaController = {
                         g: item.g ?? item.quantidade_gramas
                     }));
 
-                    const totais = calcularTotais(itens);
                     const result = await client.query(
                         `INSERT INTO receita (nome, categoria, custo_total, peso_total, custo_por_kg)
-                         VALUES ($1, $2, $3, $4, $5) RETURNING id`,
-                        [rec.nome, rec.categoria || 'Geral', totais.custo, totais.peso, totais.custoPorKg]
+                         VALUES ($1, $2, 0, 0, 0) RETURNING id`,
+                        [rec.nome, rec.categoria || 'Geral']
                     );
                     const novoId = result.rows[0].id;
                     await gravarItens(client, novoId, itens);
@@ -222,6 +221,7 @@ const receitaController = {
             }
 
             await client.query('COMMIT');
+            await recalcularTodasReceitas();
             res.json({ status: 'sucesso', importadas, mapa_receitas: mapaReceita });
         } catch (error) {
             await client.query('ROLLBACK');
