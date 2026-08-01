@@ -467,39 +467,48 @@ const planejamentoController = {
                 data_2 
             } = req.body;
 
-            if (!op_id || !quantidade_colaborador_1 || !colaborador_1_id || !data_1) {
+            const targetOpId = op_id;
+            const qtd1 = parseFloat(quantidade_colaborador_1);
+            const qtd2 = parseFloat(quantidade_colaborador_2);
+
+            if (!targetOpId || isNaN(qtd1) || isNaN(qtd2) || qtd1 <= 0 || qtd2 <= 0) {
                 await client.query('ROLLBACK');
-                return res.status(400).json({ status: 'erro', erro: 'Campos obrigatórios ausentes.' });
+                return res.status(400).json({ status: 'erro', erro: 'Quantidades válidas são obrigatórias para a divisão.' });
             }
 
             // Buscar OP original
-            const opRow = await client.query('SELECT * FROM ordem_producao WHERE id = $1', [op_id]);
+            const opRow = await client.query('SELECT * FROM ordem_producao WHERE id = $1', [targetOpId]);
             if (opRow.rows.length === 0) {
                 await client.query('ROLLBACK');
                 return res.status(404).json({ status: 'erro', erro: 'OP original não encontrada' });
             }
             const originalOp = opRow.rows[0];
 
-            // Atualizar a OP original com a quantidade reduzida e alocar
+            // Atualizar a OP original com a quantidade reduzida
             await client.query(
                 `UPDATE ordem_producao 
-                 SET quantidade_planejada = $1, colaborador_id = $2, data_programada = $3
+                 SET quantidade_planejada = $1,
+                     colaborador_id = CASE WHEN $2::int IS NOT NULL THEN $2::int ELSE colaborador_id END,
+                     data_programada = CASE WHEN $3::date IS NOT NULL THEN $3::date ELSE data_programada END
                  WHERE id = $4`,
-                [quantidade_colaborador_1, colaborador_1_id, data_1, op_id]
+                [qtd1, colaborador_1_id || null, data_1 || null, targetOpId]
             );
 
             // Criar a nova OP com a quantidade restante
             let novaOp = null;
-            if (quantidade_colaborador_2 > 0) {
+            if (qtd2 > 0) {
                 novaOp = await client.query(
-                    `INSERT INTO ordem_producao (produto_id, quantidade_planejada, status, colaborador_id, data_programada, categoria_producao)
-                     VALUES ($1, $2, 'FILA', $3, $4, $5) RETURNING *`,
+                    `INSERT INTO ordem_producao (produto_id, quantidade_planejada, status, colaborador_id, data_programada, categoria_producao, tipo_op, receita_id, parent_op_id)
+                     VALUES ($1, $2, 'FILA', $3, $4, $5, $6, $7, $8) RETURNING *`,
                     [
                         originalOp.produto_id, 
-                        quantidade_colaborador_2, 
+                        qtd2, 
                         colaborador_2_id || null, 
                         data_2 || null, 
-                        originalOp.categoria_producao
+                        originalOp.categoria_producao,
+                        originalOp.tipo_op || 'MONTAGEM',
+                        originalOp.receita_id || null,
+                        originalOp.parent_op_id || null
                     ]
                 );
             }
@@ -507,8 +516,8 @@ const planejamentoController = {
             await client.query('COMMIT');
             res.json({
                 status: 'sucesso',
-                mensagem: 'OP dividida e alocada com sucesso.',
-                op_original_atualizada_id: op_id,
+                mensagem: 'OP dividida com sucesso em duas ordens menores.',
+                op_original_atualizada_id: targetOpId,
                 nova_op_criada: novaOp ? novaOp.rows[0] : null
             });
         } catch (error) {

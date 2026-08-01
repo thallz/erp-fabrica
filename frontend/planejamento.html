@@ -377,14 +377,53 @@
             ${badgeTipo}
           </div>
           <div class="op-item-title">${o.produto}</div>
-          <div class="op-item-header" style="margin-top:6px">
+          <div class="op-item-header" style="margin-top:6px;gap:6px">
             <span class="op-item-qtd">${parseFloat(o.quantidade_planejada)} un</span>
-            <button class="btn btn-primary btn-sm" onclick="abrirModalAlocar(${opIdNum}, '${o.produto.replace(/'/g, "\\'")}', ${o.quantidade_planejada})">
-              + Atribuir
-            </button>
+            <div style="display:flex;gap:4px">
+              <button class="btn btn-dividir btn-sm" onclick="dividirOP(${opIdNum}, ${o.quantidade_planejada})">
+                ✂️ Dividir
+              </button>
+              <button class="btn btn-primary btn-sm" onclick="abrirModalAlocar(${opIdNum}, '${o.produto.replace(/'/g, "\\'")}', ${o.quantidade_planejada})">
+                + Atribuir
+              </button>
+            </div>
           </div>
         </div>`;
     }).join('');
+  }
+
+  /* ======================== DIVIDIR OP ======================== */
+  async function dividirOP(opId, totalQtd) {
+    const valor = prompt(`Esta OP tem ${totalQtd} unidades.\nQuantas unidades você deseja mover para a NOVA OP secundária?`);
+    if (!valor) return;
+    const qtdNova = parseFloat(valor.replace(',', '.'));
+    if (isNaN(qtdNova) || qtdNova <= 0 || qtdNova >= totalQtd) {
+      showToast(`Digite um valor válido maior que 0 e menor que ${totalQtd}.`, 'error');
+      return;
+    }
+    const qtdRestante = totalQtd - qtdNova;
+
+    try {
+      const res = await fetch(`${API_PLANEJAMENTO}/split-op`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          op_id: opId,
+          quantidade_colaborador_1: qtdRestante,
+          quantidade_colaborador_2: qtdNova
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok && data.status !== 'erro') {
+        showToast(`✂️ OP dividida com sucesso em duas! (${qtdRestante} un + ${qtdNova} un)`, 'success');
+        carregarTudo();
+      } else {
+        showToast('Erro: ' + (data.erro || 'Não foi possível dividir a OP.'), 'error');
+      }
+    } catch {
+      showToast('Erro de conexão com o servidor.', 'error');
+    }
   }
 
   /* ======================== RENDER QUADRO SEMANAL ======================== */

@@ -773,7 +773,7 @@ const producaoController = {
             }
 
             const opRes = await client.query(
-                `SELECT id, produto_id, quantidade_planejada, status FROM ordem_producao WHERE id = $1 FOR UPDATE`,
+                `SELECT id, produto_id, quantidade_planejada, status, tipo_op, receita_id FROM ordem_producao WHERE id = $1 FOR UPDATE`,
                 [id]
             );
 
@@ -789,6 +789,94 @@ const producaoController = {
                 return res.status(400).json({ status: 'erro', erro: 'Esta OP já foi finalizada anteriormente.' });
             }
 
+            const qtdPlanejada = parseFloat(op.quantidade_planejada || 0);
+
+            // 1. LÓGICA SE FOR OP DE PREPARO (EX: RECHEIO OU MASSA)
+            if (op.tipo_op === 'PREPARO' && op.receita_id) {
+                const recRes = await client.query('SELECT peso_total FROM receita WHERE id = $1', [op.receita_id]);
+                const pesoTotalReceita = parseFloat(recRes.rows[0]?.peso_total || 10.0);
+                const scaleFactor = pesoTotalReceita > 0 ? (qtdPlanejada / pesoTotalReceita) : 1.0;
+
+                const items = await client.query('SELECT * FROM receita_item WHERE receita_id = $1', [op.receita_id]);
+
+                for (const item of items.rows) {
+                    if (item.tipo_origem === 'materia') {
+                        // Subtrai quantidade em kg (gramas / 1000 * fator de escala)
+                        const qtdKg = (parseFloat(item.quantidade_gramas || 0) / 1000.0) * scaleFactor;
+                        await client.query(
+                            `UPDATE insumo SET estoque_atual = COALESCE(estoque_atual, 0) - $1 WHERE id = $2`,
+                            [qtdKg, item.origem_id]
+                        );
+                    } else if (item.tipo_origem === 'receita') {
+                        const qtdSubKg = (parseFloat(item.quantidade_gramas || 0) / 1000.0) * scaleFactor;
+                        await client.query(
+                            `UPDATE receita SET estoque_atual = COALESCE(estoque_atual, 0) - $1 WHERE id = $2`,
+                            [qtdSubKg, item.origem_id]
+                        );
+                    }
+                }
+
+                // Credita o estoque produzido na tabela RECEITA
+                await client.query(
+                    `UPDATE receita SET estoque_atual = COALESCE(estoque_atual, 0) + $1 WHERE id = $2`,
+                    [qtdPlanejada, op.receita_id]
+                );
+            } 
+            // 2. LÓGICA SE FOR OP DE MONTAGEM (EX: COXINHA OU PRODUTO FINAL)
+            else {
+                // Subtrai peso das receitas vinculadas na ficha técnica do produto
+                const receitasFt = await client.query(
+                    `SELECT receita_id, quantidade_necessaria FROM ficha_tecnica_receita WHERE produto_id = $1`,
+                    [op.produto_id]
+                );
+
+                for (const r of receitasFt.rows) {
+                    const pesoKgNecessario = parseFloat(r.quantidade_necessaria || 0) * qtdPlanejada;
+                    await client.query(
+                        `UPDATE receita SET estoque_atual = GREATEST(0, COALESCE(estoque_atual, 0) - $1) WHERE id = $2`,
+                        [pesoKgNecessario, r.receita_id]
+                    );
+                }
+
+                // Subtrai insumos diretos da ficha técnica (se houver)
+                try {
+                    const insumosFt = await client.query(
+                        `SELECT insumo_id, quantidade FROM ficha_tecnica_insumo WHERE produto_id = $1`,
+                        [op.produto_id]
+                    );
+                    for (const ins of insumosFt.rows) {
+                        const qtdUsada = parseFloat(ins.quantidade || 0) * qtdPlanejada;
+                        await client.query(
+                            `UPDATE insumo SET estoque_atual = COALESCE(estoque_atual, 0) - $1 WHERE id = $2`,
+                            [qtdUsada, ins.insumo_id]
+                        );
+                    }
+                } catch {
+                    // tabela ficha_tecnica_insumo pode não existir em alguns ambientes
+                }
+
+                // Subtrai embalagem se configurada no produto
+                const prodInfo = await client.query(
+                    `SELECT embalagem_id, capacidade_embalagem FROM produto WHERE id = $1`,
+                    [op.produto_id]
+                );
+                if (prodInfo.rows.length > 0 && prodInfo.rows[0].embalagem_id) {
+                    const embId = prodInfo.rows[0].embalagem_id;
+                    const cap   = parseFloat(prodInfo.rows[0].capacidade_embalagem || 1);
+                    const qtdCaixas = Math.ceil(qtdPlanejada / cap);
+                    await client.query(
+                        `UPDATE insumo SET estoque_atual = COALESCE(estoque_atual, 0) - $1 WHERE id = $2`,
+                        [qtdCaixas, embId]
+                    );
+                }
+
+                // Credita o estoque do PRODUTO final
+                await client.query(
+                    `UPDATE produto SET estoque_atual = COALESCE(estoque_atual, 0) + $1 WHERE id = $2`,
+                    [qtdPlanejada, op.produto_id]
+                );
+            }
+
             // Atualizar status da OP para CONCLUIDA
             const updatedOp = await client.query(
                 `UPDATE ordem_producao 
@@ -797,22 +885,12 @@ const producaoController = {
                 [id]
             );
 
-            // Somar a quantidade produzida no estoque_atual do produto
-            const qtdProduzida = parseInt(op.quantidade_planejada, 10) || 0;
-            const updatedProd = await client.query(
-                `UPDATE produto 
-                 SET estoque_atual = COALESCE(estoque_atual, 0) + $1 
-                 WHERE id = $2 RETURNING id, nome, estoque_atual`,
-                [qtdProduzida, op.produto_id]
-            );
-
             await client.query('COMMIT');
 
             res.json({
                 status: 'sucesso',
-                mensagem: 'OP finalizada e enviada para a câmara fria! Estoque atualizado com sucesso.',
-                op: updatedOp.rows[0],
-                produto: updatedProd.rows[0]
+                mensagem: 'OP finalizada com baixa de insumos/receitas e estoque creditado com sucesso!',
+                op: updatedOp.rows[0]
             });
         } catch (error) {
             await client.query('ROLLBACK');

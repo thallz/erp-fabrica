@@ -110,6 +110,34 @@ const insumoController = {
         } catch (error) {
             res.status(500).json({ status: 'erro', erro: error.message });
         }
+    },
+
+    // 5. Entrada de estoque (Compras de fornecedor)
+    darEntrada: async (req, res) => {
+        try {
+            const { id } = req.params;
+            const { quantidade } = req.body;
+            const qtdNum = parseFloat(quantidade || 0);
+
+            if (isNaN(qtdNum) || qtdNum <= 0) {
+                return res.status(400).json({ status: 'erro', erro: 'Quantidade deve ser um número maior que zero' });
+            }
+
+            const result = await pool.query(
+                `UPDATE insumo 
+                 SET estoque_atual = COALESCE(estoque_atual, 0) + $1 
+                 WHERE id = $2 RETURNING *`,
+                [qtdNum, id]
+            );
+
+            if (result.rows.length === 0) {
+                return res.status(404).json({ status: 'erro', erro: 'Insumo não encontrado' });
+            }
+
+            res.json({ status: 'sucesso', mensagem: 'Estoque atualizado com sucesso!', insumo: result.rows[0] });
+        } catch (error) {
+            res.status(500).json({ status: 'erro', erro: error.message });
+        }
     }
 };
 

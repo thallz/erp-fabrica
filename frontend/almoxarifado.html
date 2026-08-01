@@ -585,12 +585,42 @@
           </div>
 
           <div class="insumo-card-footer">
+            <button class="btn btn-entrada btn-sm"
+              onclick="darEntradaInsumo(${i.id}, '${i.nome.replace(/'/g, "\\'")}', '${unidade}')">📥 Entrada</button>
             <button class="btn btn-outline btn-sm" onclick="openInsumoModal(${i.id})">Editar</button>
             <button class="btn btn-outline btn-sm" style="color:var(--red);border-color:var(--red)"
               onclick="excluirInsumo(${i.id}, '${i.nome.replace(/'/g, "\\'")}')">Excluir</button>
           </div>
         </div>`;
     }).join('');
+  }
+
+  /* ======================== ENTRADA DE COMPRAS ======================== */
+  async function darEntradaInsumo(id, nome, unidade) {
+    const valor = prompt(`Quantos ${unidade === 'un' ? 'unidades' : 'quilos'} de "${nome}" chegaram do fornecedor?`);
+    if (!valor) return;
+    const qtd = parseFloat(valor.replace(',', '.'));
+    if (isNaN(qtd) || qtd <= 0) {
+      showToast('Digite uma quantidade válida maior que zero.', 'error');
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_INSUMOS}/${id}/entrada`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ quantidade: qtd })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showToast(`📥 Entrada de ${qtd} ${unidade} registrada para "${nome}"!`, 'success');
+        carregarInsumos();
+      } else {
+        showToast('Erro: ' + (data.erro || 'Não foi possível registrar a entrada.'), 'error');
+      }
+    } catch {
+      showToast('Erro de conexão com o servidor.', 'error');
+    }
   }
 
   function filtrar() {
