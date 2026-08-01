@@ -5,284 +5,732 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Lançar Vendas — ERP Fabrica</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/global.css" />
+  <style>
+    /* ============ TABELA DE PEDIDOS ============ */
+    .pedidos-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .pedidos-card table { width: 100%; border-collapse: collapse; }
+    .pedidos-card thead th {
+      background: var(--bg);
+      font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .05em;
+      color: var(--text-muted);
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-light);
+      text-align: left;
+    }
+    .pedidos-card tbody tr {
+      border-bottom: 1px solid var(--border-light);
+      transition: background .12s;
+    }
+    .pedidos-card tbody tr:last-child { border-bottom: none; }
+    .pedidos-card tbody tr:hover { background: var(--bg); }
+    .pedidos-card tbody td {
+      padding: 13px 16px;
+      font-size: 13.5px;
+      vertical-align: middle;
+    }
+    .pedido-id { font-weight: 700; color: var(--brand); font-size: 13px; }
+    .pedido-cliente { font-weight: 600; }
+    .pedido-valor { font-weight: 700; color: var(--text-primary); }
+
+    /* Status badges */
+    .badge-status {
+      padding: 3px 10px; border-radius: 20px;
+      font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .04em;
+    }
+    .badge-status.criado    { background: var(--blue-bg);   color: var(--blue); }
+    .badge-status.produzindo { background: var(--amber-bg); color: var(--amber); }
+    .badge-status.faturado  { background: var(--brand-light); color: var(--brand); }
+    .badge-status.entregue  { background: var(--green-bg);  color: var(--green); }
+    .badge-status.cancelado { background: var(--red-bg);    color: var(--red); }
+
+    /* ============ MODAL CENTRALIZADO ============ */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.5);
+      z-index: 1100;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none;
+      transition: opacity .2s;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+
+    .modal-box {
+      background: var(--surface);
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.2);
+      width: 680px;
+      max-width: calc(100vw - 32px);
+      max-height: 92vh;
+      display: flex; flex-direction: column;
+      transform: translateY(14px) scale(.97);
+      transition: transform .22s cubic-bezier(.22,1,.36,1);
+    }
+    .modal-overlay.open .modal-box { transform: none; }
+
+    .modal-header {
+      padding: 22px 26px 16px;
+      border-bottom: 1px solid var(--border-light);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .modal-header h3 {
+      font-size: 17px; font-weight: 700; margin: 0;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .modal-close {
+      background: none; border: none; cursor: pointer;
+      font-size: 20px; color: var(--text-muted);
+      line-height: 1; padding: 3px 7px; border-radius: 6px;
+      transition: background .12s;
+    }
+    .modal-close:hover { background: var(--bg); color: var(--text-primary); }
+
+    .modal-body { padding: 22px 26px; overflow-y: auto; flex: 1; }
+    .modal-footer {
+      padding: 14px 26px 20px;
+      border-top: 1px solid var(--border-light);
+      display: flex; justify-content: space-between; align-items: center; gap: 8px;
+    }
+    .modal-footer-total {
+      font-size: 15px; font-weight: 700; color: var(--text-primary);
+    }
+    .modal-footer-actions { display: flex; gap: 8px; }
+
+    /* ============ LINHAS DE ITEM DO PEDIDO ============ */
+    .item-rows { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+
+    .item-row {
+      display: grid;
+      grid-template-columns: 1fr 80px 100px auto;
+      gap: 8px; align-items: start;
+      background: var(--bg);
+      border: 1px solid var(--border-light);
+      border-radius: 10px;
+      padding: 10px 12px;
+    }
+    .item-row select,
+    .item-row input { padding: 7px 10px; font-size: 13px; }
+
+    .item-stock-hint {
+      font-size: 11.5px; font-weight: 500;
+      margin-top: 3px;
+      padding: 2px 4px; border-radius: 4px;
+      display: none;
+    }
+    .item-stock-hint.ok  { color: var(--green); display: block; }
+    .item-stock-hint.warn { color: var(--amber); display: block; }
+
+    .row-remove {
+      background: none; border: none; cursor: pointer;
+      color: var(--text-muted); font-size: 20px; line-height: 1;
+      transition: color .12s; padding: 4px;
+    }
+    .row-remove:hover { color: var(--red); }
+
+    .btn-add-row {
+      background: none; border: none; cursor: pointer;
+      color: var(--brand); font-size: 12.5px; font-weight: 600;
+      display: inline-flex; align-items: center; gap: 4px;
+      margin-top: 10px; padding: 0;
+    }
+    .btn-add-row:hover { text-decoration: underline; }
+
+    /* Seção do formulário */
+    .form-section-header {
+      font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .06em;
+      color: var(--text-muted);
+      margin: 18px 0 10px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .form-section-header::after {
+      content: ''; flex: 1; height: 1px; background: var(--border-light);
+    }
+
+    /* Resultado OP gerada */
+    .op-alert {
+      background: var(--amber-bg); border: 1px solid var(--amber-border);
+      border-radius: 10px; padding: 12px 14px; margin-top: 14px;
+      font-size: 13px; color: var(--amber);
+    }
+    .op-alert strong { display: block; margin-bottom: 4px; font-size: 13.5px; }
+    .op-alert ul { margin: 4px 0 0 18px; }
+
+    /* Filtros de status */
+    .filter-pills {
+      display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px;
+    }
+    .pill {
+      border: 1px solid var(--border);
+      background: var(--surface);
+      border-radius: 20px; padding: 4px 14px;
+      font-size: 12.5px; font-weight: 500; cursor: pointer;
+      color: var(--text-secondary);
+      transition: all .12s;
+    }
+    .pill.active, .pill:hover {
+      background: var(--brand); color: #fff; border-color: var(--brand);
+    }
+  </style>
 </head>
 <body>
 
 <div id="toast-container"></div>
 
 <div class="erp-shell">
-
-  <!-- SIDEBAR -->
-  <aside class="sidebar">
-    <div class="sidebar-logo">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-      <span>ERP Fabrica</span>
-    </div>
-    <nav class="sidebar-nav">
-      <div class="sidebar-section-label">Menu Principal</div>
-      <a href="almoxarifado.html" class="nav-link">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
-        📦 Almoxarifado
-      </a>
-      <a href="receitas.html" class="nav-link">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-        👨🍳 Receitas
-      </a>
-      <a href="produtos.html" class="nav-link">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-        🍰 Produtos Finais
-      </a>
-      <a href="clientes.html" class="nav-link">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-        👥 Clientes
-      </a>
-      <a href="vendas.html" class="nav-link active">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-        💰 Lançar Vendas
-      </a>
-      <a href="planejamento.html" class="nav-link">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-        📅 Planejamento (Maestro)
-      </a>
-    </nav>
-  </aside>
-
-  <!-- MAIN -->
   <div class="main-wrap">
+
+    <!-- TOPBAR COM NAVEGAÇÃO -->
     <header class="topbar">
-      <div style="font-size:15px;font-weight:700">💰 Lançar Vendas</div>
-      <div class="topbar-right"><span class="badge-online">● Online</span></div>
+      <a href="vendas.html" class="topbar-logo">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+        </svg>
+        <span>ERP Fabrica</span>
+      </a>
+      <nav class="topbar-nav">
+        <a href="almoxarifado.html">📦 Almoxarifado</a>
+        <a href="receitas.html">👨🍳 Receitas</a>
+        <a href="produtos.html">🍰 Produtos Finais</a>
+        <a href="clientes.html">👥 Clientes</a>
+        <a href="vendas.html" class="active">💰 Lançar Vendas</a>
+        <a href="ordens_producao.html">🏭 Produção</a>
+        <a href="colaboradores.html">👤 Colaboradores</a>
+        <a href="planejamento.html">📅 Planejamento</a>
+      </nav>
+      <div class="topbar-right">
+        <span class="badge-online">● Online</span>
+      </div>
     </header>
 
     <div class="page-content">
+
       <div class="page-header">
         <div class="page-header-left">
-          <h1>Pedidos B2B</h1>
-          <p>Lance pedidos para clientes. O sistema gera OPs automaticamente quando necessário.</p>
+          <h1>Pedidos de Venda</h1>
+          <p>Lançamento de pedidos B2B com baixa automática de estoque e geração de OP.</p>
         </div>
         <div class="page-header-actions">
           <div class="search-bar" style="width:260px">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input type="text" id="input-busca" placeholder="Buscar por cliente..." oninput="filtrar()" />
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input type="text" id="input-busca" placeholder="Buscar cliente ou #pedido..." oninput="filtrar()" />
           </div>
-          <button class="btn btn-primary" onclick="openDrawer()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <button class="btn btn-primary" onclick="openPedidoModal()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
             Novo Pedido
           </button>
         </div>
       </div>
 
-      <!-- Table card -->
-      <div class="card">
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th style="width:70px">Pedido</th>
-                <th>Cliente</th>
-                <th style="text-align:center">Data Entrega</th>
-                <th style="text-align:right">Valor Total</th>
-                <th style="text-align:center;width:120px">Status</th>
-              </tr>
-            </thead>
-            <tbody id="pedidos-tbody">
-              <tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text-muted)">
-                <div class="spinner" style="margin:0 auto 10px"></div>Carregando...
-              </td></tr>
-            </tbody>
-          </table>
+      <!-- FILTROS DE STATUS -->
+      <div class="filter-pills">
+        <span class="pill active" onclick="filtrarStatus('', this)">Todos</span>
+        <span class="pill" onclick="filtrarStatus('CRIADO', this)">🔵 Criado</span>
+        <span class="pill" onclick="filtrarStatus('PRODUZINDO', this)">🟡 Produzindo</span>
+        <span class="pill" onclick="filtrarStatus('FATURADO', this)">🟣 Faturado</span>
+        <span class="pill" onclick="filtrarStatus('ENTREGUE', this)">🟢 Entregue</span>
+      </div>
+
+      <!-- TABELA DE PEDIDOS -->
+      <div class="pedidos-card">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:70px">Pedido</th>
+              <th>Cliente</th>
+              <th>Data Entrega</th>
+              <th>Itens</th>
+              <th style="text-align:right">Valor Total</th>
+              <th style="text-align:center">Status</th>
+              <th style="text-align:center;width:120px">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="pedidos-tbody">
+            <tr>
+              <td colspan="7" style="text-align:center;padding:50px;color:var(--text-muted)">
+                <div class="spinner" style="margin:0 auto 12px"></div>
+                Carregando pedidos...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ==================== MODAL CENTRALIZADO DE PEDIDO (680px) ==================== -->
+<div class="modal-overlay" id="pedido-modal-overlay" onclick="closePedidoModalOnBackdrop(event)">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 id="pedido-modal-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="1" x2="12" y2="23"/>
+          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+        </svg>
+        Novo Pedido
+      </h3>
+      <button class="modal-close" onclick="closePedidoModal()">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <form id="form-pedido" onsubmit="salvarPedido(event)">
+
+        <!-- CABEÇALHO DO PEDIDO -->
+        <div class="form-row cols-2">
+          <div class="form-group">
+            <label>Cliente *</label>
+            <select id="pedido-cliente" required>
+              <option value="">Selecione o cliente...</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Data de Entrega *</label>
+            <input type="date" id="pedido-data-entrega" required />
+          </div>
         </div>
+
+        <!-- ITENS DO PEDIDO -->
+        <div class="form-section-header">🛒 Itens do Pedido</div>
+
+        <div style="display:grid;grid-template-columns:1fr 80px 100px auto;gap:8px;padding:0 2px;margin-bottom:4px">
+          <span style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase">Produto</span>
+          <span style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase">Qtd (un)</span>
+          <span style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase">Preço Unit.</span>
+          <span></span>
+        </div>
+
+        <div class="item-rows" id="item-rows"></div>
+
+        <button type="button" class="btn-add-row" onclick="adicionarLinhaItem()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          Adicionar produto
+        </button>
+
+      </form>
+    </div>
+
+    <div class="modal-footer">
+      <div class="modal-footer-total">
+        Total: <span id="pedido-total">R$ 0,00</span>
+      </div>
+      <div class="modal-footer-actions">
+        <button class="btn btn-outline" type="button" onclick="closePedidoModal()">Cancelar</button>
+        <button class="btn btn-primary" type="button" onclick="document.getElementById('form-pedido').requestSubmit()">
+          Lançar Pedido
+        </button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- BACKDROP -->
-<div class="drawer-backdrop" id="drawer-backdrop" onclick="closeDrawer()"></div>
-
-<!-- DRAWER -->
-<div class="drawer" id="drawer-form">
-  <div class="drawer-header">
-    <h2>
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-      Lançar Novo Pedido
-    </h2>
-    <p>Selecione cliente, produto e quantidade</p>
-    <button class="drawer-close" onclick="closeDrawer()">✕</button>
-  </div>
-
-  <div class="drawer-body">
-    <form id="form-pedido" onsubmit="salvarPedido(event)">
-
-      <div class="form-group">
-        <label>Cliente B2B</label>
-        <select id="pedido-cliente" required>
-          <option value="">Selecione o cliente...</option>
+<!-- ==================== MODAL DE DETALHES DO PEDIDO ==================== -->
+<div class="modal-overlay" id="detalhe-modal-overlay" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal-box" style="width:560px">
+    <div class="modal-header">
+      <h3 id="detalhe-modal-title">Detalhes do Pedido</h3>
+      <button class="modal-close" onclick="document.getElementById('detalhe-modal-overlay').classList.remove('open')">✕</button>
+    </div>
+    <div class="modal-body" id="detalhe-modal-body">
+      <!-- preenchido via JS -->
+    </div>
+    <div style="padding:14px 26px 20px;border-top:1px solid var(--border-light);display:flex;justify-content:space-between;align-items:center;gap:8px">
+      <div style="display:flex;gap:8px">
+        <select id="detalhe-status-select" style="padding:7px 10px;font-size:13px;border-radius:8px">
+          <option value="CRIADO">Criado</option>
+          <option value="PRODUZINDO">Produzindo</option>
+          <option value="FATURADO">Faturado</option>
+          <option value="ENTREGUE">Entregue</option>
+          <option value="CANCELADO">Cancelado</option>
         </select>
+        <button class="btn btn-outline" onclick="atualizarStatus()">Atualizar Status</button>
       </div>
-
-      <div class="form-group">
-        <label>Produto Final</label>
-        <select id="pedido-produto" required onchange="atualizarTotal()">
-          <option value="">Selecione o produto...</option>
-        </select>
-      </div>
-
-      <div class="form-row cols-2">
-        <div class="form-group">
-          <label>Quantidade (un)</label>
-          <input type="number" id="pedido-qtd" min="1" required placeholder="100" oninput="atualizarTotal()" />
-        </div>
-        <div class="form-group">
-          <label>Data de Entrega</label>
-          <input type="date" id="pedido-data" required />
-        </div>
-      </div>
-
-      <!-- Resumo de valor -->
-      <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-top:8px">
-        <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--text-secondary)">
-          <span>Preço unitário:</span>
-          <strong id="label-preco-unitario" style="color:var(--text-primary)">R$ 0,00</strong>
-        </div>
-        <div style="display:flex;justify-content:space-between;font-size:15px;margin-top:8px;border-top:1px solid var(--border-light);padding-top:8px">
-          <span style="font-weight:600">Valor Total do Pedido:</span>
-          <strong style="color:var(--brand);font-size:18px" id="label-preco-total">R$ 0,00</strong>
-        </div>
-      </div>
-
-    </form>
-  </div>
-
-  <div class="drawer-footer">
-    <span class="hint">OPs são geradas automaticamente se necessário</span>
-    <button class="btn btn-outline" onclick="closeDrawer()">Cancelar</button>
-    <button class="btn btn-primary" onclick="document.getElementById('form-pedido').requestSubmit()">Lançar Pedido</button>
+      <button class="btn btn-outline" onclick="document.getElementById('detalhe-modal-overlay').classList.remove('open')">Fechar</button>
+    </div>
   </div>
 </div>
 
 <script>
-  const API_PEDIDOS  = 'http://localhost:3001/api/pedidos';
-  const API_CLIENTES = 'http://localhost:3001/api/clientes';
+  const API_PEDIDOS  = 'http://localhost:3001/api/comercial/pedidos';
+  const API_CLIENTES = 'http://localhost:3001/api/comercial/clientes';
   const API_PRODUTOS = 'http://localhost:3001/api/produtos';
 
-  let todosPedidos = [], todosClientes = [], todosProdutos = [];
+  let todosPedidos  = [];
+  let todosClientes = [];
+  let todosProdutos = [];
+  let filtroStatus  = '';
+  let pedidoDetalheId = null;
+
+  /* ======================== FORMATAÇÃO ======================== */
+  function formatarDinheiro(valor) {
+    const num = Number(valor || 0);
+    return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  }
+
+  function formatarData(dataStr) {
+    if (!dataStr) return '—';
+    const d = new Date(dataStr);
+    return d.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+  }
 
   function showToast(msg, type = '') {
     const el = document.createElement('div');
     el.className = 'toast ' + type;
     el.textContent = msg;
     document.getElementById('toast-container').appendChild(el);
-    setTimeout(() => el.remove(), 3200);
+    setTimeout(() => el.remove(), 4000);
   }
 
+  /* ======================== LOAD ======================== */
   async function carregarDados() {
     try {
-      const [resPed, resCli, resProd] = await Promise.all([fetch(API_PEDIDOS), fetch(API_CLIENTES), fetch(API_PRODUTOS)]);
-      todosPedidos  = await resPed.json();
-      todosClientes = await resCli.json();
-      todosProdutos = await resProd.json();
-      renderizar(todosPedidos);
+      const [rPed, rCli, rPro] = await Promise.all([
+        fetch(API_PEDIDOS),
+        fetch(API_CLIENTES),
+        fetch(API_PRODUTOS)
+      ]);
+      todosPedidos  = await rPed.json();
+      todosClientes = await rCli.json();
+      todosProdutos = await rPro.json();
+      renderizarPedidos();
+      popularClienteSelect();
     } catch {
-      document.getElementById('pedidos-tbody').innerHTML = `<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--red)">⚠️ Erro ao conectar com o servidor.</td></tr>`;
+      document.getElementById('pedidos-tbody').innerHTML =
+        `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--red)">
+          ⚠️ Erro ao conectar com o servidor. Verifique se o backend está rodando na porta 3001.
+        </td></tr>`;
     }
   }
 
-  function formatarMoeda(valor) {
-    return new Number(valor || 0).toLocaleString('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
+  /* ======================== RENDER TABELA ======================== */
+  function renderizarPedidos() {
+    const busca = document.getElementById('input-busca').value.toLowerCase();
+    const lista = todosPedidos.filter(p => {
+      const matchStatus = !filtroStatus || p.status === filtroStatus;
+      const matchBusca  = !busca ||
+        p.razao_social.toLowerCase().includes(busca) ||
+        String(p.id).includes(busca);
+      return matchStatus && matchBusca;
     });
-  }
 
-  function getStatusBadge(status) {
-    if (status === 'PRODUZINDO') return '<span class="badge badge-amber">PRODUZINDO</span>';
-    if (status === 'CONCLUIDO' || status === 'CONCLUIDA') return '<span class="badge badge-green">CONCLUÍDO</span>';
-    return '<span class="badge badge-blue">CRIADO</span>';
-  }
-
-  function renderizar(lista) {
     const tbody = document.getElementById('pedidos-tbody');
+
     if (!lista.length) {
-      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text-muted)">Nenhum pedido lançado. Clique em <strong>+ Novo Pedido</strong> para começar.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:50px;color:var(--text-muted)">
+        Nenhum pedido encontrado. Clique em <strong>+ Novo Pedido</strong> para começar.</td></tr>`;
       return;
     }
+
     tbody.innerHTML = lista.map(p => {
-      const dataEnt = p.data_entrega ? new Date(p.data_entrega).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : '—';
+      const statusKey = (p.status || 'criado').toLowerCase();
+      const statusLabel = {
+        criado: '🔵 Criado', produzindo: '🟡 Produzindo',
+        faturado: '🟣 Faturado', entregue: '🟢 Entregue', cancelado: '🔴 Cancelado'
+      }[statusKey] || p.status;
+
       return `<tr>
-        <td><span class="badge badge-gray">#${p.id}</span></td>
-        <td>
-          <strong>${p.razao_social}</strong>
-          <br/><span style="font-size:11px;color:var(--text-muted)">CNPJ: ${p.cnpj}</span>
+        <td><span class="pedido-id">#${p.id}</span></td>
+        <td><span class="pedido-cliente">${p.razao_social}</span></td>
+        <td>${formatarData(p.data_entrega)}</td>
+        <td><span class="badge badge-gray">${p.total_itens} produto(s)</span></td>
+        <td style="text-align:right"><span class="pedido-valor">${formatarDinheiro(p.valor_total)}</span></td>
+        <td style="text-align:center">
+          <span class="badge-status ${statusKey}">${statusLabel}</span>
         </td>
-        <td style="text-align:center">${dataEnt}</td>
-        <td style="text-align:right;font-weight:700;color:var(--brand)">${formatarMoeda(p.valor_total)}</td>
-        <td style="text-align:center">${getStatusBadge(p.status)}</td>
+        <td style="text-align:center">
+          <button class="btn btn-outline btn-sm" onclick="abrirDetalhe(${p.id})">Detalhes</button>
+        </td>
       </tr>`;
     }).join('');
   }
 
-  function filtrar() {
-    const q = document.getElementById('input-busca').value.toLowerCase();
-    renderizar(todosPedidos.filter(p => p.razao_social.toLowerCase().includes(q)));
+  function filtrar() { renderizarPedidos(); }
+
+  function filtrarStatus(status, el) {
+    filtroStatus = status;
+    document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    renderizarPedidos();
   }
 
-  function openDrawer() {
+  /* ======================== POPULAR SELECTS ======================== */
+  function popularClienteSelect(valorSelecionado = '') {
+    const sel = document.getElementById('pedido-cliente');
+    sel.innerHTML = '<option value="">Selecione o cliente...</option>';
+    todosClientes.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.id;
+      opt.textContent = c.razao_social;
+      if (c.id == valorSelecionado) opt.selected = true;
+      sel.appendChild(opt);
+    });
+  }
+
+  /* ======================== MODAL DE PEDIDO ======================== */
+  function openPedidoModal() {
     document.getElementById('form-pedido').reset();
+    document.getElementById('item-rows').innerHTML = '';
+    document.getElementById('pedido-total').textContent = 'R$ 0,00';
+    popularClienteSelect();
 
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    document.getElementById('pedido-data').value = tomorrow.toISOString().split('T')[0];
+    // Pré-selecionar data de hoje + 1 dia
+    const amanha = new Date();
+    amanha.setDate(amanha.getDate() + 1);
+    document.getElementById('pedido-data-entrega').value = amanha.toISOString().split('T')[0];
 
-    const selCli = document.getElementById('pedido-cliente');
-    selCli.innerHTML = '<option value="">Selecione o cliente...</option>';
-    todosClientes.forEach(c => selCli.innerHTML += `<option value="${c.id}">${c.razao_social}</option>`);
+    adicionarLinhaItem();
 
-    const selProd = document.getElementById('pedido-produto');
-    selProd.innerHTML = '<option value="">Selecione o produto...</option>';
-    todosProdutos.forEach(p => selProd.innerHTML += `<option value="${p.id}" data-price="${p.preco_venda}">${p.nome} (${formatarMoeda(p.preco_venda)})</option>`);
-
-    atualizarTotal();
-    document.getElementById('drawer-form').classList.add('open');
-    document.getElementById('drawer-backdrop').classList.add('open');
+    document.getElementById('pedido-modal-overlay').classList.add('open');
   }
 
-  function closeDrawer() {
-    document.getElementById('drawer-form').classList.remove('open');
-    document.getElementById('drawer-backdrop').classList.remove('open');
+  function closePedidoModal() {
+    document.getElementById('pedido-modal-overlay').classList.remove('open');
   }
 
-  function atualizarTotal() {
-    const sel = document.getElementById('pedido-produto');
-    const opt = sel.options[sel.selectedIndex];
-    const price = opt ? parseFloat(opt.getAttribute('data-price') || 0) : 0;
-    const qtd = parseInt(document.getElementById('pedido-qtd').value || 0, 10);
-    document.getElementById('label-preco-unitario').innerText = formatarMoeda(price);
-    document.getElementById('label-preco-total').innerText = formatarMoeda(price * qtd);
+  function closePedidoModalOnBackdrop(event) {
+    if (event.target === document.getElementById('pedido-modal-overlay')) closePedidoModal();
   }
 
+  window.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { closePedidoModal(); }
+  });
+
+  /* ======================== LINHAS DE ITEM ======================== */
+  function adicionarLinhaItem() {
+    const container = document.getElementById('item-rows');
+    const rowId = 'row-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
+    const div = document.createElement('div');
+    div.className = 'item-row'; div.id = rowId;
+
+    let options = '<option value="">Selecione o produto...</option>';
+    todosProdutos.forEach(p => {
+      const estoque = parseInt(p.estoque_atual || 0);
+      options += `<option value="${p.id}" data-preco="${p.preco_venda}" data-estoque="${estoque}">${p.nome} (Estoque: ${estoque} un)</option>`;
+    });
+
+    div.innerHTML = `
+      <div>
+        <select class="produto-select" required onchange="onProdutoChange('${rowId}')">
+          ${options}
+        </select>
+        <div class="item-stock-hint" id="hint-${rowId}"></div>
+      </div>
+      <input type="number" class="qtd-input" min="1" step="1" value="1" placeholder="Qtd"
+             required oninput="onQtdChange('${rowId}')" />
+      <input type="number" class="preco-input" min="0" step="0.01" placeholder="R$"
+             required oninput="recalcTotal()" />
+      <button type="button" class="row-remove" onclick="removerLinha('${rowId}')">×</button>
+    `;
+    container.appendChild(div);
+  }
+
+  function removerLinha(rowId) {
+    const el = document.getElementById(rowId);
+    if (el) el.remove();
+    recalcTotal();
+  }
+
+  function onProdutoChange(rowId) {
+    const row    = document.getElementById(rowId);
+    const select = row.querySelector('.produto-select');
+    const opt    = select.options[select.selectedIndex];
+    const preco  = opt ? parseFloat(opt.dataset.preco || 0) : 0;
+
+    row.querySelector('.preco-input').value = preco ? preco.toFixed(2) : '';
+    onQtdChange(rowId);
+    recalcTotal();
+  }
+
+  function onQtdChange(rowId) {
+    const row     = document.getElementById(rowId);
+    const select  = row.querySelector('.produto-select');
+    const opt     = select.options[select.selectedIndex];
+    const estoque = opt ? parseInt(opt.dataset.estoque || 0) : 0;
+    const qtd     = parseInt(row.querySelector('.qtd-input').value || 0);
+    const hint    = document.getElementById('hint-' + rowId);
+
+    if (!select.value || !qtd) { hint.className = 'item-stock-hint'; return; }
+
+    if (qtd <= estoque) {
+      hint.className = 'item-stock-hint ok';
+      hint.textContent = `✅ Disponível em estoque (${estoque} un)`;
+    } else {
+      const falta = qtd - estoque;
+      hint.className = 'item-stock-hint warn';
+      hint.textContent = `⚠️ Estoque insuficiente: faltam ${falta} un — OP gerada automaticamente`;
+    }
+    recalcTotal();
+  }
+
+  function recalcTotal() {
+    let total = 0;
+    document.querySelectorAll('.item-row').forEach(row => {
+      const qtd   = parseFloat(row.querySelector('.qtd-input').value || 0);
+      const preco = parseFloat(row.querySelector('.preco-input').value || 0);
+      total += qtd * preco;
+    });
+    document.getElementById('pedido-total').textContent = formatarDinheiro(total);
+  }
+
+  /* ======================== SALVAR PEDIDO ======================== */
   async function salvarPedido(e) {
     e.preventDefault();
-    const sel = document.getElementById('pedido-produto');
-    const opt = sel.options[sel.selectedIndex];
-    const price = opt ? parseFloat(opt.getAttribute('data-price') || 0) : 0;
-    const body = {
-      cliente_id: parseInt(document.getElementById('pedido-cliente').value, 10),
-      data_entrega: document.getElementById('pedido-data').value,
-      itens: [{ produto_id: parseInt(sel.value, 10), quantidade: parseInt(document.getElementById('pedido-qtd').value, 10), preco_unitario: price }]
-    };
+
+    const clienteId   = document.getElementById('pedido-cliente').value;
+    const dataEntrega = document.getElementById('pedido-data-entrega').value;
+    const rows = document.querySelectorAll('.item-row');
+
+    if (!clienteId) { showToast('Selecione um cliente.', 'error'); return; }
+    if (!dataEntrega) { showToast('Informe a data de entrega.', 'error'); return; }
+    if (!rows.length) { showToast('Adicione ao menos um produto.', 'error'); return; }
+
+    const itens = [];
+    for (const row of rows) {
+      const prodId = row.querySelector('.produto-select').value;
+      const qtd    = parseFloat(row.querySelector('.qtd-input').value);
+      const preco  = parseFloat(row.querySelector('.preco-input').value);
+      if (!prodId || !qtd || !preco) { showToast('Preencha todos os produtos corretamente.', 'error'); return; }
+      itens.push({ produto_id: parseInt(prodId, 10), quantidade: qtd, preco_unitario: preco });
+    }
+
+    const body = { cliente_id: parseInt(clienteId, 10), data_entrega: dataEntrega, itens };
+
+    const btn = document.querySelector('#pedido-modal-overlay .btn-primary');
+    btn.disabled = true;
+    btn.textContent = 'Salvando...';
+
     try {
-      const res = await fetch(API_PEDIDOS, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      const res = await fetch(API_PEDIDOS, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+
+      const data = await res.json();
+
       if (res.ok) {
-        const data = await res.json();
-        showToast(data.mensagem || '✅ Pedido lançado com sucesso!', 'success');
-        closeDrawer(); carregarDados();
-      } else { const d = await res.json(); showToast('Erro: ' + d.erro, 'error'); }
-    } catch { showToast('Erro de conexão.', 'error'); }
+        closePedidoModal();
+        showToast(`✅ Pedido #${data.pedido_id} lançado com sucesso!`, 'success');
+
+        if (data.ops_geradas && data.ops_geradas.length) {
+          const opNomes = data.ops_geradas.map(op => `• ${op.produto} — ${op.quantidade_planejada} un`).join('\n');
+          setTimeout(() => showToast(`🏭 ${data.ops_geradas.length} OP(s) gerada(s): ${data.ops_geradas.map(o => o.produto).join(', ')}`, ''), 500);
+        }
+
+        carregarDados();
+      } else {
+        showToast('Erro: ' + (data.erro || 'Desconhecido'), 'error');
+      }
+    } catch {
+      showToast('Erro de conexão com o servidor.', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Lançar Pedido';
+    }
   }
 
+  /* ======================== DETALHE DO PEDIDO ======================== */
+  async function abrirDetalhe(id) {
+    pedidoDetalheId = id;
+    const body = document.getElementById('detalhe-modal-body');
+    body.innerHTML = `<div style="text-align:center;padding:30px"><div class="spinner" style="margin:0 auto"></div></div>`;
+    document.getElementById('detalhe-modal-overlay').classList.add('open');
+
+    try {
+      const res  = await fetch(`${API_PEDIDOS}/${id}`);
+      const data = await res.json();
+
+      const statusKey = (data.status || 'criado').toLowerCase();
+      document.getElementById('detalhe-modal-title').textContent = `Pedido #${data.id}`;
+      document.getElementById('detalhe-status-select').value = data.status || 'CRIADO';
+
+      body.innerHTML = `
+        <div style="display:flex;gap:20px;margin-bottom:18px">
+          <div>
+            <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:2px">Cliente</div>
+            <div style="font-weight:700">${data.razao_social}</div>
+            <div style="font-size:12px;color:var(--text-secondary)">${data.cnpj || ''}</div>
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:2px">Entrega</div>
+            <div style="font-weight:600">${formatarData(data.data_entrega)}</div>
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:2px">Status</div>
+            <span class="badge-status ${statusKey}">${data.status}</span>
+          </div>
+        </div>
+
+        <table style="width:100%;border-collapse:collapse">
+          <thead>
+            <tr>
+              <th style="text-align:left;padding:8px 0;font-size:11px;text-transform:uppercase;color:var(--text-muted);border-bottom:1px solid var(--border-light)">Produto</th>
+              <th style="text-align:center;padding:8px;font-size:11px;text-transform:uppercase;color:var(--text-muted);border-bottom:1px solid var(--border-light)">Qtd</th>
+              <th style="text-align:right;padding:8px 0;font-size:11px;text-transform:uppercase;color:var(--text-muted);border-bottom:1px solid var(--border-light)">Preço Unit.</th>
+              <th style="text-align:right;padding:8px 0;font-size:11px;text-transform:uppercase;color:var(--text-muted);border-bottom:1px solid var(--border-light)">Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${(data.itens || []).map(it => `
+              <tr style="border-bottom:1px solid var(--border-light)">
+                <td style="padding:10px 0;font-weight:600">${it.produto_nome}</td>
+                <td style="text-align:center;padding:10px">${it.quantidade}</td>
+                <td style="text-align:right;padding:10px 0">${formatarDinheiro(it.preco_unitario)}</td>
+                <td style="text-align:right;padding:10px 0;font-weight:700">${formatarDinheiro(it.quantidade * it.preco_unitario)}</td>
+              </tr>`).join('')}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="3" style="text-align:right;padding:14px 0;font-weight:700;font-size:14px">TOTAL:</td>
+              <td style="text-align:right;padding:14px 0;font-weight:800;font-size:16px;color:var(--brand)">${formatarDinheiro(data.valor_total)}</td>
+            </tr>
+          </tfoot>
+        </table>`;
+    } catch {
+      body.innerHTML = `<p style="color:var(--red);text-align:center;padding:20px">Erro ao carregar detalhes.</p>`;
+    }
+  }
+
+  async function atualizarStatus() {
+    const novoStatus = document.getElementById('detalhe-status-select').value;
+    if (!pedidoDetalheId) return;
+
+    try {
+      const res = await fetch(`${API_PEDIDOS}/${pedidoDetalheId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: novoStatus })
+      });
+      if (res.ok) {
+        showToast(`✅ Status atualizado para ${novoStatus}!`, 'success');
+        document.getElementById('detalhe-modal-overlay').classList.remove('open');
+        carregarDados();
+      } else {
+        const d = await res.json();
+        showToast('Erro: ' + d.erro, 'error');
+      }
+    } catch {
+      showToast('Erro de conexão.', 'error');
+    }
+  }
+
+  /* ======================== INIT ======================== */
   window.onload = carregarDados;
 </script>
 </body>

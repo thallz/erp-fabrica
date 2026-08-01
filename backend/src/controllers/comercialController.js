@@ -50,10 +50,10 @@ const comercialController = {
     // 1. CRIAR CLIENTE B2B
     criarCliente: async (req, res) => {
         try {
-            const { razao_social, cnpj, telefone } = req.body;
+            const { razao_social, cnpj, telefone, endereco, tipo } = req.body;
             const novoCliente = await pool.query(
-                'INSERT INTO cliente (razao_social, cnpj, telefone) VALUES ($1, $2, $3) RETURNING *',
-                [razao_social, cnpj, telefone]
+                'INSERT INTO cliente (razao_social, cnpj, telefone, endereco, tipo) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+                [razao_social, cnpj || '', telefone || '', endereco || '', tipo || 'B2B']
             );
             res.status(201).json(novoCliente.rows[0]);
         } catch (error) {
@@ -64,7 +64,7 @@ const comercialController = {
     // 2. LISTAR CLIENTES
     listarClientes: async (req, res) => {
         try {
-            const clientes = await pool.query('SELECT * FROM cliente ORDER BY razao_social ASC');
+            const clientes = await pool.query('SELECT id, razao_social, cnpj, telefone, endereco, tipo, criado_em FROM cliente ORDER BY razao_social ASC');
             res.json(clientes.rows);
         } catch (error) {
             res.status(500).json({ status: 'erro', erro: error.message });
@@ -75,10 +75,10 @@ const comercialController = {
     atualizarCliente: async (req, res) => {
         try {
             const { id } = req.params;
-            const { razao_social, cnpj, telefone } = req.body;
+            const { razao_social, cnpj, telefone, endereco, tipo } = req.body;
             const result = await pool.query(
-                'UPDATE cliente SET razao_social = $1, cnpj = $2, telefone = $3 WHERE id = $4 RETURNING *',
-                [razao_social, cnpj, telefone, id]
+                'UPDATE cliente SET razao_social = $1, cnpj = $2, telefone = $3, endereco = $4, tipo = $5 WHERE id = $6 RETURNING *',
+                [razao_social, cnpj || '', telefone || '', endereco || '', tipo || 'B2B', id]
             );
             if (result.rows.length === 0) {
                 return res.status(404).json({ status: 'erro', erro: 'Cliente não encontrado' });

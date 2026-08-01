@@ -155,6 +155,12 @@ async function runMigrations() {
         ON CONFLICT (nome, tipo) DO NOTHING;
     `);
 
+    // Migration: campos adicionais na tabela cliente
+    await pool.query(`
+        ALTER TABLE cliente ADD COLUMN IF NOT EXISTS endereco TEXT;
+        ALTER TABLE cliente ADD COLUMN IF NOT EXISTS tipo VARCHAR(20) DEFAULT 'B2B';
+    `);
+
     console.log('✅ Tabela de categorias dinâmicas verificada');
 }
 

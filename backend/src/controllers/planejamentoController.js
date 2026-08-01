@@ -539,7 +539,7 @@ const planejamentoController = {
 
             // 1. Obter todos os colaboradores ativos
             const colabsResult = await pool.query(
-                'SELECT id, nome, meta_diaria_individual, eh_novato FROM colaborador WHERE ativo = TRUE ORDER BY nome ASC'
+                "SELECT id, nome, COALESCE(meta_diaria_individual, meta_diaria, 350) AS meta_diaria_individual, eh_novato FROM colaborador WHERE status = 'Ativo' OR status IS NULL ORDER BY nome ASC"
             );
             const colaboradores = colabsResult.rows;
 
@@ -980,6 +980,71 @@ const planejamentoController = {
                 categoria_dia: categoriaDia,
                 ops: opsDetalhadas
             });
+        } catch (error) {
+            res.status(500).json({ status: 'erro', erro: error.message });
+        }
+    },
+
+    // 9. AGENDAR OP COM INTELIGÊNCIA DE CRONOGRAMA D-1
+    agendarOP: async (req, res) => {
+        try {
+            const { op_id, data_programada, colaborador_id } = req.body;
+            const targetId = req.params.id || op_id;
+
+            if (!targetId) {
+                return res.status(400).json({ status: 'erro', erro: 'ID da OP é obrigatório' });
+            }
+
+            const result = await pool.query(
+                `UPDATE ordem_producao
+                 SET data_programada = $1, colaborador_id = $2
+                 WHERE id = $3 RETURNING *`,
+                [data_programada || null, colaborador_id || null, targetId]
+            );
+
+            if (result.rows.length === 0) {
+                return res.status(404).json({ status: 'erro', erro: 'OP não encontrada.' });
+            }
+
+            const op = result.rows[0];
+            let avisoCronograma = null;
+
+            if (op.tipo_op === 'MONTAGEM' && data_programada) {
+                const filhas = await pool.query(
+                    `SELECT id FROM ordem_producao WHERE parent_op_id = $1 AND tipo_op = 'PREPARO'`,
+                    [targetId]
+                );
+                if (filhas.rows.length === 0) {
+                    await explodirEPrefabricarOPs(pool, targetId, op.produto_id, op.quantidade_planejada);
+                }
+
+                // Inteligência de Cronograma: Recheios/Molhos em D-1
+                const filhasOPs = await pool.query(
+                    `SELECT op.id, r.categoria FROM ordem_producao op
+                     LEFT JOIN receita r ON r.id = op.receita_id
+                     WHERE op.parent_op_id = $1 AND op.tipo_op = 'PREPARO'`,
+                    [targetId]
+                );
+                for (const f of filhasOPs.rows) {
+                    if (f.categoria === 'Recheio' || f.categoria === 'Molho') {
+                        const dateObj = new Date(data_programada + 'T00:00:00');
+                        dateObj.setDate(dateObj.getDate() - 1);
+                        const dateStrMinus1 = dateObj.toISOString().split('T')[0];
+                        await pool.query(
+                            `UPDATE ordem_producao SET data_programada = $1 WHERE id = $2`,
+                            [dateStrMinus1, f.id]
+                        );
+                        avisoCronograma = `💡 D-1 Ativado: O recheio/molho vinculado foi agendado para o dia anterior (${dateStrMinus1}).`;
+                    } else {
+                        await pool.query(
+                            `UPDATE ordem_producao SET data_programada = $1 WHERE id = $2`,
+                            [data_programada, f.id]
+                        );
+                    }
+                }
+            }
+
+            res.json({ status: 'sucesso', op: result.rows[0], aviso: avisoCronograma });
         } catch (error) {
             res.status(500).json({ status: 'erro', erro: error.message });
         }

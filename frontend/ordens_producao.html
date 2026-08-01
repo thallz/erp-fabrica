@@ -3,253 +3,236 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Fila de Produção — ERP Fabrica</title>
+  <title>Ordens de Produção — ERP Fabrica</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/global.css" />
   <style>
-    .op-kpi-grid {
+    /* Grid de Cards de OPs */
+    .op-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 16px;
-      margin-bottom: 24px;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 18px;
     }
-    .toolbar {
-      display: flex; align-items: center; gap: 10px;
-      margin-bottom: 16px; flex-wrap: wrap;
-    }
-    .toolbar .search-bar { flex: 1; max-width: 380px; }
-    .toolbar-right { margin-left: auto; display: flex; gap: 8px; align-items: center; }
 
-    .action-icons { display: flex; gap: 6px; }
-    .action-icons button {
+    .op-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: box-shadow .15s, transform .12s;
+    }
+    .op-card:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-2px);
+    }
+
+    .op-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 8px;
+    }
+
+    .op-number {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--brand);
+      background: var(--brand-light);
+      padding: 3px 9px;
+      border-radius: 6px;
+    }
+
+    .op-product-name {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--text-primary);
+      margin-top: 8px;
+      white-space: normal;
+      word-wrap: break-word;
+      line-height: 1.35;
+    }
+
+    .op-detail-box {
+      background: var(--bg);
+      border: 1px solid var(--border-light);
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin: 12px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .op-detail-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12.5px;
+      color: var(--text-secondary);
+    }
+    .op-detail-row strong {
+      color: var(--text-primary);
+      font-weight: 700;
+    }
+
+    .op-card-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      align-items: center;
+      border-top: 1px dashed var(--border-light);
+      padding-top: 12px;
+      margin-top: 4px;
+    }
+
+    /* Badges de Status da OP */
+    .op-badge {
       padding: 4px 10px;
+      border-radius: 20px;
       font-size: 11px;
       font-weight: 700;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+    .op-badge.fila {
+      background: var(--amber-bg);
+      color: var(--amber);
+      border: 1px solid #fde68a;
+    }
+    .op-badge.produzindo {
+      background: var(--blue-bg);
+      color: var(--blue);
+      border: 1px solid #bfdbfe;
+    }
+    .op-badge.concluida {
+      background: var(--green-bg);
+      color: var(--green);
+      border: 1px solid #bbf7d0;
+    }
+
+    /* Tabs / Filter Pills */
+    .filter-pills {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    .pill-tab {
       border: 1px solid var(--border);
-      border-radius: 6px;
       background: var(--surface);
+      border-radius: 20px;
+      padding: 6px 16px;
+      font-size: 13px;
+      font-weight: 600;
       cursor: pointer;
       color: var(--text-secondary);
-      transition: all 0.12s;
+      transition: all .15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
     }
-    .action-icons button.primary {
+    .pill-tab.active, .pill-tab:hover {
       background: var(--brand);
-      color: white;
+      color: #fff;
       border-color: var(--brand);
     }
-    .action-icons button.primary:hover {
-      background: var(--brand-hover);
+    .pill-tab .count-badge {
+      background: rgba(255,255,255,0.25);
+      padding: 1px 7px;
+      border-radius: 10px;
+      font-size: 11px;
     }
-    .action-icons button.green {
-      background: var(--green);
-      color: white;
-      border-color: var(--green);
-    }
-    .action-icons button.green:hover {
-      background: #15803d;
-    }
-    .action-icons button.red:hover {
-      border-color: var(--red);
-      color: var(--red);
+    .pill-tab:not(.active) .count-badge {
+      background: var(--bg);
+      color: var(--text-secondary);
     }
   </style>
 </head>
 <body>
-<div class="erp-shell">
-
-  <!-- SIDEBAR -->
-  <aside class="sidebar">
-    <div class="sidebar-logo">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-      <span>ERP Fabrica</span>
-    </div>
-    <nav class="sidebar-nav">
-      <div class="sidebar-section-label">Menu Principal</div>
-      <a href="index.html" class="nav-link">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-        Dashboard
-      </a>
-      <a href="colaboradores.html" class="nav-link">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-        Colaboradores
-      </a>
-      <a href="producao.html" class="nav-link">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
-        Insumos (Almoxarifado)
-      </a>
-      <a href="produtos.html" class="nav-link">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-        Receitas / Produtos
-      </a>
-      <a href="ordens_producao.html" class="nav-link active">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-        Fila de Produção (OPs)
-      </a>
-      <a href="vendas.html" class="nav-link">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        Vendas / Clientes
-      </a>
-      <a href="planejamento.html" class="nav-link">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-        Planejamento Maestro
-      </a>
-      <a href="financeiro.html" class="nav-link">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-        Financeiro
-      </a>
-    </nav>
-    <div class="sidebar-footer">
-      <a href="#">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-        Sair do Sistema
-      </a>
-      <div class="sidebar-version">v2.4.0-build.102</div>
-    </div>
-  </aside>
-
-  <!-- MAIN -->
-  <div class="main-wrap">
-    <header class="topbar">
-      <div class="topbar-search">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        Busca global (Alt + S)
-      </div>
-      <div class="topbar-right">
-        <span class="badge-offline" id="api-status">Conectando...</span>
-        <div class="user-chip">
-          <div><strong>Admin Fabrica</strong><span>Administrador</span></div>
-          <div class="user-avatar">AF</div>
-        </div>
-      </div>
-    </header>
-
-    <main class="page-content">
-      <div class="page-header">
-        <div class="page-header-left">
-          <h1>Fila de Produção (OPs)</h1>
-          <p>Monitore a fila ativa, altere status de produção e crie ordens manuais.</p>
-        </div>
-        <div class="page-header-actions">
-          <button class="btn btn-primary" onclick="openNovaOP()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            + Criar OP Manual
-          </button>
-        </div>
-      </div>
-
-      <!-- KPI GRID -->
-      <div class="op-kpi-grid">
-        <div class="card kpi-card" style="position:relative">
-          <div class="card-body">
-            <div class="kpi-label">Aguardando (FILA)</div>
-            <div class="kpi-value" id="kpi-fila">0</div>
-            <div class="kpi-sub">Ordens aguardando início</div>
-            <div class="kpi-icon blue">⏳</div>
-          </div>
-        </div>
-        <div class="card kpi-card" style="position:relative">
-          <div class="card-body">
-            <div class="kpi-label">Em Produção</div>
-            <div class="kpi-value" id="kpi-produzindo">0</div>
-            <div class="kpi-sub">Ordens ativas na bancada</div>
-            <div class="kpi-icon green">⚙️</div>
-          </div>
-        </div>
-        <div class="card kpi-card" style="position:relative">
-          <div class="card-body">
-            <div class="kpi-label">Total Ativas</div>
-            <div class="kpi-value" id="kpi-total">0</div>
-            <div class="kpi-sub">Total de OPs em processamento</div>
-            <div class="kpi-icon amber">📈</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- TOOLBAR -->
-      <div class="toolbar">
-        <div class="search-bar">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input type="text" id="op-search" placeholder="Filtrar por produto..." oninput="filtrarOPs()" />
-        </div>
-      </div>
-
-      <!-- MAIN TABLE CARD -->
-      <div class="card">
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th width="90">OP ID</th>
-                <th>Tipo</th>
-                <th>Item / Produto</th>
-                <th>Meta / Carga</th>
-                <th>Agendado</th>
-                <th>Status</th>
-                <th width="220" style="text-align:right">Ações</th>
-              </tr>
-            </thead>
-            <tbody id="op-tbody">
-              <!-- Dynamically populated -->
-            </tbody>
-          </table>
-        </div>
-        <div class="tbl-footer">
-          <span id="footer-count">Exibindo 0 ordens de produção</span>
-        </div>
-      </div>
-    </main>
-
-    <footer class="site-footer">
-      <span>&copy; 2026 ERP Fabrica — Produção Maestro</span>
-      <div class="footer-links">
-        <a href="#">Suporte Tecnico</a>
-        <a href="#">Documentacao</a>
-      </div>
-    </footer>
-  </div>
-</div>
-
-<!-- DRAWER: Nova OP Manual -->
-<div class="drawer-backdrop" id="drawer-backdrop" onclick="closeDrawer()"></div>
-<div class="drawer" id="drawer">
-  <div class="drawer-header">
-    <h2>
-      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>
-      Criar OP Manual
-    </h2>
-    <p>Aloque uma nova necessidade de produção diretamente na fila.</p>
-    <button class="drawer-close" onclick="closeDrawer()">&#10005;</button>
-  </div>
-  <div class="drawer-body">
-    <form id="form-op" onsubmit="submitOP(event)">
-      <div class="form-group">
-        <label>Escolha o Produto Acabado <span style="color:var(--red)">*</span></label>
-        <select id="f-produto-id" required>
-          <option value="">Carregando produtos...</option>
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label>Quantidade Planejada (unidades) <span style="color:var(--red)">*</span></label>
-        <input type="number" id="f-quantidade" placeholder="Ex: 100" required min="1" />
-      </div>
-    </form>
-  </div>
-  <div class="drawer-footer">
-    <button class="btn btn-close" onclick="closeDrawer()">Cancelar</button>
-    <button class="btn btn-primary" onclick="document.getElementById('form-op').requestSubmit()">Alocar na Fila</button>
-  </div>
-</div>
 
 <div id="toast-container"></div>
 
-<script>
-  const API = 'http://localhost:3001/api';
-  let opsList = [];
-  let produtos = [];
+<div class="erp-shell">
+  <!-- MAIN (PÁGINA INTEIRA 100%) -->
+  <div class="main-wrap">
+    
+    <!-- TOPBAR COM NAVEGAÇÃO -->
+    <header class="topbar">
+      <a href="ordens_producao.html" class="topbar-logo">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+        </svg>
+        <span>ERP Fabrica</span>
+      </a>
+      <nav class="topbar-nav">
+        <a href="almoxarifado.html">📦 Almoxarifado</a>
+        <a href="receitas.html">👨🍳 Receitas</a>
+        <a href="produtos.html">🍰 Produtos Finais</a>
+        <a href="clientes.html">👥 Clientes</a>
+        <a href="vendas.html">💰 Lançar Vendas</a>
+        <a href="ordens_producao.html" class="active">🏭 Produção</a>
+        <a href="colaboradores.html">👤 Colaboradores</a>
+        <a href="planejamento.html">📅 Planejamento</a>
+      </nav>
+      <div class="topbar-right">
+        <span class="badge-online">● Online</span>
+      </div>
+    </header>
 
-  function toast(msg, type = '') {
+    <div class="page-content">
+
+      <div class="page-header">
+        <div class="page-header-left">
+          <h1>Ordens de Produção (OPs)</h1>
+          <p>Gerencie a esteira de produção. Finalizar uma OP envia o lote direto para a câmara fria.</p>
+        </div>
+        <div class="page-header-actions">
+          <div class="search-bar" style="width:280px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input type="text" id="input-busca" placeholder="Buscar produto ou #OP..." oninput="filtrar()" />
+          </div>
+        </div>
+      </div>
+
+      <!-- TABS DE NAVEGAÇÃO DE STATUS -->
+      <div class="filter-pills">
+        <span class="pill-tab active" onclick="selecionarTab('FILA', this)">
+          ⏳ Fila de Espera <span class="count-badge" id="count-fila">0</span>
+        </span>
+        <span class="pill-tab" onclick="selecionarTab('PRODUZINDO', this)">
+          ⚙️ Em Produção <span class="count-badge" id="count-produzindo">0</span>
+        </span>
+        <span class="pill-tab" onclick="selecionarTab('CONCLUIDA', this)">
+          ✅ Finalizadas <span class="count-badge" id="count-concluida">0</span>
+        </span>
+      </div>
+
+      <!-- GRID DE CARDS DE OPS -->
+      <div class="op-grid" id="op-grid">
+        <p style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted)">
+          <span class="spinner" style="display:inline-block;margin-right:8px"></span>
+          Carregando ordens de produção...
+        </p>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  const API_PRODUCAO = 'http://localhost:3001/api/producao';
+
+  let todasOPs    = [];
+  let tabAtiva    = 'FILA';
+
+  /* ======================== TOAST & FORMATAÇÃO ======================== */
+  function showToast(msg, type = '') {
     const el = document.createElement('div');
     el.className = 'toast ' + type;
     el.textContent = msg;
@@ -257,190 +240,206 @@
     setTimeout(() => el.remove(), 4000);
   }
 
-  async function testConnection() {
+  function formatarData(dataStr) {
+    if (!dataStr) return '—';
+    const d = new Date(dataStr);
+    return d.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+  }
+
+  /* ======================== LOAD / RENDER ======================== */
+  async function carregarOPs() {
     try {
-      const res = await fetch(`${API}/status`);
-      if (res.ok) {
-        document.getElementById('api-status').textContent = 'API Online';
-        document.getElementById('api-status').className = 'api-status api-online';
-      }
+      const res = await fetch(`${API_PRODUCAO}/fila`);
+      todasOPs  = await res.json();
+      atualizarContadores();
+      renderizar();
     } catch {
-      document.getElementById('api-status').textContent = 'Modo Offline';
-      document.getElementById('api-status').className = 'api-status api-offline';
+      document.getElementById('op-grid').innerHTML =
+        `<p style="grid-column:1/-1;text-align:center;padding:40px;color:var(--red)">
+          ⚠️ Erro ao conectar com o servidor em localhost:3001
+        </p>`;
     }
   }
 
-  async function loadProdutos() {
-    try {
-      const res = await fetch(`${API}/produtos`);
-      if (!res.ok) throw new Error();
-      produtos = await res.json();
-      
-      const select = document.getElementById('f-produto-id');
-      if (produtos.length === 0) {
-        select.innerHTML = '<option value="">Nenhum produto com ficha técnica cadastrada</option>';
-        return;
-      }
+  function atualizarContadores() {
+    const countFila       = todasOPs.filter(o => o.status === 'FILA').length;
+    const countProduzindo = todasOPs.filter(o => o.status === 'PRODUZINDO').length;
+    const countConcluida  = todasOPs.filter(o => o.status === 'CONCLUIDA').length;
 
-      select.innerHTML = '<option value="">Selecione...</option>' + 
-        produtos.map(p => `<option value="${p.id}">${p.nome} (${p.categoria_producao || 'Geral'})</option>`).join('');
-    } catch (e) {
-      console.error(e);
-      document.getElementById('f-produto-id').innerHTML = '<option value="">Erro ao carregar produtos</option>';
-    }
+    document.getElementById('count-fila').textContent       = countFila;
+    document.getElementById('count-produzindo').textContent = countProduzindo;
+    document.getElementById('count-concluida').textContent  = countConcluida;
   }
 
-  async function loadOPs() {
-    try {
-      const res = await fetch(`${API}/producao/fila`);
-      if (!res.ok) throw new Error();
-      opsList = await res.json();
-      renderOPs();
-    } catch {
-      toast('Erro ao obter fila de OPs do servidor.', 'error');
-    }
+  function selecionarTab(status, el) {
+    tabAtiva = status;
+    document.querySelectorAll('.pill-tab').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    renderizar();
   }
 
-  function renderOPs() {
-    const tbody = document.getElementById('op-tbody');
-    const term = document.getElementById('op-search').value.toLowerCase().trim();
+  function renderizar() {
+    const busca = document.getElementById('input-busca').value.toLowerCase();
+    const grid  = document.getElementById('op-grid');
 
-    const filtered = opsList.filter(o => {
-      const nomeProd = (o.tipo_op === 'PREPARO' ? o.receita_nome : o.produto) || '';
-      return nomeProd.toLowerCase().includes(term);
+    const lista = todasOPs.filter(o => {
+      const matchTab   = o.status === tabAtiva;
+      const opNumStr   = `#${String(o.numero_op || o.id).padStart(3, '0')}`;
+      const matchBusca = !busca ||
+        (o.produto || '').toLowerCase().includes(busca) ||
+        opNumStr.toLowerCase().includes(busca) ||
+        String(o.id).includes(busca);
+      return matchTab && matchBusca;
     });
 
-    const totalFila = opsList.filter(o => o.status === 'FILA').length;
-    const totalProd = opsList.filter(o => o.status === 'PRODUZINDO').length;
+    if (!lista.length) {
+      const msgVazio = {
+        FILA: 'Nenhuma ordem de produção na fila de espera.',
+        PRODUZINDO: 'Nenhuma ordem de produção em andamento.',
+        CONCLUIDA: 'Nenhuma ordem de produção finalizada.'
+      }[tabAtiva] || 'Nenhuma OP encontrada.';
 
-    document.getElementById('kpi-fila').textContent = totalFila;
-    document.getElementById('kpi-produzindo').textContent = totalProd;
-    document.getElementById('kpi-total').textContent = opsList.length;
-    document.getElementById('footer-count').textContent = `Exibindo ${filtered.length} de ${opsList.length} ordens de produção`;
-
-    if (filtered.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--text-muted); padding:30px;">Nenhuma OP ativa na fila de trabalho.</td></tr>`;
+      grid.innerHTML = `<p style="grid-column:1/-1;text-align:center;padding:50px;color:var(--text-muted)">
+        ${msgVazio}
+      </p>`;
       return;
     }
 
-    tbody.innerHTML = filtered.map(o => {
-      const isPrep = o.tipo_op === 'PREPARO';
-      const displayNome = isPrep ? (o.receita_nome || 'Receita Preparo') : o.produto;
-      const displayUnidade = isPrep ? 'kg' : 'un';
-      const statusClass = o.status === 'PRODUZINDO' ? 'badge-green' : 'badge-amber';
+    grid.innerHTML = lista.map(o => {
+      const opIdNum        = o.numero_op || o.id;
+      const opNumFormatted = `#${String(opIdNum).padStart(3, '0')}`;
+      const qtdStr         = `${parseFloat(o.quantidade_planejada || 0)} un`;
+      const dataCriacao    = formatarData(o.criado_em);
+      const statusKey      = (o.status || 'fila').toLowerCase();
       
-      let actionsHtml = '';
-      if (o.status === 'FILA') {
-        actionsHtml += `<button class="primary" onclick="alterarStatus(${o.numero_op}, 'PRODUZINDO')">Iniciar</button>`;
-      } else if (o.status === 'PRODUZINDO') {
-        actionsHtml += `<button class="green" onclick="alterarStatus(${o.numero_op}, 'CONCLUIDA')">Concluir</button>`;
-      }
-      actionsHtml += `<button class="red" onclick="excluirOP(${o.numero_op})">Excluir</button>`;
+      const statusBadge = {
+        fila:       '<span class="op-badge fila">🟡 Fila de Espera</span>',
+        produzindo: '<span class="op-badge produzindo">🔵 Em Produção</span>',
+        concluida:  '<span class="op-badge concluida">🟢 Finalizada</span>'
+      }[statusKey] || `<span class="op-badge">${o.status}</span>`;
 
-      const dataStr = o.data_programada ? o.data_programada.split('T')[0].split('-').reverse().join('/') : '—';
-      const colabStr = o.colaborador_nome ? `${o.colaborador_nome}` : '—';
+      const tipoBadge = o.tipo_op === 'PREPARO'
+        ? '<span class="op-badge" style="background:#f3e8ff;color:#7e22ce;border:1px solid #e9d5ff">🥣 PREPARO</span>'
+        : '<span class="op-badge" style="background:#dbeafe;color:#1e40af;border:1px solid #bfdbfe">🛠️ MONTAGEM</span>';
+
+      // Botão de ação
+      let botaoAcao = '';
+      if (o.status === 'FILA') {
+        botaoAcao = `
+          <button class="btn btn-primary btn-sm" onclick="iniciarProducao(${opIdNum})">
+            ▶️ Iniciar Produção
+          </button>`;
+      } else if (o.status === 'PRODUZINDO') {
+        botaoAcao = `
+          <button class="btn btn-success btn-sm" style="background:var(--green);color:#fff;border:none" onclick="finalizarProducao(${opIdNum})">
+            ✅ Finalizar e Enviar para Câmara Fria
+          </button>`;
+      } else if (o.status === 'CONCLUIDA') {
+        botaoAcao = `<span style="font-size:12px;color:var(--green);font-weight:600">✓ Estoque Creditado</span>`;
+      }
 
       return `
-        <tr>
-          <td><strong>OP-${String(o.numero_op).padStart(3, '0')}</strong></td>
-          <td><span class="badge ${isPrep ? 'badge-purple' : 'badge-blue'}">${isPrep ? 'PREPARO' : 'MONTAGEM'}</span></td>
-          <td><strong>${displayNome}</strong></td>
-          <td><span style="font-weight:700;">${o.quantidade_planejada} ${displayUnidade}</span></td>
-          <td><span style="font-size:12px;">📅 ${dataStr}<br/><span style="color:var(--text-muted)">👤 ${colabStr}</span></span></td>
-          <td><span class="badge ${statusClass}">${o.status}</span></td>
-          <td style="text-align:right">
-            <div class="action-icons" style="justify-content:flex-end">
-              ${actionsHtml}
+        <div class="op-card">
+          <div>
+            <div class="op-card-header">
+              <div style="display:flex;gap:6px;align-items:center">
+                <span class="op-number">${opNumFormatted}</span>
+                ${tipoBadge}
+              </div>
+              ${statusBadge}
             </div>
-          </td>
-        </tr>
-      `;
+
+            <div class="op-product-name">${o.produto || 'Produto sem nome'}</div>
+
+            <div class="op-detail-box">
+              <div class="op-detail-row">
+                <span>Quantidade Solicitada:</span>
+                <strong>${qtdStr}</strong>
+              </div>
+              <div class="op-detail-row">
+                <span>Data de Criação:</span>
+                <span>${dataCriacao}</span>
+              </div>
+              ${o.categoria_producao ? `
+              <div class="op-detail-row">
+                <span>Categoria:</span>
+                <span>${o.categoria_producao}</span>
+              </div>` : ''}
+              ${o.estoque_camara_fria !== undefined ? `
+              <div class="op-detail-row">
+                <span>Estoque Atual:</span>
+                <span>${parseFloat(o.estoque_camara_fria || 0)} un</span>
+              </div>` : ''}
+            </div>
+          </div>
+
+          <div class="op-card-footer">
+            ${botaoAcao}
+          </div>
+        </div>`;
     }).join('');
   }
 
-  function filtrarOPs() {
-    renderOPs();
+  function filtrar() {
+    renderizar();
   }
 
-  function openDrawer() {
-    document.getElementById('drawer-backdrop').classList.add('open');
-    document.getElementById('drawer').classList.add('open');
-  }
-
-  function closeDrawer() {
-    document.getElementById('drawer-backdrop').classList.remove('open');
-    document.getElementById('drawer').classList.remove('open');
-    document.getElementById('form-op').reset();
-  }
-
-  function openNovaOP() {
-    loadProdutos();
-    openDrawer();
-  }
-
-  async function submitOP(e) {
-    e.preventDefault();
-    const produto_id = document.getElementById('f-produto-id').value;
-    const quantidade_planejada = document.getElementById('f-quantidade').value;
-
-    try {
-      const res = await fetch(`${API}/producao/alocar`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ produto_id, quantidade_planejada })
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        toast(`Erro: ${data.erro || 'Falha ao alocar OP'}`, 'error');
-        return;
-      }
-
-      toast('OP alocada na fila com sucesso!', 'success');
-      closeDrawer();
-      await loadOPs();
-    } catch {
-      toast('Erro ao enviar dados para a API.', 'error');
+  /* ======================== AÇÕES DA OP ======================== */
+  async function iniciarProducao(opId) {
+    if (!opId || opId === 'undefined' || isNaN(opId)) {
+      console.error('Erro: ID da OP não definido:', opId);
+      showToast('Erro: ID da OP inválido', 'error');
+      return;
     }
-  }
 
-  async function alterarStatus(id, novoStatus) {
     try {
-      const res = await fetch(`${API}/producao/op/${id}/status`, {
+      const res = await fetch(`${API_PRODUCAO}/op/${opId}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: novoStatus })
+        body: JSON.stringify({ status: 'PRODUZINDO' })
       });
-
       const data = await res.json();
-      if (!res.ok) {
-        toast(`Impedimento: ${data.erro || 'Erro ao alterar status'}`, 'error');
-        return;
+
+      if (res.ok && data.status !== 'erro') {
+        showToast(`▶️ OP #${String(opId).padStart(3, '0')} em produção!`, 'success');
+        carregarOPs();
+      } else {
+        showToast('Erro: ' + (data.erro || 'Não foi possível iniciar a produção.'), 'error');
       }
-
-      toast(`OP atualizada para ${novoStatus}!`, 'success');
-      await loadOPs();
-    } catch {
-      toast('Erro de rede ao atualizar status.', 'error');
+    } catch (err) {
+      showToast('Erro de conexão com o servidor na porta 3001.', 'error');
     }
   }
 
-  async function excluirOP(id) {
-    if (!confirm('Deseja realmente excluir esta ordem de produção? Isso também excluirá preparos pendentes vinculados.')) return;
+  async function finalizarProducao(opId) {
+    if (!opId || opId === 'undefined' || isNaN(opId)) {
+      console.error('Erro: ID da OP não definido:', opId);
+      showToast('Erro: ID da OP inválido', 'error');
+      return;
+    }
+
+    if (!confirm(`Confirmar a finalização da OP #${String(opId).padStart(3, '0')} e enviar a produção para a câmara fria?`)) return;
+
     try {
-      const res = await fetch(`${API}/producao/op/${id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error();
-      toast('Ordem de produção excluída!', 'success');
-      await loadOPs();
-    } catch {
-      toast('Erro ao excluir OP.', 'error');
+      const res = await fetch(`${API_PRODUCAO}/op/${opId}/finalizar`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const data = await res.json();
+
+      if (res.ok && data.status !== 'erro') {
+        showToast(`✅ OP #${String(opId).padStart(3, '0')} finalizada! Estoque de "${data.produto?.nome || 'produto'}" atualizado para ${data.produto?.estoque_atual} un.`, 'success');
+        carregarOPs();
+      } else {
+        showToast('Erro: ' + (data.erro || 'Não foi possível finalizar a OP.'), 'error');
+      }
+    } catch (err) {
+      showToast('Erro de conexão com o servidor na porta 3001.', 'error');
     }
   }
 
-  document.addEventListener('DOMContentLoaded', () => {
-    testConnection();
-    loadOPs();
-  });
+  /* ======================== INIT ======================== */
+  window.onload = carregarOPs;
 </script>
 </body>
 </html>

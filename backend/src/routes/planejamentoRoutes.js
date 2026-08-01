@@ -8,6 +8,8 @@ router.get('/insumos-semana', planejamentoController.obterInsumosSemana);
 router.post('/aplicar-sugestao', planejamentoController.aplicarSugestao);
 router.post('/split-op', planejamentoController.splitOP);
 router.get('/semanal', planejamentoController.obterPlanejamentoSemanal);
+router.post('/agendar', planejamentoController.agendarOP);
+router.put('/op/:id/agendar', planejamentoController.agendarOP);
 router.get('/validar-estoque', planejamentoController.validarEstoqueSemana);
 router.get('/ficha/:colaborador_id/:data', planejamentoController.obterFichaTrabalho);
 

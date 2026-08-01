@@ -105,8 +105,9 @@ const producaoController = {
 
     listarFila: async (req, res) => {
         try {
-            const fila = await pool.query(`
-                SELECT op.id AS numero_op, op.produto_id, p.nome AS produto,
+            const { status } = req.query;
+            let query = `
+                SELECT op.id AS numero_op, op.id, op.produto_id, p.nome AS produto,
                        op.quantidade_planejada, op.status, op.criado_em,
                        p.estoque_atual AS estoque_camara_fria,
                        op.data_programada, op.colaborador_id, op.categoria_producao,
@@ -116,10 +117,15 @@ const producaoController = {
                 JOIN produto p ON op.produto_id = p.id
                 LEFT JOIN colaborador c ON op.colaborador_id = c.id
                 LEFT JOIN receita r ON r.id = op.receita_id
-                WHERE op.status IN ('FILA', 'PRODUZINDO')
-                ORDER BY op.criado_em ASC
-            `);
+            `;
+            const params = [];
+            if (status) {
+                query += ` WHERE op.status = $1`;
+                params.push(status);
+            }
+            query += ` ORDER BY op.criado_em DESC`;
 
+            const fila = await pool.query(query, params);
             res.json(fila.rows);
         } catch (error) {
             res.status(500).json({ status: 'erro', erro: error.message });
@@ -696,10 +702,14 @@ const producaoController = {
         }
     },
 
-    // 10. ATUALIZAR STATUS DE UMA OP (COM REGRA DE BLOQUEIO DE MONTAGEM)
+    // 10. ATUALIZAR STATUS DE UMA OP
     atualizarStatusOP: async (req, res) => {
         try {
             const { id } = req.params;
+            if (!id || isNaN(id)) {
+                return res.status(400).json({ status: 'erro', erro: 'ID da OP inválido' });
+            }
+
             const { status } = req.body;
 
             if (!status) {
@@ -709,22 +719,6 @@ const producaoController = {
             const opRes = await pool.query('SELECT * FROM ordem_producao WHERE id = $1', [id]);
             if (opRes.rows.length === 0) {
                 return res.status(404).json({ status: 'erro', erro: 'OP não encontrada' });
-            }
-            const op = opRes.rows[0];
-
-            if (op.tipo_op === 'MONTAGEM' && (status === 'PRODUZINDO' || status === 'CONCLUIDA')) {
-                const preparosPendentes = await pool.query(
-                    `SELECT id, status FROM ordem_producao 
-                     WHERE parent_op_id = $1 AND tipo_op = 'PREPARO' AND status != 'CONCLUIDA'`,
-                    [id]
-                );
-
-                if (preparosPendentes.rows.length > 0) {
-                    return res.status(400).json({
-                        status: 'erro',
-                        erro: 'Bloqueio: Esta OP de montagem só pode ser iniciada se a OP de preparo vinculada estiver com status CONCLUÍDA.'
-                    });
-                }
             }
 
             const result = await pool.query(
@@ -738,6 +732,93 @@ const producaoController = {
             res.json({ status: 'sucesso', op: result.rows[0] });
         } catch (error) {
             res.status(500).json({ status: 'erro', erro: error.message });
+        }
+    },
+
+    // 11. INICIAR OP (FILA -> PRODUZINDO)
+    iniciarOP: async (req, res) => {
+        try {
+            const { id } = req.params;
+            if (!id || isNaN(id)) {
+                return res.status(400).json({ status: 'erro', erro: 'ID da OP inválido' });
+            }
+
+            const result = await pool.query(
+                `UPDATE ordem_producao 
+                 SET status = 'PRODUZINDO',
+                     data_inicio = COALESCE(data_inicio, CURRENT_TIMESTAMP)
+                 WHERE id = $1 RETURNING *`,
+                [id]
+            );
+
+            if (result.rows.length === 0) {
+                return res.status(404).json({ status: 'erro', erro: 'OP não encontrada' });
+            }
+
+            res.json({ status: 'sucesso', mensagem: 'Produção iniciada!', op: result.rows[0] });
+        } catch (error) {
+            res.status(500).json({ status: 'erro', erro: error.message });
+        }
+    },
+
+    // 12. FINALIZAR OP E ENVIAR PARA CÂMARA FRIA (TRANSAÇÃO SQL QUE INCREMENTA ESTOQUE)
+    finalizarOP: async (req, res) => {
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+            const { id } = req.params;
+            if (!id || isNaN(id)) {
+                await client.query('ROLLBACK');
+                return res.status(400).json({ status: 'erro', erro: 'ID da OP inválido' });
+            }
+
+            const opRes = await client.query(
+                `SELECT id, produto_id, quantidade_planejada, status FROM ordem_producao WHERE id = $1 FOR UPDATE`,
+                [id]
+            );
+
+            if (opRes.rows.length === 0) {
+                await client.query('ROLLBACK');
+                return res.status(404).json({ status: 'erro', erro: 'OP não encontrada' });
+            }
+
+            const op = opRes.rows[0];
+
+            if (op.status === 'CONCLUIDA') {
+                await client.query('ROLLBACK');
+                return res.status(400).json({ status: 'erro', erro: 'Esta OP já foi finalizada anteriormente.' });
+            }
+
+            // Atualizar status da OP para CONCLUIDA
+            const updatedOp = await client.query(
+                `UPDATE ordem_producao 
+                 SET status = 'CONCLUIDA', data_fim = CURRENT_TIMESTAMP 
+                 WHERE id = $1 RETURNING *`,
+                [id]
+            );
+
+            // Somar a quantidade produzida no estoque_atual do produto
+            const qtdProduzida = parseInt(op.quantidade_planejada, 10) || 0;
+            const updatedProd = await client.query(
+                `UPDATE produto 
+                 SET estoque_atual = COALESCE(estoque_atual, 0) + $1 
+                 WHERE id = $2 RETURNING id, nome, estoque_atual`,
+                [qtdProduzida, op.produto_id]
+            );
+
+            await client.query('COMMIT');
+
+            res.json({
+                status: 'sucesso',
+                mensagem: 'OP finalizada e enviada para a câmara fria! Estoque atualizado com sucesso.',
+                op: updatedOp.rows[0],
+                produto: updatedProd.rows[0]
+            });
+        } catch (error) {
+            await client.query('ROLLBACK');
+            res.status(500).json({ status: 'erro', erro: error.message });
+        } finally {
+            client.release();
         }
     }
 };
