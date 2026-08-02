@@ -172,7 +172,7 @@ const comercialController = {
         const client = await pool.connect();
         try {
             await client.query('BEGIN');
-            const { cliente_id, data_entrega, itens } = req.body;
+            const { cliente_id, data_entrega, itens, is_orcamento } = req.body;
 
             if (!itens || !itens.length) {
                 await client.query('ROLLBACK');
@@ -183,6 +183,34 @@ const comercialController = {
             const opsGeradas = [];
             const avisos = [];
             const baixasEstoque = [];
+
+            // SE FOR APENAS ORÇAMENTO (NÃO GERA OP NEM BAIXA ESTOQUE)
+            if (is_orcamento) {
+                for (const item of itens) {
+                    valorTotal += item.quantidade * item.preco_unitario;
+                }
+
+                const resultOrc = await client.query(
+                    'INSERT INTO pedido (cliente_id, data_entrega, valor_total, status) VALUES ($1, $2, $3, $4) RETURNING id',
+                    [cliente_id, data_entrega, valorTotal, 'ORCAMENTO']
+                );
+                const orcamentoId = resultOrc.rows[0].id;
+
+                for (const item of itens) {
+                    await client.query(
+                        'INSERT INTO item_pedido (pedido_id, produto_id, quantidade, preco_unitario) VALUES ($1, $2, $3, $4)',
+                        [orcamentoId, item.produto_id, item.quantidade, item.preco_unitario]
+                    );
+                }
+
+                await client.query('COMMIT');
+                return res.json({
+                    status: 'sucesso',
+                    mensagem: 'Orçamento salvo com sucesso!',
+                    pedido_id: orcamentoId,
+                    valor_total: valorTotal
+                });
+            }
 
             for (const item of itens) {
                 valorTotal += item.quantidade * item.preco_unitario;

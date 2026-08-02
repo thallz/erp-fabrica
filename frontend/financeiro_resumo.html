@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fluxo de Caixa — ERP Fabrica</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/global.css" />
+  <style>
+    .kpi-finance-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px;
+    }
+    .kpi-finance { border-radius: var(--radius-lg); padding: 22px 24px; color: #fff; }
+    .kpi-finance.purple { background: var(--brand); }
+    .kpi-finance.green  { background: #16a34a; }
+    .kpi-finance.red    { background: #dc2626; }
+    .kpi-finance-label { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; opacity: .85; margin-bottom: 10px; }
+    .kpi-finance-value { font-size: 26px; font-weight: 800; letter-spacing: -.5px; }
+    .kpi-finance-sub   { font-size: 12px; opacity: .8; margin-top: 6px; }
+
+    .fin-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+      box-shadow: var(--shadow); padding: 20px; margin-bottom: 20px;
+    }
+    .fin-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  </style>
+</head>
+<body>
+
+<div id="toast-container"></div>
+
+<div class="erp-shell">
+  <div class="main-wrap">
+
+    <!-- TOPBAR GLOBAL DROPDOWN -->
+    <header class="topbar">
+      <a href="vendas.html" class="topbar-logo">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+        </svg>
+        <span>ERP Fabrica</span>
+      </a>
+      <nav class="topbar-nav">
+        <!-- COMERCIAL -->
+        <div class="nav-dropdown">
+          <button class="nav-dropdown-btn">💼 Comercial ▾</button>
+          <div class="nav-dropdown-menu">
+            <a href="vendas.html">💰 Lançamento de Vendas</a>
+            <a href="orcamentos.html">📄 Orçamentos</a>
+            <a href="produtos.html">🍰 Produtos Finais</a>
+          </div>
+        </div>
+        <!-- ESTOQUE -->
+        <div class="nav-dropdown">
+          <button class="nav-dropdown-btn">📦 Estoque ▾</button>
+          <div class="nav-dropdown-menu">
+            <a href="almoxarifado.html">🌾 Matéria Prima (Almoxarifado)</a>
+            <a href="estoque_produtos.html">❄️ Produto Acabado (Câmara Fria)</a>
+          </div>
+        </div>
+        <!-- PRODUÇÃO -->
+        <div class="nav-dropdown">
+          <button class="nav-dropdown-btn">🏭 Produção ▾</button>
+          <div class="nav-dropdown-menu">
+            <a href="planejamento.html">📅 Planejamento Maestro</a>
+            <a href="ordens_producao.html">📋 Fila de OPs</a>
+            <a href="colaboradores.html">👤 Equipe & Colaboradores</a>
+          </div>
+        </div>
+        <!-- FINANCEIRO -->
+        <div class="nav-dropdown active">
+          <button class="nav-dropdown-btn">💵 Financeiro ▾</button>
+          <div class="nav-dropdown-menu">
+            <a href="financeiro_resumo.html" class="active">📊 Fluxo de Caixa</a>
+            <a href="contas_pagar.html">📤 Contas a Pagar</a>
+            <a href="contas_receber.html">📥 Contas a Receber</a>
+          </div>
+        </div>
+      </nav>
+      <div class="topbar-right">
+        <span class="badge-online">● Online</span>
+      </div>
+    </header>
+
+    <div class="page-content">
+
+      <div class="page-header">
+        <div class="page-header-left">
+          <h1>Resumo do Fluxo de Caixa</h1>
+          <p>Visão consolidada das receitas e despesas operacionais da fábrica.</p>
+        </div>
+      </div>
+
+      <!-- KPIS FINANCEIROS -->
+      <div class="kpi-finance-grid">
+        <div class="kpi-finance green">
+          <div class="kpi-finance-label">Contas a Receber (Vendas B2B)</div>
+          <div class="kpi-finance-value" id="kpi-receber">R$ 0,00</div>
+          <div class="kpi-finance-sub">Faturamentos previstos</div>
+        </div>
+        <div class="kpi-finance red">
+          <div class="kpi-finance-label">Contas a Pagar (Insumos/Operação)</div>
+          <div class="kpi-finance-value" id="kpi-pagar">R$ 0,00</div>
+          <div class="kpi-finance-sub">Compromissos pendentes</div>
+        </div>
+        <div class="kpi-finance purple">
+          <div class="kpi-finance-label">Saldo Líquido Previsto</div>
+          <div class="kpi-finance-value" id="kpi-saldo">R$ 0,00</div>
+          <div class="kpi-finance-sub">Resultado Operacional</div>
+        </div>
+      </div>
+
+      <div class="fin-card">
+        <h3>📊 Resumo Operacional</h3>
+        <p style="color:var(--text-secondary);font-size:13.5px">
+          Acesse os atalhos do menu <strong>Financeiro ▾</strong> acima para gerenciar o detalhamento de <strong>Contas a Pagar</strong> (compras de insumos) e <strong>Contas a Receber</strong> (faturamento de clientes).
+        </p>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  const API_PEDIDOS = 'http://localhost:3001/api/comercial/pedidos';
+  const API_INSUMOS = 'http://localhost:3001/api/insumos';
+
+  function formatarDinheiro(val) { return Number(val||0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
+
+  async function carregarFinanceiro() {
+    try {
+      const [rPed, rIns] = await Promise.all([fetch(API_PEDIDOS), fetch(API_INSUMOS)]);
+      const peds    = await rPed.json();
+      const insumos = await rIns.json();
+
+      let totalReceber = peds.filter(p => p.status !== 'CANCELADO' && p.status !== 'ORCAMENTO')
+                             .reduce((acc, c) => acc + parseFloat(c.valor_total || 0), 0);
+
+      let totalPagar = insumos.reduce((acc, i) => {
+        const preco = parseFloat(i.preco_pago || i.custo_unitario || 0);
+        const est   = parseFloat(i.estoque_atual || 0);
+        return acc + (preco * est);
+      }, 0);
+
+      document.getElementById('kpi-receber').textContent = formatarDinheiro(totalReceber);
+      document.getElementById('kpi-pagar').textContent   = formatarDinheiro(totalPagar);
+      document.getElementById('kpi-saldo').textContent   = formatarDinheiro(totalReceber - totalPagar);
+    } catch {
+      // fallback
+    }
+  }
+
+  window.onload = carregarFinanceiro;
+</script>
+</body>
+</html>

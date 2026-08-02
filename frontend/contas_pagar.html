@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contas a Pagar — ERP Fabrica</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/global.css" />
+  <style>
+    .pagar-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+      box-shadow: var(--shadow); overflow: hidden;
+    }
+    .pagar-card table { width: 100%; border-collapse: collapse; }
+    .pagar-card thead th {
+      background: var(--bg); font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .05em; color: var(--text-muted); padding: 12px 16px; border-bottom: 1px solid var(--border-light); text-align: left;
+    }
+    .pagar-card tbody tr { border-bottom: 1px solid var(--border-light); }
+    .pagar-card tbody td { padding: 13px 16px; font-size: 13.5px; }
+  </style>
+</head>
+<body>
+
+<div id="toast-container"></div>
+
+<div class="erp-shell">
+  <div class="main-wrap">
+
+    <!-- TOPBAR GLOBAL DROPDOWN -->
+    <header class="topbar">
+      <a href="vendas.html" class="topbar-logo">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+        </svg>
+        <span>ERP Fabrica</span>
+      </a>
+      <nav class="topbar-nav">
+        <!-- COMERCIAL -->
+        <div class="nav-dropdown">
+          <button class="nav-dropdown-btn">💼 Comercial ▾</button>
+          <div class="nav-dropdown-menu">
+            <a href="vendas.html">💰 Lançamento de Vendas</a>
+            <a href="orcamentos.html">📄 Orçamentos</a>
+            <a href="produtos.html">🍰 Produtos Finais</a>
+          </div>
+        </div>
+        <!-- ESTOQUE -->
+        <div class="nav-dropdown">
+          <button class="nav-dropdown-btn">📦 Estoque ▾</button>
+          <div class="nav-dropdown-menu">
+            <a href="almoxarifado.html">🌾 Matéria Prima (Almoxarifado)</a>
+            <a href="estoque_produtos.html">❄️ Produto Acabado (Câmara Fria)</a>
+          </div>
+        </div>
+        <!-- PRODUÇÃO -->
+        <div class="nav-dropdown">
+          <button class="nav-dropdown-btn">🏭 Produção ▾</button>
+          <div class="nav-dropdown-menu">
+            <a href="planejamento.html">📅 Planejamento Maestro</a>
+            <a href="ordens_producao.html">📋 Fila de OPs</a>
+            <a href="colaboradores.html">👤 Equipe & Colaboradores</a>
+          </div>
+        </div>
+        <!-- FINANCEIRO -->
+        <div class="nav-dropdown active">
+          <button class="nav-dropdown-btn">💵 Financeiro ▾</button>
+          <div class="nav-dropdown-menu">
+            <a href="financeiro_resumo.html">📊 Fluxo de Caixa</a>
+            <a href="contas_pagar.html" class="active">📤 Contas a Pagar</a>
+            <a href="contas_receber.html">📥 Contas a Receber</a>
+          </div>
+        </div>
+      </nav>
+      <div class="topbar-right">
+        <span class="badge-online">● Online</span>
+      </div>
+    </header>
+
+    <div class="page-content">
+
+      <div class="page-header">
+        <div class="page-header-left">
+          <h1>Contas a Pagar (Compras & Operacional)</h1>
+          <p>Acompanhe os custos com fornecedores de insumos, embalagens e despesas operacionais da fábrica.</p>
+        </div>
+      </div>
+
+      <div class="pagar-card">
+        <table>
+          <thead>
+            <tr>
+              <th>Descrição / Insumo</th>
+              <th>Categoria</th>
+              <th>Estoque Comprado</th>
+              <th style="text-align:right">Custo / Unidade</th>
+              <th style="text-align:right">Total Previsto</th>
+              <th style="text-align:center">Status</th>
+            </tr>
+          </thead>
+          <tbody id="pagar-tbody">
+            <tr>
+              <td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted)">Carregando compromissos a pagar...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  const API_INSUMOS = 'http://localhost:3001/api/insumos';
+
+  function formatarDinheiro(val) { return Number(val||0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
+
+  async function carregarPagar() {
+    try {
+      const res = await fetch(API_INSUMOS);
+      const insumos = await res.json();
+      const tbody = document.getElementById('pagar-tbody');
+
+      if (!insumos.length) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted)">Nenhuma compra ou insumo cadastrado.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = insumos.map(i => {
+        const est = parseFloat(i.estoque_atual || 0);
+        const custo = parseFloat(i.preco_pago || i.custo_unitario || 0);
+        const total = est * custo;
+
+        return `
+          <tr>
+            <td><strong>${i.nome}</strong></td>
+            <td><span class="badge badge-purple">${i.categoria || 'Almoxarifado'}</span></td>
+            <td>${est} ${i.unidade_medida || 'kg'}</td>
+            <td style="text-align:right">${formatarDinheiro(custo)}</td>
+            <td style="text-align:right;font-weight:700;color:var(--red)">${formatarDinheiro(total)}</td>
+            <td style="text-align:center"><span class="badge badge-green">✓ Alocado</span></td>
+          </tr>
+        `;
+      }).join('');
+    } catch {
+      // fallback
+    }
+  }
+
+  window.onload = carregarPagar;
+</script>
+</body>
+</html>

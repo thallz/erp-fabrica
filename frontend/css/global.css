@@ -155,29 +155,71 @@ body {
 .topbar-nav {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   margin-left: 20px;
 }
 
-.topbar-nav a {
+.nav-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.nav-dropdown-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
+  gap: 5px;
+  padding: 7px 14px;
   font-size: 13.5px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text-secondary);
-  text-decoration: none;
+  background: none;
+  border: none;
   border-radius: var(--radius);
+  cursor: pointer;
   transition: background .15s, color .15s;
 }
 
-.topbar-nav a:hover {
+.nav-dropdown-btn:hover,
+.nav-dropdown.active .nav-dropdown-btn {
   background: var(--brand-light);
   color: var(--brand);
 }
 
-.topbar-nav a.active {
+.nav-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+  min-width: 210px;
+  padding: 6px;
+  display: none;
+  z-index: 100;
+}
+
+.nav-dropdown:hover .nav-dropdown-menu,
+.nav-dropdown:focus-within .nav-dropdown-menu {
+  display: block;
+}
+
+.nav-dropdown-menu a {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-decoration: none;
+  border-radius: 8px;
+  transition: background .12s, color .12s;
+}
+
+.nav-dropdown-menu a:hover,
+.nav-dropdown-menu a.active {
   background: var(--brand-light);
   color: var(--brand);
   font-weight: 600;

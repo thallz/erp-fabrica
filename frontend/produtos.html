@@ -216,14 +216,41 @@
         <span>ERP Fabrica</span>
       </a>
       <nav class="topbar-nav">
-        <a href="almoxarifado.html">📦 Almoxarifado</a>
-        <a href="receitas.html">👨🍳 Receitas</a>
-        <a href="produtos.html" class="active">🍰 Produtos Finais</a>
-        <a href="clientes.html">👥 Clientes</a>
-        <a href="vendas.html">💰 Lançar Vendas</a>
-        <a href="ordens_producao.html">🏭 Produção</a>
-        <a href="colaboradores.html">👤 Colaboradores</a>
-        <a href="planejamento.html">📅 Planejamento</a>
+        <!-- COMERCIAL -->
+        <div class="nav-dropdown active">
+          <button class="nav-dropdown-btn">💼 Comercial ▾</button>
+          <div class="nav-dropdown-menu">
+            <a href="vendas.html">💰 Lançamento de Vendas</a>
+            <a href="orcamentos.html">📄 Orçamentos</a>
+            <a href="produtos.html" class="active">🍰 Produtos Finais</a>
+          </div>
+        </div>
+        <!-- ESTOQUE -->
+        <div class="nav-dropdown">
+          <button class="nav-dropdown-btn">📦 Estoque ▾</button>
+          <div class="nav-dropdown-menu">
+            <a href="almoxarifado.html">🌾 Matéria Prima (Almoxarifado)</a>
+            <a href="estoque_produtos.html">❄️ Produto Acabado (Câmara Fria)</a>
+          </div>
+        </div>
+        <!-- PRODUÇÃO -->
+        <div class="nav-dropdown">
+          <button class="nav-dropdown-btn">🏭 Produção ▾</button>
+          <div class="nav-dropdown-menu">
+            <a href="planejamento.html">📅 Planejamento Maestro</a>
+            <a href="ordens_producao.html">📋 Fila de OPs</a>
+            <a href="colaboradores.html">👤 Equipe & Colaboradores</a>
+          </div>
+        </div>
+        <!-- FINANCEIRO -->
+        <div class="nav-dropdown">
+          <button class="nav-dropdown-btn">💵 Financeiro ▾</button>
+          <div class="nav-dropdown-menu">
+            <a href="financeiro_resumo.html">📊 Fluxo de Caixa</a>
+            <a href="contas_pagar.html">📤 Contas a Pagar</a>
+            <a href="contas_receber.html">📥 Contas a Receber</a>
+          </div>
+        </div>
       </nav>
       <div class="topbar-right"><span class="badge-online">● Online</span></div>
     </header>
