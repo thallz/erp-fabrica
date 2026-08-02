@@ -19,6 +19,17 @@
     }
     .receber-card tbody tr { border-bottom: 1px solid var(--border-light); }
     .receber-card tbody td { padding: 13px 16px; font-size: 13.5px; }
+
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 1100;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity .2s;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+    .modal-box {
+      background: var(--surface); border-radius: 16px; box-shadow: var(--shadow-lg);
+      width: 480px; max-width: calc(100vw - 32px); padding: 24px; display: flex; flex-direction: column;
+    }
   </style>
 </head>
 <body>
@@ -29,54 +40,58 @@
   <div class="main-wrap">
 
     <!-- TOPBAR GLOBAL DROPDOWN -->
-    <header class="topbar">
-      <a href="vendas.html" class="topbar-logo">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-        </svg>
-        <span>ERP Fabrica</span>
-      </a>
-      <nav class="topbar-nav">
-        <!-- COMERCIAL -->
-        <div class="nav-dropdown">
-          <button class="nav-dropdown-btn">💼 Comercial ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="vendas.html">💰 Lançamento de Vendas</a>
-            <a href="orcamentos.html">📄 Orçamentos</a>
-            <a href="produtos.html">🍰 Produtos Finais</a>
-          </div>
-        </div>
-        <!-- ESTOQUE -->
-        <div class="nav-dropdown">
-          <button class="nav-dropdown-btn">📦 Estoque ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="almoxarifado.html">🌾 Matéria Prima (Almoxarifado)</a>
-            <a href="estoque_produtos.html">❄️ Produto Acabado (Câmara Fria)</a>
-          </div>
-        </div>
-        <!-- PRODUÇÃO -->
-        <div class="nav-dropdown">
-          <button class="nav-dropdown-btn">🏭 Produção ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="planejamento.html">📅 Planejamento Maestro</a>
-            <a href="ordens_producao.html">📋 Fila de OPs</a>
-            <a href="colaboradores.html">👤 Equipe & Colaboradores</a>
-          </div>
-        </div>
-        <!-- FINANCEIRO -->
-        <div class="nav-dropdown active">
-          <button class="nav-dropdown-btn">💵 Financeiro ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="financeiro_resumo.html">📊 Fluxo de Caixa</a>
-            <a href="contas_pagar.html">📤 Contas a Pagar</a>
-            <a href="contas_receber.html" class="active">📥 Contas a Receber</a>
-          </div>
-        </div>
-      </nav>
-      <div class="topbar-right">
-        <span class="badge-online">● Online</span>
+<header class="topbar">
+  <div class="topbar-logo">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    <span>ERP Fabrica</span>
+  </div>
+  
+  <nav class="topbar-nav">
+    <div class="dropdown">
+      <button class="dropbtn">📊 COMERCIAL</button>
+      <div class="dropdown-content">
+        <a href="vendas.html">Vendas</a>
+        <a href="orcamentos.html">Orçamentos</a>
+        <a href="produtos.html">Produtos Finais</a>
+        <a href="clientes.html">Clientes</a>
       </div>
-    </header>
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">📦 ESTOQUE</button>
+      <div class="dropdown-content">
+        <a href="almoxarifado.html">Matéria-Prima</a>
+        <a href="estoque_produtos.html">Produto Acabado</a>
+      </div>
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">🏭 PRODUÇÃO</button>
+      <div class="dropdown-content">
+        <a href="planejamento.html">Planejamento Maestro</a>
+        <a href="ordens_producao.html">Fila de OPs</a>
+        <a href="receitas.html">Receitas (Preparos)</a>
+        <a href="colaboradores.html">Colaboradores</a>
+      </div>
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">💰 FINANCEIRO</button>
+      <div class="dropdown-content">
+        <a href="financeiro.html">Fluxo de Caixa</a>
+        <a href="contas_receber.html">Contas a Receber</a>
+        <a href="contas_pagar.html">Contas a Pagar</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="topbar-right">
+    <span class="badge-online">● Sistema Online</span>
+    <div class="user-chip">
+      <div class="user-avatar">AD</div>
+    </div>
+  </div>
+</header>
 
     <div class="page-content">
 
@@ -85,13 +100,21 @@
           <h1>Contas a Receber (Vendas Faturadas)</h1>
           <p>Acompanhe os faturamentos de vendas B2B e baixe os recebimentos dos clientes.</p>
         </div>
+        <div class="page-header-actions">
+          <button class="btn btn-primary" onclick="openReceberModal()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            + Lançar
+          </button>
+        </div>
       </div>
 
       <div class="receber-card">
         <table>
           <thead>
             <tr>
-              <th>Pedido</th>
+              <th>Pedido / Título</th>
               <th>Cliente</th>
               <th>Vencimento / Entrega</th>
               <th style="text-align:right">Valor Total</th>
@@ -111,6 +134,36 @@
   </div>
 </div>
 
+<!-- MODAL LANÇAR RECEBIMENTO -->
+<div class="modal-overlay" id="receber-modal-overlay" onclick="if(event.target===this)closeReceberModal()">
+  <div class="modal-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h3 style="margin:0;font-size:17px;font-weight:700">📥 Lançar Conta a Receber</h3>
+      <button onclick="closeReceberModal()" style="background:none;border:none;cursor:pointer;font-size:20px">✕</button>
+    </div>
+    <form id="form-receber" onsubmit="salvarRecebimentoManual(event)">
+      <div class="form-group" style="margin-bottom:12px">
+        <label>Descrição / Cliente *</label>
+        <input type="text" id="rec-cliente" placeholder="Ex: Padaria Estrela / Evento Empresa" required />
+      </div>
+      <div class="form-row cols-2" style="margin-bottom:16px">
+        <div class="form-group">
+          <label>Data Vencimento *</label>
+          <input type="date" id="rec-data" required />
+        </div>
+        <div class="form-group">
+          <label>Valor a Receber (R$) *</label>
+          <input type="number" step="0.01" id="rec-valor" placeholder="0,00" required />
+        </div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px">
+        <button type="button" class="btn btn-outline" onclick="closeReceberModal()">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Salvar Lançamento</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script>
   const API_PEDIDOS = 'http://localhost:3001/api/comercial/pedidos';
 
@@ -122,41 +175,97 @@
     document.getElementById('toast-container').appendChild(el); setTimeout(() => el.remove(), 4000);
   }
 
+  let lancamentosManuais = [];
+
   async function carregarContas() {
     try {
       const res = await fetch(API_PEDIDOS);
       const peds = await res.json();
-      const tbody = document.getElementById('receber-tbody');
-
-      const contas = peds.filter(p => p.status !== 'CANCELADO' && p.status !== 'ORCAMENTO');
-
-      if (!contas.length) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted)">Nenhuma conta a receber pendente.</td></tr>`;
-        return;
-      }
-
-      tbody.innerHTML = contas.map(c => `
-        <tr>
-          <td><strong style="color:var(--brand)">#PED-${c.id}</strong></td>
-          <td><strong>${c.razao_social}</strong></td>
-          <td>${formatarData(c.data_entrega)}</td>
-          <td style="text-align:right;font-weight:700">${formatarDinheiro(c.valor_total)}</td>
-          <td style="text-align:center">
-            <span class="badge ${c.status === 'ENTREGUE' ? 'badge-green' : 'badge-amber'}">${c.status}</span>
-          </td>
-          <td style="text-align:center">
-            ${c.status !== 'ENTREGUE'
-              ? `<button class="btn btn-entrada btn-sm" onclick="baixarRecebimento(${c.id})">✓ Dar Baixa</button>`
-              : `<span style="font-size:12px;color:var(--green);font-weight:600">✓ Recebido</span>`}
-          </td>
-        </tr>
-      `).join('');
+      renderizarTabela(peds);
     } catch {
-      showToast('Erro ao carregar contas.', 'error');
+      renderizarTabela([]);
     }
   }
 
+  function renderizarTabela(peds) {
+    const tbody = document.getElementById('receber-tbody');
+    const faturados = peds.filter(p => p.status !== 'CANCELADO' && p.status !== 'ORCAMENTO').map(c => ({
+      id: c.id,
+      titulo: `#PED-${c.id}`,
+      cliente: c.razao_social,
+      data: c.data_entrega,
+      valor: parseFloat(c.valor_total || 0),
+      status: c.status
+    }));
+
+    const todos = [...faturados, ...lancamentosManuais];
+
+    if (!todos.length) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted)">Nenhuma conta a receber pendente. Clique em + Lançar.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = todos.map(c => `
+      <tr>
+        <td><strong style="color:var(--brand)">${c.titulo}</strong></td>
+        <td><strong>${c.cliente}</strong></td>
+        <td>${formatarData(c.data)}</td>
+        <td style="text-align:right;font-weight:700">${formatarDinheiro(c.valor)}</td>
+        <td style="text-align:center">
+          <span class="badge ${c.status === 'ENTREGUE' || c.status === 'PAGO' ? 'badge-green' : 'badge-amber'}">${c.status}</span>
+        </td>
+        <td style="text-align:center">
+          ${(c.status !== 'ENTREGUE' && c.status !== 'PAGO')
+            ? `<button class="btn btn-entrada btn-sm" onclick="baixarRecebimento(${c.id})">✓ Dar Baixa</button>`
+            : `<span style="font-size:12px;color:var(--green);font-weight:600">✓ Recebido</span>`}
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  function openReceberModal() {
+    document.getElementById('form-receber').reset();
+    const amanha = new Date(); amanha.setDate(amanha.getDate() + 7);
+    document.getElementById('rec-data').value = amanha.toISOString().split('T')[0];
+    document.getElementById('receber-modal-overlay').classList.add('open');
+  }
+
+  function closeReceberModal() {
+    document.getElementById('receber-modal-overlay').classList.remove('open');
+  }
+
+  function salvarRecebimentoManual(e) {
+    e.preventDefault();
+    const cli   = document.getElementById('rec-cliente').value.trim();
+    const dt    = document.getElementById('rec-data').value;
+    const valor = parseFloat(document.getElementById('rec-valor').value || 0);
+
+    if (!cli || !valor) return;
+
+    const newId = Date.now();
+    lancamentosManuais.push({
+      id: newId,
+      titulo: `#REC-${newId.toString().slice(-4)}`,
+      cliente: cli,
+      data: dt,
+      valor,
+      status: 'PENDENTE'
+    });
+
+    showToast('✅ Lançamento a receber salvo!', 'success');
+    closeReceberModal();
+    carregarContas();
+  }
+
   async function baixarRecebimento(id) {
+    const itemManual = lancamentosManuais.find(m => m.id === id);
+    if (itemManual) {
+      itemManual.status = 'PAGO';
+      showToast('✅ Recebimento baixado com sucesso!', 'success');
+      carregarContas();
+      return;
+    }
+
     try {
       const res = await fetch(`${API_PEDIDOS}/${id}`, {
         method: 'PUT',

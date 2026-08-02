@@ -962,6 +962,17 @@ settings:
     }
     .pagar-card tbody tr { border-bottom: 1px solid var(--border-light); }
     .pagar-card tbody td { padding: 13px 16px; font-size: 13.5px; }
+
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 1100;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity .2s;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+    .modal-box {
+      background: var(--surface); border-radius: 16px; box-shadow: var(--shadow-lg);
+      width: 480px; max-width: calc(100vw - 32px); padding: 24px; display: flex; flex-direction: column;
+    }
   </style>
 </head>
 <body>
@@ -972,54 +983,58 @@ settings:
   <div class="main-wrap">
 
     <!-- TOPBAR GLOBAL DROPDOWN -->
-    <header class="topbar">
-      <a href="vendas.html" class="topbar-logo">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-        </svg>
-        <span>ERP Fabrica</span>
-      </a>
-      <nav class="topbar-nav">
-        <!-- COMERCIAL -->
-        <div class="nav-dropdown">
-          <button class="nav-dropdown-btn">💼 Comercial ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="vendas.html">💰 Lançamento de Vendas</a>
-            <a href="orcamentos.html">📄 Orçamentos</a>
-            <a href="produtos.html">🍰 Produtos Finais</a>
-          </div>
-        </div>
-        <!-- ESTOQUE -->
-        <div class="nav-dropdown">
-          <button class="nav-dropdown-btn">📦 Estoque ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="almoxarifado.html">🌾 Matéria Prima (Almoxarifado)</a>
-            <a href="estoque_produtos.html">❄️ Produto Acabado (Câmara Fria)</a>
-          </div>
-        </div>
-        <!-- PRODUÇÃO -->
-        <div class="nav-dropdown">
-          <button class="nav-dropdown-btn">🏭 Produção ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="planejamento.html">📅 Planejamento Maestro</a>
-            <a href="ordens_producao.html">📋 Fila de OPs</a>
-            <a href="colaboradores.html">👤 Equipe & Colaboradores</a>
-          </div>
-        </div>
-        <!-- FINANCEIRO -->
-        <div class="nav-dropdown active">
-          <button class="nav-dropdown-btn">💵 Financeiro ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="financeiro_resumo.html">📊 Fluxo de Caixa</a>
-            <a href="contas_pagar.html" class="active">📤 Contas a Pagar</a>
-            <a href="contas_receber.html">📥 Contas a Receber</a>
-          </div>
-        </div>
-      </nav>
-      <div class="topbar-right">
-        <span class="badge-online">● Online</span>
+<header class="topbar">
+  <div class="topbar-logo">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    <span>ERP Fabrica</span>
+  </div>
+  
+  <nav class="topbar-nav">
+    <div class="dropdown">
+      <button class="dropbtn">📊 COMERCIAL</button>
+      <div class="dropdown-content">
+        <a href="vendas.html">Vendas</a>
+        <a href="orcamentos.html">Orçamentos</a>
+        <a href="produtos.html">Produtos Finais</a>
+        <a href="clientes.html">Clientes</a>
       </div>
-    </header>
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">📦 ESTOQUE</button>
+      <div class="dropdown-content">
+        <a href="almoxarifado.html">Matéria-Prima</a>
+        <a href="estoque_produtos.html">Produto Acabado</a>
+      </div>
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">🏭 PRODUÇÃO</button>
+      <div class="dropdown-content">
+        <a href="planejamento.html">Planejamento Maestro</a>
+        <a href="ordens_producao.html">Fila de OPs</a>
+        <a href="receitas.html">Receitas (Preparos)</a>
+        <a href="colaboradores.html">Colaboradores</a>
+      </div>
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">💰 FINANCEIRO</button>
+      <div class="dropdown-content">
+        <a href="financeiro.html">Fluxo de Caixa</a>
+        <a href="contas_receber.html">Contas a Receber</a>
+        <a href="contas_pagar.html">Contas a Pagar</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="topbar-right">
+    <span class="badge-online">● Sistema Online</span>
+    <div class="user-chip">
+      <div class="user-avatar">AD</div>
+    </div>
+  </div>
+</header>
 
     <div class="page-content">
 
@@ -1027,6 +1042,14 @@ settings:
         <div class="page-header-left">
           <h1>Contas a Pagar (Compras & Operacional)</h1>
           <p>Acompanhe os custos com fornecedores de insumos, embalagens e despesas operacionais da fábrica.</p>
+        </div>
+        <div class="page-header-actions">
+          <button class="btn btn-primary" onclick="openPagarModal()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            + Lançar
+          </button>
         </div>
       </div>
 
@@ -1054,41 +1077,127 @@ settings:
   </div>
 </div>
 
+<!-- MODAL LANÇAR CONTA A PAGAR -->
+<div class="modal-overlay" id="pagar-modal-overlay" onclick="if(event.target===this)closePagarModal()">
+  <div class="modal-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h3 style="margin:0;font-size:17px;font-weight:700">📤 Lançar Conta a Pagar</h3>
+      <button onclick="closePagarModal()" style="background:none;border:none;cursor:pointer;font-size:20px">✕</button>
+    </div>
+    <form id="form-pagar" onsubmit="salvarDespesa(event)">
+      <div class="form-group" style="margin-bottom:12px">
+        <label>Descrição da Despesa *</label>
+        <input type="text" id="pagar-desc" placeholder="Ex: Conta de Energia / Compra de Sacos" required />
+      </div>
+      <div class="form-row cols-2" style="margin-bottom:16px">
+        <div class="form-group">
+          <label>Categoria</label>
+          <select id="pagar-cat">
+            <option>Matéria-Prima</option>
+            <option>Embalagens</option>
+            <option>Energia / Água</option>
+            <option>Manutenção</option>
+            <option>Outros</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Valor Total (R$) *</label>
+          <input type="number" step="0.01" id="pagar-valor" placeholder="0,00" required />
+        </div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px">
+        <button type="button" class="btn btn-outline" onclick="closePagarModal()">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Salvar Lançamento</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script>
   const API_INSUMOS = 'http://localhost:3001/api/insumos';
 
   function formatarDinheiro(val) { return Number(val||0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
 
+  function showToast(msg, type='') {
+    const el = document.createElement('div'); el.className = 'toast ' + type; el.textContent = msg;
+    document.getElementById('toast-container').appendChild(el); setTimeout(() => el.remove(), 4000);
+  }
+
+  let lancamentosAdicionais = [];
+
   async function carregarPagar() {
     try {
       const res = await fetch(API_INSUMOS);
       const insumos = await res.json();
-      const tbody = document.getElementById('pagar-tbody');
+      renderizarTabela(insumos);
+    } catch {
+      renderizarTabela([]);
+    }
+  }
 
-      if (!insumos.length) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted)">Nenhuma compra ou insumo cadastrado.</td></tr>`;
-        return;
-      }
-
-      tbody.innerHTML = insumos.map(i => {
+  function renderizarTabela(insumos) {
+    const tbody = document.getElementById('pagar-tbody');
+    const todos = [
+      ...insumos.map(i => {
         const est = parseFloat(i.estoque_atual || 0);
         const custo = parseFloat(i.preco_pago || i.custo_unitario || 0);
-        const total = est * custo;
+        return {
+          nome: i.nome,
+          categoria: i.categoria || 'Almoxarifado',
+          estoque: `${est} ${i.unidade_medida || 'kg'}`,
+          custo,
+          total: est * custo,
+          status: '✓ Alocado'
+        };
+      }),
+      ...lancamentosAdicionais
+    ];
 
-        return `
-          <tr>
-            <td><strong>${i.nome}</strong></td>
-            <td><span class="badge badge-purple">${i.categoria || 'Almoxarifado'}</span></td>
-            <td>${est} ${i.unidade_medida || 'kg'}</td>
-            <td style="text-align:right">${formatarDinheiro(custo)}</td>
-            <td style="text-align:right;font-weight:700;color:var(--red)">${formatarDinheiro(total)}</td>
-            <td style="text-align:center"><span class="badge badge-green">✓ Alocado</span></td>
-          </tr>
-        `;
-      }).join('');
-    } catch {
-      // fallback
+    if (!todos.length) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted)">Nenhuma conta a pagar cadastrada. Clique em + Lançar.</td></tr>`;
+      return;
     }
+
+    tbody.innerHTML = todos.map(item => `
+      <tr>
+        <td><strong>${item.nome}</strong></td>
+        <td><span class="badge badge-purple">${item.categoria}</span></td>
+        <td>${item.estoque}</td>
+        <td style="text-align:right">${formatarDinheiro(item.custo)}</td>
+        <td style="text-align:right;font-weight:700;color:var(--red)">${formatarDinheiro(item.total)}</td>
+        <td style="text-align:center"><span class="badge badge-green">${item.status}</span></td>
+      </tr>
+    `).join('');
+  }
+
+  function openPagarModal() {
+    document.getElementById('form-pagar').reset();
+    document.getElementById('pagar-modal-overlay').classList.add('open');
+  }
+  function closePagarModal() {
+    document.getElementById('pagar-modal-overlay').classList.remove('open');
+  }
+
+  function salvarDespesa(e) {
+    e.preventDefault();
+    const desc  = document.getElementById('pagar-desc').value.trim();
+    const cat   = document.getElementById('pagar-cat').value;
+    const valor = parseFloat(document.getElementById('pagar-valor').value || 0);
+
+    if (!desc || !valor) return;
+
+    lancamentosAdicionais.push({
+      nome: desc,
+      categoria: cat,
+      estoque: '1 serv',
+      custo: valor,
+      total: valor,
+      status: '⏳ Pendente'
+    });
+
+    showToast('✅ Despesa lançada com sucesso!', 'success');
+    closePagarModal();
+    carregarPagar();
   }
 
   window.onload = carregarPagar;
@@ -1119,6 +1228,17 @@ settings:
     }
     .receber-card tbody tr { border-bottom: 1px solid var(--border-light); }
     .receber-card tbody td { padding: 13px 16px; font-size: 13.5px; }
+
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 1100;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity .2s;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+    .modal-box {
+      background: var(--surface); border-radius: 16px; box-shadow: var(--shadow-lg);
+      width: 480px; max-width: calc(100vw - 32px); padding: 24px; display: flex; flex-direction: column;
+    }
   </style>
 </head>
 <body>
@@ -1129,54 +1249,58 @@ settings:
   <div class="main-wrap">
 
     <!-- TOPBAR GLOBAL DROPDOWN -->
-    <header class="topbar">
-      <a href="vendas.html" class="topbar-logo">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-        </svg>
-        <span>ERP Fabrica</span>
-      </a>
-      <nav class="topbar-nav">
-        <!-- COMERCIAL -->
-        <div class="nav-dropdown">
-          <button class="nav-dropdown-btn">💼 Comercial ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="vendas.html">💰 Lançamento de Vendas</a>
-            <a href="orcamentos.html">📄 Orçamentos</a>
-            <a href="produtos.html">🍰 Produtos Finais</a>
-          </div>
-        </div>
-        <!-- ESTOQUE -->
-        <div class="nav-dropdown">
-          <button class="nav-dropdown-btn">📦 Estoque ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="almoxarifado.html">🌾 Matéria Prima (Almoxarifado)</a>
-            <a href="estoque_produtos.html">❄️ Produto Acabado (Câmara Fria)</a>
-          </div>
-        </div>
-        <!-- PRODUÇÃO -->
-        <div class="nav-dropdown">
-          <button class="nav-dropdown-btn">🏭 Produção ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="planejamento.html">📅 Planejamento Maestro</a>
-            <a href="ordens_producao.html">📋 Fila de OPs</a>
-            <a href="colaboradores.html">👤 Equipe & Colaboradores</a>
-          </div>
-        </div>
-        <!-- FINANCEIRO -->
-        <div class="nav-dropdown active">
-          <button class="nav-dropdown-btn">💵 Financeiro ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="financeiro_resumo.html">📊 Fluxo de Caixa</a>
-            <a href="contas_pagar.html">📤 Contas a Pagar</a>
-            <a href="contas_receber.html" class="active">📥 Contas a Receber</a>
-          </div>
-        </div>
-      </nav>
-      <div class="topbar-right">
-        <span class="badge-online">● Online</span>
+<header class="topbar">
+  <div class="topbar-logo">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    <span>ERP Fabrica</span>
+  </div>
+  
+  <nav class="topbar-nav">
+    <div class="dropdown">
+      <button class="dropbtn">📊 COMERCIAL</button>
+      <div class="dropdown-content">
+        <a href="vendas.html">Vendas</a>
+        <a href="orcamentos.html">Orçamentos</a>
+        <a href="produtos.html">Produtos Finais</a>
+        <a href="clientes.html">Clientes</a>
       </div>
-    </header>
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">📦 ESTOQUE</button>
+      <div class="dropdown-content">
+        <a href="almoxarifado.html">Matéria-Prima</a>
+        <a href="estoque_produtos.html">Produto Acabado</a>
+      </div>
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">🏭 PRODUÇÃO</button>
+      <div class="dropdown-content">
+        <a href="planejamento.html">Planejamento Maestro</a>
+        <a href="ordens_producao.html">Fila de OPs</a>
+        <a href="receitas.html">Receitas (Preparos)</a>
+        <a href="colaboradores.html">Colaboradores</a>
+      </div>
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">💰 FINANCEIRO</button>
+      <div class="dropdown-content">
+        <a href="financeiro.html">Fluxo de Caixa</a>
+        <a href="contas_receber.html">Contas a Receber</a>
+        <a href="contas_pagar.html">Contas a Pagar</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="topbar-right">
+    <span class="badge-online">● Sistema Online</span>
+    <div class="user-chip">
+      <div class="user-avatar">AD</div>
+    </div>
+  </div>
+</header>
 
     <div class="page-content">
 
@@ -1185,13 +1309,21 @@ settings:
           <h1>Contas a Receber (Vendas Faturadas)</h1>
           <p>Acompanhe os faturamentos de vendas B2B e baixe os recebimentos dos clientes.</p>
         </div>
+        <div class="page-header-actions">
+          <button class="btn btn-primary" onclick="openReceberModal()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            + Lançar
+          </button>
+        </div>
       </div>
 
       <div class="receber-card">
         <table>
           <thead>
             <tr>
-              <th>Pedido</th>
+              <th>Pedido / Título</th>
               <th>Cliente</th>
               <th>Vencimento / Entrega</th>
               <th style="text-align:right">Valor Total</th>
@@ -1211,6 +1343,36 @@ settings:
   </div>
 </div>
 
+<!-- MODAL LANÇAR RECEBIMENTO -->
+<div class="modal-overlay" id="receber-modal-overlay" onclick="if(event.target===this)closeReceberModal()">
+  <div class="modal-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h3 style="margin:0;font-size:17px;font-weight:700">📥 Lançar Conta a Receber</h3>
+      <button onclick="closeReceberModal()" style="background:none;border:none;cursor:pointer;font-size:20px">✕</button>
+    </div>
+    <form id="form-receber" onsubmit="salvarRecebimentoManual(event)">
+      <div class="form-group" style="margin-bottom:12px">
+        <label>Descrição / Cliente *</label>
+        <input type="text" id="rec-cliente" placeholder="Ex: Padaria Estrela / Evento Empresa" required />
+      </div>
+      <div class="form-row cols-2" style="margin-bottom:16px">
+        <div class="form-group">
+          <label>Data Vencimento *</label>
+          <input type="date" id="rec-data" required />
+        </div>
+        <div class="form-group">
+          <label>Valor a Receber (R$) *</label>
+          <input type="number" step="0.01" id="rec-valor" placeholder="0,00" required />
+        </div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px">
+        <button type="button" class="btn btn-outline" onclick="closeReceberModal()">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Salvar Lançamento</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script>
   const API_PEDIDOS = 'http://localhost:3001/api/comercial/pedidos';
 
@@ -1222,41 +1384,97 @@ settings:
     document.getElementById('toast-container').appendChild(el); setTimeout(() => el.remove(), 4000);
   }
 
+  let lancamentosManuais = [];
+
   async function carregarContas() {
     try {
       const res = await fetch(API_PEDIDOS);
       const peds = await res.json();
-      const tbody = document.getElementById('receber-tbody');
-
-      const contas = peds.filter(p => p.status !== 'CANCELADO' && p.status !== 'ORCAMENTO');
-
-      if (!contas.length) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted)">Nenhuma conta a receber pendente.</td></tr>`;
-        return;
-      }
-
-      tbody.innerHTML = contas.map(c => `
-        <tr>
-          <td><strong style="color:var(--brand)">#PED-${c.id}</strong></td>
-          <td><strong>${c.razao_social}</strong></td>
-          <td>${formatarData(c.data_entrega)}</td>
-          <td style="text-align:right;font-weight:700">${formatarDinheiro(c.valor_total)}</td>
-          <td style="text-align:center">
-            <span class="badge ${c.status === 'ENTREGUE' ? 'badge-green' : 'badge-amber'}">${c.status}</span>
-          </td>
-          <td style="text-align:center">
-            ${c.status !== 'ENTREGUE'
-              ? `<button class="btn btn-entrada btn-sm" onclick="baixarRecebimento(${c.id})">✓ Dar Baixa</button>`
-              : `<span style="font-size:12px;color:var(--green);font-weight:600">✓ Recebido</span>`}
-          </td>
-        </tr>
-      `).join('');
+      renderizarTabela(peds);
     } catch {
-      showToast('Erro ao carregar contas.', 'error');
+      renderizarTabela([]);
     }
   }
 
+  function renderizarTabela(peds) {
+    const tbody = document.getElementById('receber-tbody');
+    const faturados = peds.filter(p => p.status !== 'CANCELADO' && p.status !== 'ORCAMENTO').map(c => ({
+      id: c.id,
+      titulo: `#PED-${c.id}`,
+      cliente: c.razao_social,
+      data: c.data_entrega,
+      valor: parseFloat(c.valor_total || 0),
+      status: c.status
+    }));
+
+    const todos = [...faturados, ...lancamentosManuais];
+
+    if (!todos.length) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted)">Nenhuma conta a receber pendente. Clique em + Lançar.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = todos.map(c => `
+      <tr>
+        <td><strong style="color:var(--brand)">${c.titulo}</strong></td>
+        <td><strong>${c.cliente}</strong></td>
+        <td>${formatarData(c.data)}</td>
+        <td style="text-align:right;font-weight:700">${formatarDinheiro(c.valor)}</td>
+        <td style="text-align:center">
+          <span class="badge ${c.status === 'ENTREGUE' || c.status === 'PAGO' ? 'badge-green' : 'badge-amber'}">${c.status}</span>
+        </td>
+        <td style="text-align:center">
+          ${(c.status !== 'ENTREGUE' && c.status !== 'PAGO')
+            ? `<button class="btn btn-entrada btn-sm" onclick="baixarRecebimento(${c.id})">✓ Dar Baixa</button>`
+            : `<span style="font-size:12px;color:var(--green);font-weight:600">✓ Recebido</span>`}
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  function openReceberModal() {
+    document.getElementById('form-receber').reset();
+    const amanha = new Date(); amanha.setDate(amanha.getDate() + 7);
+    document.getElementById('rec-data').value = amanha.toISOString().split('T')[0];
+    document.getElementById('receber-modal-overlay').classList.add('open');
+  }
+
+  function closeReceberModal() {
+    document.getElementById('receber-modal-overlay').classList.remove('open');
+  }
+
+  function salvarRecebimentoManual(e) {
+    e.preventDefault();
+    const cli   = document.getElementById('rec-cliente').value.trim();
+    const dt    = document.getElementById('rec-data').value;
+    const valor = parseFloat(document.getElementById('rec-valor').value || 0);
+
+    if (!cli || !valor) return;
+
+    const newId = Date.now();
+    lancamentosManuais.push({
+      id: newId,
+      titulo: `#REC-${newId.toString().slice(-4)}`,
+      cliente: cli,
+      data: dt,
+      valor,
+      status: 'PENDENTE'
+    });
+
+    showToast('✅ Lançamento a receber salvo!', 'success');
+    closeReceberModal();
+    carregarContas();
+  }
+
   async function baixarRecebimento(id) {
+    const itemManual = lancamentosManuais.find(m => m.id === id);
+    if (itemManual) {
+      itemManual.status = 'PAGO';
+      showToast('✅ Recebimento baixado com sucesso!', 'success');
+      carregarContas();
+      return;
+    }
+
     try {
       const res = await fetch(`${API_PEDIDOS}/${id}`, {
         method: 'PUT',
@@ -1320,54 +1538,58 @@ settings:
   <div class="main-wrap">
 
     <!-- TOPBAR GLOBAL DROPDOWN -->
-    <header class="topbar">
-      <a href="vendas.html" class="topbar-logo">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-        </svg>
-        <span>ERP Fabrica</span>
-      </a>
-      <nav class="topbar-nav">
-        <!-- COMERCIAL -->
-        <div class="nav-dropdown">
-          <button class="nav-dropdown-btn">💼 Comercial ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="vendas.html">💰 Lançamento de Vendas</a>
-            <a href="orcamentos.html">📄 Orçamentos</a>
-            <a href="produtos.html">🍰 Produtos Finais</a>
-          </div>
-        </div>
-        <!-- ESTOQUE -->
-        <div class="nav-dropdown active">
-          <button class="nav-dropdown-btn">📦 Estoque ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="almoxarifado.html">🌾 Matéria Prima (Almoxarifado)</a>
-            <a href="estoque_produtos.html" class="active">❄️ Produto Acabado (Câmara Fria)</a>
-          </div>
-        </div>
-        <!-- PRODUÇÃO -->
-        <div class="nav-dropdown">
-          <button class="nav-dropdown-btn">🏭 Produção ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="planejamento.html">📅 Planejamento Maestro</a>
-            <a href="ordens_producao.html">📋 Fila de OPs</a>
-            <a href="colaboradores.html">👤 Equipe & Colaboradores</a>
-          </div>
-        </div>
-        <!-- FINANCEIRO -->
-        <div class="nav-dropdown">
-          <button class="nav-dropdown-btn">💵 Financeiro ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="financeiro_resumo.html">📊 Fluxo de Caixa</a>
-            <a href="contas_pagar.html">📤 Contas a Pagar</a>
-            <a href="contas_receber.html">📥 Contas a Receber</a>
-          </div>
-        </div>
-      </nav>
-      <div class="topbar-right">
-        <span class="badge-online">● Online</span>
+<header class="topbar">
+  <div class="topbar-logo">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    <span>ERP Fabrica</span>
+  </div>
+  
+  <nav class="topbar-nav">
+    <div class="dropdown">
+      <button class="dropbtn">📊 COMERCIAL</button>
+      <div class="dropdown-content">
+        <a href="vendas.html">Vendas</a>
+        <a href="orcamentos.html">Orçamentos</a>
+        <a href="produtos.html">Produtos Finais</a>
+        <a href="clientes.html">Clientes</a>
       </div>
-    </header>
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">📦 ESTOQUE</button>
+      <div class="dropdown-content">
+        <a href="almoxarifado.html">Matéria-Prima</a>
+        <a href="estoque_produtos.html">Produto Acabado</a>
+      </div>
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">🏭 PRODUÇÃO</button>
+      <div class="dropdown-content">
+        <a href="planejamento.html">Planejamento Maestro</a>
+        <a href="ordens_producao.html">Fila de OPs</a>
+        <a href="receitas.html">Receitas (Preparos)</a>
+        <a href="colaboradores.html">Colaboradores</a>
+      </div>
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">💰 FINANCEIRO</button>
+      <div class="dropdown-content">
+        <a href="financeiro.html">Fluxo de Caixa</a>
+        <a href="contas_receber.html">Contas a Receber</a>
+        <a href="contas_pagar.html">Contas a Pagar</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="topbar-right">
+    <span class="badge-online">● Sistema Online</span>
+    <div class="user-chip">
+      <div class="user-avatar">AD</div>
+    </div>
+  </div>
+</header>
 
     <div class="page-content">
 
@@ -2445,54 +2667,58 @@ settings:
   <div class="main-wrap">
 
     <!-- TOPBAR GLOBAL DROPDOWN -->
-    <header class="topbar">
-      <a href="vendas.html" class="topbar-logo">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-        </svg>
-        <span>ERP Fabrica</span>
-      </a>
-      <nav class="topbar-nav">
-        <!-- COMERCIAL -->
-        <div class="nav-dropdown">
-          <button class="nav-dropdown-btn">💼 Comercial ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="vendas.html">💰 Lançamento de Vendas</a>
-            <a href="orcamentos.html">📄 Orçamentos</a>
-            <a href="produtos.html">🍰 Produtos Finais</a>
-          </div>
-        </div>
-        <!-- ESTOQUE -->
-        <div class="nav-dropdown">
-          <button class="nav-dropdown-btn">📦 Estoque ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="almoxarifado.html">🌾 Matéria Prima (Almoxarifado)</a>
-            <a href="estoque_produtos.html">❄️ Produto Acabado (Câmara Fria)</a>
-          </div>
-        </div>
-        <!-- PRODUÇÃO -->
-        <div class="nav-dropdown">
-          <button class="nav-dropdown-btn">🏭 Produção ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="planejamento.html">📅 Planejamento Maestro</a>
-            <a href="ordens_producao.html">📋 Fila de OPs</a>
-            <a href="colaboradores.html">👤 Equipe & Colaboradores</a>
-          </div>
-        </div>
-        <!-- FINANCEIRO -->
-        <div class="nav-dropdown active">
-          <button class="nav-dropdown-btn">💵 Financeiro ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="financeiro_resumo.html" class="active">📊 Fluxo de Caixa</a>
-            <a href="contas_pagar.html">📤 Contas a Pagar</a>
-            <a href="contas_receber.html">📥 Contas a Receber</a>
-          </div>
-        </div>
-      </nav>
-      <div class="topbar-right">
-        <span class="badge-online">● Online</span>
+<header class="topbar">
+  <div class="topbar-logo">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    <span>ERP Fabrica</span>
+  </div>
+  
+  <nav class="topbar-nav">
+    <div class="dropdown">
+      <button class="dropbtn">📊 COMERCIAL</button>
+      <div class="dropdown-content">
+        <a href="vendas.html">Vendas</a>
+        <a href="orcamentos.html">Orçamentos</a>
+        <a href="produtos.html">Produtos Finais</a>
+        <a href="clientes.html">Clientes</a>
       </div>
-    </header>
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">📦 ESTOQUE</button>
+      <div class="dropdown-content">
+        <a href="almoxarifado.html">Matéria-Prima</a>
+        <a href="estoque_produtos.html">Produto Acabado</a>
+      </div>
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">🏭 PRODUÇÃO</button>
+      <div class="dropdown-content">
+        <a href="planejamento.html">Planejamento Maestro</a>
+        <a href="ordens_producao.html">Fila de OPs</a>
+        <a href="receitas.html">Receitas (Preparos)</a>
+        <a href="colaboradores.html">Colaboradores</a>
+      </div>
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">💰 FINANCEIRO</button>
+      <div class="dropdown-content">
+        <a href="financeiro.html">Fluxo de Caixa</a>
+        <a href="contas_receber.html">Contas a Receber</a>
+        <a href="contas_pagar.html">Contas a Pagar</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="topbar-right">
+    <span class="badge-online">● Sistema Online</span>
+    <div class="user-chip">
+      <div class="user-avatar">AD</div>
+    </div>
+  </div>
+</header>
 
     <div class="page-content">
 
@@ -2635,54 +2861,58 @@ settings:
   <div class="main-wrap">
 
     <!-- TOPBAR COM DROPDOWN SETORIAL GLOBAL -->
-    <header class="topbar">
-      <a href="vendas.html" class="topbar-logo">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-        </svg>
-        <span>ERP Fabrica</span>
-      </a>
-      <nav class="topbar-nav">
-        <!-- COMERCIAL -->
-        <div class="nav-dropdown active">
-          <button class="nav-dropdown-btn">💼 Comercial ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="vendas.html">💰 Lançamento de Vendas</a>
-            <a href="orcamentos.html" class="active">📄 Orçamentos</a>
-            <a href="produtos.html">🍰 Produtos Finais</a>
-          </div>
-        </div>
-        <!-- ESTOQUE -->
-        <div class="nav-dropdown">
-          <button class="nav-dropdown-btn">📦 Estoque ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="almoxarifado.html">🌾 Matéria Prima (Almoxarifado)</a>
-            <a href="estoque_produtos.html">❄️ Produto Acabado (Câmara Fria)</a>
-          </div>
-        </div>
-        <!-- PRODUÇÃO -->
-        <div class="nav-dropdown">
-          <button class="nav-dropdown-btn">🏭 Produção ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="planejamento.html">📅 Planejamento Maestro</a>
-            <a href="ordens_producao.html">📋 Fila de OPs</a>
-            <a href="colaboradores.html">👤 Equipe & Colaboradores</a>
-          </div>
-        </div>
-        <!-- FINANCEIRO -->
-        <div class="nav-dropdown">
-          <button class="nav-dropdown-btn">💵 Financeiro ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="financeiro_resumo.html">📊 Fluxo de Caixa</a>
-            <a href="contas_pagar.html">📤 Contas a Pagar</a>
-            <a href="contas_receber.html">📥 Contas a Receber</a>
-          </div>
-        </div>
-      </nav>
-      <div class="topbar-right">
-        <span class="badge-online">● Online</span>
+<header class="topbar">
+  <div class="topbar-logo">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    <span>ERP Fabrica</span>
+  </div>
+  
+  <nav class="topbar-nav">
+    <div class="dropdown">
+      <button class="dropbtn">📊 COMERCIAL</button>
+      <div class="dropdown-content">
+        <a href="vendas.html">Vendas</a>
+        <a href="orcamentos.html">Orçamentos</a>
+        <a href="produtos.html">Produtos Finais</a>
+        <a href="clientes.html">Clientes</a>
       </div>
-    </header>
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">📦 ESTOQUE</button>
+      <div class="dropdown-content">
+        <a href="almoxarifado.html">Matéria-Prima</a>
+        <a href="estoque_produtos.html">Produto Acabado</a>
+      </div>
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">🏭 PRODUÇÃO</button>
+      <div class="dropdown-content">
+        <a href="planejamento.html">Planejamento Maestro</a>
+        <a href="ordens_producao.html">Fila de OPs</a>
+        <a href="receitas.html">Receitas (Preparos)</a>
+        <a href="colaboradores.html">Colaboradores</a>
+      </div>
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">💰 FINANCEIRO</button>
+      <div class="dropdown-content">
+        <a href="financeiro.html">Fluxo de Caixa</a>
+        <a href="contas_receber.html">Contas a Receber</a>
+        <a href="contas_pagar.html">Contas a Pagar</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="topbar-right">
+    <span class="badge-online">● Sistema Online</span>
+    <div class="user-chip">
+      <div class="user-avatar">AD</div>
+    </div>
+  </div>
+</header>
 
     <div class="page-content">
       <div class="page-header">
@@ -4625,54 +4855,58 @@ module.exports = router;
   <!-- MAIN (LARGURA TOTAL 100%) -->
   <div class="main-wrap">
     <!-- TOPBAR COM NAVEGAÇÃO -->
-    <header class="topbar">
-      <a href="colaboradores.html" class="topbar-logo">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-        </svg>
-        <span>ERP Fabrica</span>
-      </a>
-      <nav class="topbar-nav">
-        <!-- COMERCIAL -->
-        <div class="nav-dropdown">
-          <button class="nav-dropdown-btn">💼 Comercial ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="vendas.html">💰 Lançamento de Vendas</a>
-            <a href="orcamentos.html">📄 Orçamentos</a>
-            <a href="produtos.html">🍰 Produtos Finais</a>
-          </div>
-        </div>
-        <!-- ESTOQUE -->
-        <div class="nav-dropdown">
-          <button class="nav-dropdown-btn">📦 Estoque ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="almoxarifado.html">🌾 Matéria Prima (Almoxarifado)</a>
-            <a href="estoque_produtos.html">❄️ Produto Acabado (Câmara Fria)</a>
-          </div>
-        </div>
-        <!-- PRODUÇÃO -->
-        <div class="nav-dropdown active">
-          <button class="nav-dropdown-btn">🏭 Produção ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="planejamento.html">📅 Planejamento Maestro</a>
-            <a href="ordens_producao.html">📋 Fila de OPs</a>
-            <a href="colaboradores.html" class="active">👤 Equipe & Colaboradores</a>
-          </div>
-        </div>
-        <!-- FINANCEIRO -->
-        <div class="nav-dropdown">
-          <button class="nav-dropdown-btn">💵 Financeiro ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="financeiro_resumo.html">📊 Fluxo de Caixa</a>
-            <a href="contas_pagar.html">📤 Contas a Pagar</a>
-            <a href="contas_receber.html">📥 Contas a Receber</a>
-          </div>
-        </div>
-      </nav>
-      <div class="topbar-right">
-        <span class="badge-online">● Online</span>
+<header class="topbar">
+  <div class="topbar-logo">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    <span>ERP Fabrica</span>
+  </div>
+  
+  <nav class="topbar-nav">
+    <div class="dropdown">
+      <button class="dropbtn">📊 COMERCIAL</button>
+      <div class="dropdown-content">
+        <a href="vendas.html">Vendas</a>
+        <a href="orcamentos.html">Orçamentos</a>
+        <a href="produtos.html">Produtos Finais</a>
+        <a href="clientes.html">Clientes</a>
       </div>
-    </header>
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">📦 ESTOQUE</button>
+      <div class="dropdown-content">
+        <a href="almoxarifado.html">Matéria-Prima</a>
+        <a href="estoque_produtos.html">Produto Acabado</a>
+      </div>
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">🏭 PRODUÇÃO</button>
+      <div class="dropdown-content">
+        <a href="planejamento.html">Planejamento Maestro</a>
+        <a href="ordens_producao.html">Fila de OPs</a>
+        <a href="receitas.html">Receitas (Preparos)</a>
+        <a href="colaboradores.html">Colaboradores</a>
+      </div>
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">💰 FINANCEIRO</button>
+      <div class="dropdown-content">
+        <a href="financeiro.html">Fluxo de Caixa</a>
+        <a href="contas_receber.html">Contas a Receber</a>
+        <a href="contas_pagar.html">Contas a Pagar</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="topbar-right">
+    <span class="badge-online">● Sistema Online</span>
+    <div class="user-chip">
+      <div class="user-avatar">AD</div>
+    </div>
+  </div>
+</header>
 
     <div class="page-content">
 
@@ -5116,54 +5350,58 @@ module.exports = router;
   <div class="main-wrap">
     
     <!-- TOPBAR COM NAVEGAÇÃO -->
-    <header class="topbar">
-      <a href="ordens_producao.html" class="topbar-logo">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-        </svg>
-        <span>ERP Fabrica</span>
-      </a>
-      <nav class="topbar-nav">
-        <!-- COMERCIAL -->
-        <div class="nav-dropdown">
-          <button class="nav-dropdown-btn">💼 Comercial ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="vendas.html">💰 Lançamento de Vendas</a>
-            <a href="orcamentos.html">📄 Orçamentos</a>
-            <a href="produtos.html">🍰 Produtos Finais</a>
-          </div>
-        </div>
-        <!-- ESTOQUE -->
-        <div class="nav-dropdown">
-          <button class="nav-dropdown-btn">📦 Estoque ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="almoxarifado.html">🌾 Matéria Prima (Almoxarifado)</a>
-            <a href="estoque_produtos.html">❄️ Produto Acabado (Câmara Fria)</a>
-          </div>
-        </div>
-        <!-- PRODUÇÃO -->
-        <div class="nav-dropdown active">
-          <button class="nav-dropdown-btn">🏭 Produção ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="planejamento.html">📅 Planejamento Maestro</a>
-            <a href="ordens_producao.html" class="active">📋 Fila de OPs</a>
-            <a href="colaboradores.html">👤 Equipe & Colaboradores</a>
-          </div>
-        </div>
-        <!-- FINANCEIRO -->
-        <div class="nav-dropdown">
-          <button class="nav-dropdown-btn">💵 Financeiro ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="financeiro_resumo.html">📊 Fluxo de Caixa</a>
-            <a href="contas_pagar.html">📤 Contas a Pagar</a>
-            <a href="contas_receber.html">📥 Contas a Receber</a>
-          </div>
-        </div>
-      </nav>
-      <div class="topbar-right">
-        <span class="badge-online">● Online</span>
+<header class="topbar">
+  <div class="topbar-logo">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    <span>ERP Fabrica</span>
+  </div>
+  
+  <nav class="topbar-nav">
+    <div class="dropdown">
+      <button class="dropbtn">📊 COMERCIAL</button>
+      <div class="dropdown-content">
+        <a href="vendas.html">Vendas</a>
+        <a href="orcamentos.html">Orçamentos</a>
+        <a href="produtos.html">Produtos Finais</a>
+        <a href="clientes.html">Clientes</a>
       </div>
-    </header>
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">📦 ESTOQUE</button>
+      <div class="dropdown-content">
+        <a href="almoxarifado.html">Matéria-Prima</a>
+        <a href="estoque_produtos.html">Produto Acabado</a>
+      </div>
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">🏭 PRODUÇÃO</button>
+      <div class="dropdown-content">
+        <a href="planejamento.html">Planejamento Maestro</a>
+        <a href="ordens_producao.html">Fila de OPs</a>
+        <a href="receitas.html">Receitas (Preparos)</a>
+        <a href="colaboradores.html">Colaboradores</a>
+      </div>
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">💰 FINANCEIRO</button>
+      <div class="dropdown-content">
+        <a href="financeiro.html">Fluxo de Caixa</a>
+        <a href="contas_receber.html">Contas a Receber</a>
+        <a href="contas_pagar.html">Contas a Pagar</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="topbar-right">
+    <span class="badge-online">● Sistema Online</span>
+    <div class="user-chip">
+      <div class="user-avatar">AD</div>
+    </div>
+  </div>
+</header>
 
     <div class="page-content">
 
@@ -5574,14 +5812,13 @@ body {
   margin-top: 8px;
 }
 
-/* ---- Main content area ---- */
 .main-wrap {
-  margin-left: 0;
+  margin-left: 0 !important;
+  width: 100%;
   flex: 1;
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  width: 100%;
 }
 
 /* ---- Topbar ---- */
@@ -5595,7 +5832,7 @@ body {
   gap: 16px;
   position: sticky;
   top: 0;
-  z-index: 50;
+  z-index: 500;
 }
 
 .topbar-nav {
@@ -5605,37 +5842,37 @@ body {
   margin-left: 20px;
 }
 
-.nav-dropdown {
+.dropdown {
   position: relative;
   display: inline-block;
 }
 
-.nav-dropdown-btn {
+.dropbtn {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 7px 14px;
+  padding: 8px 14px;
   font-size: 13.5px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text-secondary);
-  background: none;
+  background: transparent;
   border: none;
   border-radius: var(--radius);
   cursor: pointer;
   transition: background .15s, color .15s;
 }
 
-.nav-dropdown-btn:hover,
-.nav-dropdown.active .nav-dropdown-btn {
+.dropdown:hover .dropbtn,
+.dropbtn:hover {
   background: var(--brand-light);
   color: var(--brand);
 }
 
-.nav-dropdown-menu {
+.dropdown-content {
   position: absolute;
   top: 100%;
   left: 0;
-  margin-top: 4px;
+  margin-top: 0;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -5643,15 +5880,24 @@ body {
   min-width: 210px;
   padding: 6px;
   display: none;
-  z-index: 100;
+  z-index: 1000;
 }
 
-.nav-dropdown:hover .nav-dropdown-menu,
-.nav-dropdown:focus-within .nav-dropdown-menu {
+/* Ponte transparente que impede a perda do hover ao mover o cursor */
+.dropdown-content::before {
+  content: "";
+  position: absolute;
+  top: -10px;
+  left: 0;
+  right: 0;
+  height: 10px;
+}
+
+.dropdown:hover .dropdown-content {
   display: block;
 }
 
-.nav-dropdown-menu a {
+.dropdown-content a {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -5664,8 +5910,8 @@ body {
   transition: background .12s, color .12s;
 }
 
-.nav-dropdown-menu a:hover,
-.nav-dropdown-menu a.active {
+.dropdown-content a:hover,
+.dropdown-content a.active {
   background: var(--brand-light);
   color: var(--brand);
   font-weight: 600;
@@ -6187,53 +6433,57 @@ input::placeholder, textarea::placeholder { color: var(--text-muted); }
   <!-- MAIN (LARGURA TOTAL 100%) -->
   <div class="main-wrap">
     <header class="topbar">
-      <a href="clientes.html" class="topbar-logo">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-        </svg>
-        <span>ERP Fabrica</span>
-      </a>
-      <nav class="topbar-nav">
-        <!-- COMERCIAL -->
-        <div class="nav-dropdown active">
-          <button class="nav-dropdown-btn">💼 Comercial ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="vendas.html">💰 Lançamento de Vendas</a>
-            <a href="orcamentos.html">📄 Orçamentos</a>
-            <a href="produtos.html">🍰 Produtos Finais</a>
-          </div>
-        </div>
-        <!-- ESTOQUE -->
-        <div class="nav-dropdown">
-          <button class="nav-dropdown-btn">📦 Estoque ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="almoxarifado.html">🌾 Matéria Prima (Almoxarifado)</a>
-            <a href="estoque_produtos.html">❄️ Produto Acabado (Câmara Fria)</a>
-          </div>
-        </div>
-        <!-- PRODUÇÃO -->
-        <div class="nav-dropdown">
-          <button class="nav-dropdown-btn">🏭 Produção ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="planejamento.html">📅 Planejamento Maestro</a>
-            <a href="ordens_producao.html">📋 Fila de OPs</a>
-            <a href="colaboradores.html">👤 Equipe & Colaboradores</a>
-          </div>
-        </div>
-        <!-- FINANCEIRO -->
-        <div class="nav-dropdown">
-          <button class="nav-dropdown-btn">💵 Financeiro ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="financeiro_resumo.html">📊 Fluxo de Caixa</a>
-            <a href="contas_pagar.html">📤 Contas a Pagar</a>
-            <a href="contas_receber.html">📥 Contas a Receber</a>
-          </div>
-        </div>
-      </nav>
-      <div class="topbar-right">
-        <span class="badge-online">● Online</span>
+  <div class="topbar-logo">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    <span>ERP Fabrica</span>
+  </div>
+  
+  <nav class="topbar-nav">
+    <div class="dropdown">
+      <button class="dropbtn">📊 COMERCIAL</button>
+      <div class="dropdown-content">
+        <a href="vendas.html">Vendas</a>
+        <a href="orcamentos.html">Orçamentos</a>
+        <a href="produtos.html">Produtos Finais</a>
+        <a href="clientes.html">Clientes</a>
       </div>
-    </header>
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">📦 ESTOQUE</button>
+      <div class="dropdown-content">
+        <a href="almoxarifado.html">Matéria-Prima</a>
+        <a href="estoque_produtos.html">Produto Acabado</a>
+      </div>
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">🏭 PRODUÇÃO</button>
+      <div class="dropdown-content">
+        <a href="planejamento.html">Planejamento Maestro</a>
+        <a href="ordens_producao.html">Fila de OPs</a>
+        <a href="receitas.html">Receitas (Preparos)</a>
+        <a href="colaboradores.html">Colaboradores</a>
+      </div>
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">💰 FINANCEIRO</button>
+      <div class="dropdown-content">
+        <a href="financeiro.html">Fluxo de Caixa</a>
+        <a href="contas_receber.html">Contas a Receber</a>
+        <a href="contas_pagar.html">Contas a Pagar</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="topbar-right">
+    <span class="badge-online">● Sistema Online</span>
+    <div class="user-chip">
+      <div class="user-avatar">AD</div>
+    </div>
+  </div>
+</header>
 
     <div class="page-content">
 
@@ -10006,53 +10256,57 @@ CREATE TABLE item_pedido (
   <div class="main-wrap">
 
     <header class="topbar">
-      <a href="almoxarifado.html" class="topbar-logo">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-        </svg>
-        <span>ERP Fabrica</span>
-      </a>
-      <nav class="topbar-nav">
-        <!-- COMERCIAL -->
-        <div class="nav-dropdown">
-          <button class="nav-dropdown-btn">💼 Comercial ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="vendas.html">💰 Lançamento de Vendas</a>
-            <a href="orcamentos.html">📄 Orçamentos</a>
-            <a href="produtos.html">🍰 Produtos Finais</a>
-          </div>
-        </div>
-        <!-- ESTOQUE -->
-        <div class="nav-dropdown active">
-          <button class="nav-dropdown-btn">📦 Estoque ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="almoxarifado.html" class="active">🌾 Matéria Prima (Almoxarifado)</a>
-            <a href="estoque_produtos.html">❄️ Produto Acabado (Câmara Fria)</a>
-          </div>
-        </div>
-        <!-- PRODUÇÃO -->
-        <div class="nav-dropdown">
-          <button class="nav-dropdown-btn">🏭 Produção ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="planejamento.html">📅 Planejamento Maestro</a>
-            <a href="ordens_producao.html">📋 Fila de OPs</a>
-            <a href="colaboradores.html">👤 Equipe & Colaboradores</a>
-          </div>
-        </div>
-        <!-- FINANCEIRO -->
-        <div class="nav-dropdown">
-          <button class="nav-dropdown-btn">💵 Financeiro ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="financeiro_resumo.html">📊 Fluxo de Caixa</a>
-            <a href="contas_pagar.html">📤 Contas a Pagar</a>
-            <a href="contas_receber.html">📥 Contas a Receber</a>
-          </div>
-        </div>
-      </nav>
-      <div class="topbar-right">
-        <span class="badge-online">● Online</span>
+  <div class="topbar-logo">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    <span>ERP Fabrica</span>
+  </div>
+  
+  <nav class="topbar-nav">
+    <div class="dropdown">
+      <button class="dropbtn">📊 COMERCIAL</button>
+      <div class="dropdown-content">
+        <a href="vendas.html">Vendas</a>
+        <a href="orcamentos.html">Orçamentos</a>
+        <a href="produtos.html">Produtos Finais</a>
+        <a href="clientes.html">Clientes</a>
       </div>
-    </header>
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">📦 ESTOQUE</button>
+      <div class="dropdown-content">
+        <a href="almoxarifado.html">Matéria-Prima</a>
+        <a href="estoque_produtos.html">Produto Acabado</a>
+      </div>
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">🏭 PRODUÇÃO</button>
+      <div class="dropdown-content">
+        <a href="planejamento.html">Planejamento Maestro</a>
+        <a href="ordens_producao.html">Fila de OPs</a>
+        <a href="receitas.html">Receitas (Preparos)</a>
+        <a href="colaboradores.html">Colaboradores</a>
+      </div>
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">💰 FINANCEIRO</button>
+      <div class="dropdown-content">
+        <a href="financeiro.html">Fluxo de Caixa</a>
+        <a href="contas_receber.html">Contas a Receber</a>
+        <a href="contas_pagar.html">Contas a Pagar</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="topbar-right">
+    <span class="badge-online">● Sistema Online</span>
+    <div class="user-chip">
+      <div class="user-avatar">AD</div>
+    </div>
+  </div>
+</header>
 
     <div class="page-content">
 
@@ -10626,41 +10880,58 @@ CREATE TABLE item_pedido (
 <div class="erp-shell">
   <div class="main-wrap">
     <!-- TOPBAR COM NAVEGAÇÃO -->
-    <header class="topbar">
-      <a href="ordens_producao.html" class="topbar-logo">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-        </svg>
-        <span>ERP Fabrica</span>
-      </a>
-      <nav class="topbar-nav">
-        <a href="almoxarifado.html">📦 Almoxarifado</a>
-        <a href="receitas.html">👨🍳 Receitas</a>
-        <a href="produtos.html">🍰 Produtos Finais</a>
-        <a href="clientes.html">👥 Clientes</a>
-        <a href="vendas.html">💰 Lançar Vendas</a>
-        <a href="ordens_producao.html" class="active">🏭 Produção</a>
-        <a href="colaboradores.html">👤 Colaboradores</a>
-        <a href="planejamento.html">📅 Planejamento</a>
-      </nav>
-      <div class="topbar-right">
-        <span class="badge-online">● Online</span>
+<header class="topbar">
+  <div class="topbar-logo">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    <span>ERP Fabrica</span>
+  </div>
+  
+  <nav class="topbar-nav">
+    <div class="dropdown">
+      <button class="dropbtn">📊 COMERCIAL</button>
+      <div class="dropdown-content">
+        <a href="vendas.html">Vendas</a>
+        <a href="orcamentos.html">Orçamentos</a>
+        <a href="produtos.html">Produtos Finais</a>
+        <a href="clientes.html">Clientes</a>
       </div>
-    </header>
-      <div class="topbar-search">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        Busca global (Alt + S)
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">📦 ESTOQUE</button>
+      <div class="dropdown-content">
+        <a href="almoxarifado.html">Matéria-Prima</a>
+        <a href="estoque_produtos.html">Produto Acabado</a>
       </div>
-      <div class="topbar-right">
-        <span class="badge-offline">Modo Offline</span>
-        <button class="topbar-icon-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></button>
-        <button class="topbar-icon-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></button>
-        <div class="user-chip">
-          <div><strong>Admin Fabrica</strong><span>Administrador</span></div>
-          <div class="user-avatar">AF</div>
-        </div>
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">🏭 PRODUÇÃO</button>
+      <div class="dropdown-content">
+        <a href="planejamento.html">Planejamento Maestro</a>
+        <a href="ordens_producao.html">Fila de OPs</a>
+        <a href="receitas.html">Receitas (Preparos)</a>
+        <a href="colaboradores.html">Colaboradores</a>
       </div>
-    </header>
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">💰 FINANCEIRO</button>
+      <div class="dropdown-content">
+        <a href="financeiro.html">Fluxo de Caixa</a>
+        <a href="contas_receber.html">Contas a Receber</a>
+        <a href="contas_pagar.html">Contas a Pagar</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="topbar-right">
+    <span class="badge-online">● Sistema Online</span>
+    <div class="user-chip">
+      <div class="user-avatar">AD</div>
+    </div>
+  </div>
+</header>
 
     <main class="page-content">
       <div class="page-header">
@@ -11237,50 +11508,58 @@ CREATE TABLE item_pedido (
 
   <!-- MAIN (PÁGINA INTEIRA 100%) -->
   <div class="main-wrap">
-    <header class="topbar">
-      <a href="produtos.html" class="topbar-logo">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-        <span>ERP Fabrica</span>
-      </a>
-      <nav class="topbar-nav">
-        <!-- COMERCIAL -->
-        <div class="nav-dropdown active">
-          <button class="nav-dropdown-btn">💼 Comercial ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="vendas.html">💰 Lançamento de Vendas</a>
-            <a href="orcamentos.html">📄 Orçamentos</a>
-            <a href="produtos.html" class="active">🍰 Produtos Finais</a>
-          </div>
-        </div>
-        <!-- ESTOQUE -->
-        <div class="nav-dropdown">
-          <button class="nav-dropdown-btn">📦 Estoque ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="almoxarifado.html">🌾 Matéria Prima (Almoxarifado)</a>
-            <a href="estoque_produtos.html">❄️ Produto Acabado (Câmara Fria)</a>
-          </div>
-        </div>
-        <!-- PRODUÇÃO -->
-        <div class="nav-dropdown">
-          <button class="nav-dropdown-btn">🏭 Produção ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="planejamento.html">📅 Planejamento Maestro</a>
-            <a href="ordens_producao.html">📋 Fila de OPs</a>
-            <a href="colaboradores.html">👤 Equipe & Colaboradores</a>
-          </div>
-        </div>
-        <!-- FINANCEIRO -->
-        <div class="nav-dropdown">
-          <button class="nav-dropdown-btn">💵 Financeiro ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="financeiro_resumo.html">📊 Fluxo de Caixa</a>
-            <a href="contas_pagar.html">📤 Contas a Pagar</a>
-            <a href="contas_receber.html">📥 Contas a Receber</a>
-          </div>
-        </div>
-      </nav>
-      <div class="topbar-right"><span class="badge-online">● Online</span></div>
-    </header>
+<header class="topbar">
+  <div class="topbar-logo">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    <span>ERP Fabrica</span>
+  </div>
+  
+  <nav class="topbar-nav">
+    <div class="dropdown">
+      <button class="dropbtn">📊 COMERCIAL</button>
+      <div class="dropdown-content">
+        <a href="vendas.html">Vendas</a>
+        <a href="orcamentos.html">Orçamentos</a>
+        <a href="produtos.html">Produtos Finais</a>
+        <a href="clientes.html">Clientes</a>
+      </div>
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">📦 ESTOQUE</button>
+      <div class="dropdown-content">
+        <a href="almoxarifado.html">Matéria-Prima</a>
+        <a href="estoque_produtos.html">Produto Acabado</a>
+      </div>
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">🏭 PRODUÇÃO</button>
+      <div class="dropdown-content">
+        <a href="planejamento.html">Planejamento Maestro</a>
+        <a href="ordens_producao.html">Fila de OPs</a>
+        <a href="receitas.html">Receitas (Preparos)</a>
+        <a href="colaboradores.html">Colaboradores</a>
+      </div>
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">💰 FINANCEIRO</button>
+      <div class="dropdown-content">
+        <a href="financeiro.html">Fluxo de Caixa</a>
+        <a href="contas_receber.html">Contas a Receber</a>
+        <a href="contas_pagar.html">Contas a Pagar</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="topbar-right">
+    <span class="badge-online">● Sistema Online</span>
+    <div class="user-chip">
+      <div class="user-avatar">AD</div>
+    </div>
+  </div>
+</header>
 
     <div class="page-content">
       <div class="page-header">
@@ -12140,53 +12419,57 @@ CREATE TABLE item_pedido (
   <div class="main-wrap">
     <!-- TOPBAR COM NAVEGAÇÃO -->
     <header class="topbar">
-      <a href="receitas.html" class="topbar-logo">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-        </svg>
-        <span>ERP Fabrica</span>
-      </a>
-      <nav class="topbar-nav">
-        <!-- COMERCIAL -->
-        <div class="nav-dropdown">
-          <button class="nav-dropdown-btn">💼 Comercial ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="vendas.html">💰 Lançamento de Vendas</a>
-            <a href="orcamentos.html">📄 Orçamentos</a>
-            <a href="produtos.html">🍰 Produtos Finais</a>
-          </div>
-        </div>
-        <!-- ESTOQUE -->
-        <div class="nav-dropdown">
-          <button class="nav-dropdown-btn">📦 Estoque ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="almoxarifado.html">🌾 Matéria Prima (Almoxarifado)</a>
-            <a href="estoque_produtos.html">❄️ Produto Acabado (Câmara Fria)</a>
-          </div>
-        </div>
-        <!-- PRODUÇÃO -->
-        <div class="nav-dropdown active">
-          <button class="nav-dropdown-btn">🏭 Produção ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="planejamento.html">📅 Planejamento Maestro</a>
-            <a href="ordens_producao.html">📋 Fila de OPs</a>
-            <a href="colaboradores.html">👤 Equipe & Colaboradores</a>
-          </div>
-        </div>
-        <!-- FINANCEIRO -->
-        <div class="nav-dropdown">
-          <button class="nav-dropdown-btn">💵 Financeiro ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="financeiro_resumo.html">📊 Fluxo de Caixa</a>
-            <a href="contas_pagar.html">📤 Contas a Pagar</a>
-            <a href="contas_receber.html">📥 Contas a Receber</a>
-          </div>
-        </div>
-      </nav>
-      <div class="topbar-right">
-        <span class="badge-online">● Online</span>
+  <div class="topbar-logo">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    <span>ERP Fabrica</span>
+  </div>
+  
+  <nav class="topbar-nav">
+    <div class="dropdown">
+      <button class="dropbtn">📊 COMERCIAL</button>
+      <div class="dropdown-content">
+        <a href="vendas.html">Vendas</a>
+        <a href="orcamentos.html">Orçamentos</a>
+        <a href="produtos.html">Produtos Finais</a>
+        <a href="clientes.html">Clientes</a>
       </div>
-    </header>
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">📦 ESTOQUE</button>
+      <div class="dropdown-content">
+        <a href="almoxarifado.html">Matéria-Prima</a>
+        <a href="estoque_produtos.html">Produto Acabado</a>
+      </div>
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">🏭 PRODUÇÃO</button>
+      <div class="dropdown-content">
+        <a href="planejamento.html">Planejamento Maestro</a>
+        <a href="ordens_producao.html">Fila de OPs</a>
+        <a href="receitas.html">Receitas (Preparos)</a>
+        <a href="colaboradores.html">Colaboradores</a>
+      </div>
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">💰 FINANCEIRO</button>
+      <div class="dropdown-content">
+        <a href="financeiro.html">Fluxo de Caixa</a>
+        <a href="contas_receber.html">Contas a Receber</a>
+        <a href="contas_pagar.html">Contas a Pagar</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="topbar-right">
+    <span class="badge-online">● Sistema Online</span>
+    <div class="user-chip">
+      <div class="user-avatar">AD</div>
+    </div>
+  </div>
+</header>
 
     <div class="page-content">
 
@@ -13157,411 +13440,161 @@ module.exports = produtoController;
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <script src="https://tailwindcss.com"></script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Financeiro — ERP Fabrica</title>
+  <title>Fluxo de Caixa — ERP Fabrica</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/global.css" />
   <style>
-    .fin-grid {
-      display: grid;
-      grid-template-columns: 1fr 320px;
-      gap: 20px;
-    }
-
     .kpi-finance-grid {
-      display: grid;
-      grid-template-columns: repeat(3,1fr);
-      gap: 16px;
-      margin-bottom: 24px;
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px;
     }
-    .kpi-finance {
-      border-radius: var(--radius-lg);
-      padding: 22px 24px;
-      color: #fff;
-    }
+    .kpi-finance { border-radius: var(--radius-lg); padding: 22px 24px; color: #fff; }
     .kpi-finance.purple { background: var(--brand); }
+    .kpi-finance.green  { background: #16a34a; }
     .kpi-finance.red    { background: #dc2626; }
-    .kpi-finance.teal   { background: #0891b2; }
-    .kpi-finance-label {
-      font-size: 11px; font-weight: 700; letter-spacing: .08em;
-      text-transform: uppercase; opacity: .8; margin-bottom: 10px;
+    .kpi-finance-label { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; opacity: .85; margin-bottom: 10px; }
+    .kpi-finance-value { font-size: 26px; font-weight: 800; letter-spacing: -.5px; }
+    .kpi-finance-sub   { font-size: 12px; opacity: .8; margin-top: 6px; }
+
+    .fin-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+      box-shadow: var(--shadow); padding: 20px; margin-bottom: 20px;
     }
-    .kpi-finance-value { font-size: 26px; font-weight: 700; letter-spacing: -.5px; }
-    .kpi-finance-sub   { font-size: 12px; opacity: .75; margin-top: 6px; }
-
-    .filter-bar {
-      display: flex; align-items: center; gap: 10px;
-      margin-bottom: 4px; flex-wrap: wrap;
-    }
-    .filter-bar .search-bar { flex: 1; max-width: 340px; }
-
-    .status-pendente { background: #fef3c7; color: #b45309; }
-    .status-atrasado { background: #fee2e2; color: #dc2626; font-weight: 600; }
-    .status-pago     { background: #dcfce7; color: #16a34a; font-weight: 600; }
-    .status-criado   { background: #f3f4f6; color: #6b7280; }
-
-    td.date-overdue { color: var(--red); font-weight: 600; }
-    td.value-col    { text-align: right; font-weight: 600; white-space: nowrap; }
-    td.doc-col      { font-family: monospace; font-size: 12px; color: var(--text-muted); }
-
-    .action-icons { display: flex; gap: 4px; }
-    .action-icons button {
-      width: 28px; height: 28px;
-      display: flex; align-items: center; justify-content: center;
-      border: 1px solid var(--border); border-radius: 6px;
-      background: var(--surface); cursor: pointer;
-      color: var(--text-secondary); transition: border-color .12s, color .12s;
-    }
-    .action-icons button:hover { border-color: var(--brand); color: var(--brand); }
-
-    .tbl-footer {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 12px 16px; border-top: 1px solid var(--border);
-      font-size: 12.5px; color: var(--text-muted);
-    }
-
-    .reports-panel { display: flex; flex-direction: column; gap: 16px; }
-    .reports-panel label { margin-bottom: 5px; display: block; }
-    select { width: 100%; }
-
-    .resumo-recebimento {
-      background: var(--brand-light);
-      border: 1px solid #c4b9f9;
-      border-radius: var(--radius-lg);
-      padding: 16px 20px;
-    }
-    .resumo-recebimento h3 {
-      font-size: 13px; font-weight: 600; color: var(--brand); margin-bottom: 10px;
-      display: flex; align-items: center; gap: 6px;
-    }
-    .resumo-row { display: flex; justify-content: space-between; font-size: 13px; padding: 5px 0; border-bottom: 1px dashed #ddd6fe; }
-    .resumo-row:last-child { border-bottom: none; font-weight: 700; }
-
-    @media (max-width: 900px) { .fin-grid { grid-template-columns: 1fr; } .kpi-finance-grid { grid-template-columns: 1fr; } }
+    .fin-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
   </style>
 </head>
 <body>
+
+<div id="toast-container"></div>
+
 <div class="erp-shell">
   <div class="main-wrap">
-    <!-- TOPBAR COM NAVEGAÇÃO -->
-    <header class="topbar">
-      <a href="financeiro.html" class="topbar-logo">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-        </svg>
-        <span>ERP Fabrica</span>
-      </a>
-      <nav class="topbar-nav">
-        <a href="almoxarifado.html">📦 Almoxarifado</a>
-        <a href="receitas.html">👨🍳 Receitas</a>
-        <a href="produtos.html">🍰 Produtos Finais</a>
-        <a href="clientes.html">👥 Clientes</a>
-        <a href="vendas.html">💰 Lançar Vendas</a>
-        <a href="ordens_producao.html">🏭 Produção</a>
-        <a href="colaboradores.html">👤 Colaboradores</a>
-        <a href="planejamento.html">📅 Planejamento</a>
-      </nav>
-      <div class="topbar-right">
-        <span class="badge-online">● Online</span>
-      </div>
-    </header>
-      <div class="topbar-search">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        Busca global (Alt + S)
-      </div>
-      <div class="topbar-right">
-        <span class="badge-online">Online</span>
-        <button class="topbar-icon-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></button>
-        <button class="topbar-icon-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></button>
-        <div class="user-chip">
-          <div><strong>Admin Fabrica</strong><span>Administrador</span></div>
-          <div class="user-avatar">AF</div>
-        </div>
-      </div>
-    </header>
 
-    <main class="page-content">
+    <!-- TOPBAR GLOBAL DROPDOWN -->
+<header class="topbar">
+  <div class="topbar-logo">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    <span>ERP Fabrica</span>
+  </div>
+  
+  <nav class="topbar-nav">
+    <div class="dropdown">
+      <button class="dropbtn">📊 COMERCIAL</button>
+      <div class="dropdown-content">
+        <a href="vendas.html">Vendas</a>
+        <a href="orcamentos.html">Orçamentos</a>
+        <a href="produtos.html">Produtos Finais</a>
+        <a href="clientes.html">Clientes</a>
+      </div>
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">📦 ESTOQUE</button>
+      <div class="dropdown-content">
+        <a href="almoxarifado.html">Matéria-Prima</a>
+        <a href="estoque_produtos.html">Produto Acabado</a>
+      </div>
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">🏭 PRODUÇÃO</button>
+      <div class="dropdown-content">
+        <a href="planejamento.html">Planejamento Maestro</a>
+        <a href="ordens_producao.html">Fila de OPs</a>
+        <a href="receitas.html">Receitas (Preparos)</a>
+        <a href="colaboradores.html">Colaboradores</a>
+      </div>
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">💰 FINANCEIRO</button>
+      <div class="dropdown-content">
+        <a href="financeiro.html">Fluxo de Caixa</a>
+        <a href="contas_receber.html">Contas a Receber</a>
+        <a href="contas_pagar.html">Contas a Pagar</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="topbar-right">
+    <span class="badge-online">● Sistema Online</span>
+    <div class="user-chip">
+      <div class="user-avatar">AD</div>
+    </div>
+  </div>
+</header>
+
+    <div class="page-content">
+
       <div class="page-header">
         <div class="page-header-left">
-          <h1>Financeiro</h1>
-          <p>Gestao de recebiveis, indicadores de fluxo e relatorios fiscais.</p>
-        </div>
-        <div class="page-header-actions">
-          <button class="btn btn-outline">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-            Imprimir Relatorios
-          </button>
-          <button class="btn btn-outline">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            Exportar CSV
-          </button>
-          <button class="btn btn-primary">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Nova Recepcao
-          </button>
+          <h1>Resumo do Fluxo de Caixa</h1>
+          <p>Visão consolidada das receitas e despesas operacionais da fábrica.</p>
         </div>
       </div>
 
-      <!-- KPI CARDS FINANCEIROS -->
+      <!-- KPIS FINANCEIROS -->
       <div class="kpi-finance-grid">
-        <div class="kpi-finance purple">
-          <div class="kpi-finance-label">Total a Vencer (30d)</div>
-          <div class="kpi-finance-value" id="fin-vencer">—</div>
-          <div class="kpi-finance-sub" id="fin-vencer-sub">carregando...</div>
+        <div class="kpi-finance green">
+          <div class="kpi-finance-label">Contas a Receber (Vendas B2B)</div>
+          <div class="kpi-finance-value" id="kpi-receber">R$ 0,00</div>
+          <div class="kpi-finance-sub">Faturamentos previstos</div>
         </div>
         <div class="kpi-finance red">
-          <div class="kpi-finance-label">Vencidos &gt; 30 Dias</div>
-          <div class="kpi-finance-value" id="fin-atrasado">—</div>
-          <div class="kpi-finance-sub" id="fin-atrasado-sub">carregando...</div>
+          <div class="kpi-finance-label">Contas a Pagar (Insumos/Operação)</div>
+          <div class="kpi-finance-value" id="kpi-pagar">R$ 0,00</div>
+          <div class="kpi-finance-sub">Compromissos pendentes</div>
         </div>
-        <div class="kpi-finance teal">
-          <div class="kpi-finance-label">Fluxo Previsto (Junho)</div>
-          <div class="kpi-finance-value" id="fin-fluxo">—</div>
-          <div class="kpi-finance-sub">Projecao baseada em pedidos ativos</div>
-        </div>
-      </div>
-
-      <div class="fin-grid">
-        <!-- TABLE -->
-        <div>
-          <div class="card">
-            <div class="card-header" style="padding-bottom:12px">
-              <div class="flex justify-between items-center">
-                <div>
-                  <h2>Contas a Receber</h2>
-                  <p>Lista detalhada de faturas pendentes e recebidas</p>
-                </div>
-                <div class="filter-bar" style="margin:0">
-                  <div class="search-bar" style="max-width:240px">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                    <input type="text" id="fin-search" placeholder="Filtrar cliente ou doc..." oninput="filterFaturas()" style="border:none;outline:none;background:transparent;font-size:13px;color:var(--text-primary)" />
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Cliente</th>
-                    <th>Documento</th>
-                    <th>Data Venc.</th>
-                    <th style="text-align:right">Valor</th>
-                    <th>Status</th>
-                    <th>Acoes</th>
-                  </tr>
-                </thead>
-                <tbody id="faturas-tbody">
-                  <tr><td colspan="6" style="text-align:center;padding:30px;color:var(--text-muted)">Carregando...</td></tr>
-                </tbody>
-              </table>
-            </div>
-            <div class="tbl-footer">
-              <span id="faturas-info">—</span>
-              <div class="flex gap-2">
-                <button class="btn btn-outline btn-sm" id="btn-prev" onclick="goPage(-1)">Anterior</button>
-                <button class="btn btn-outline btn-sm" id="btn-next" onclick="goPage(+1)">Proximo</button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- SIDE PANEL -->
-        <div class="reports-panel">
-          <div class="card">
-            <div class="card-header">
-              <h2 style="display:flex;align-items:center;gap:6px">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                Relatorios Gerenciais
-              </h2>
-              <p>Gere demonstrativos em PDF com cabecalho oficial</p>
-            </div>
-            <div class="card-body">
-              <div class="form-row cols-2" style="margin-bottom:12px">
-                <div class="form-group">
-                  <label>Data Inicio</label>
-                  <input type="date" id="rep-inicio" value="2024-05-01" />
-                </div>
-                <div class="form-group">
-                  <label>Data Fim</label>
-                  <input type="date" id="rep-fim" value="2024-05-31" />
-                </div>
-              </div>
-              <div class="form-group">
-                <label>Tipo de Relatorio</label>
-                <select>
-                  <option value="">Selecione o tipo...</option>
-                  <option>Contas a Receber</option>
-                  <option>DRE Resumido</option>
-                  <option>CMV por Produto</option>
-                  <option>Fluxo de Caixa</option>
-                </select>
-              </div>
-              <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:4px">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Gerar PDF Profissional
-              </button>
-            </div>
-          </div>
-
-          <div class="resumo-recebimento">
-            <h3>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-              Resumo de Recebimentos
-            </h3>
-            <div class="resumo-row"><span>Recebido Hoje</span><span id="rec-hoje">—</span></div>
-            <div class="resumo-row"><span>Recebido no Mes</span><span id="rec-mes">—</span></div>
-            <div class="resumo-row"><span>Total Faturado</span><span id="rec-total">—</span></div>
-          </div>
+        <div class="kpi-finance purple">
+          <div class="kpi-finance-label">Saldo Líquido Previsto</div>
+          <div class="kpi-finance-value" id="kpi-saldo">R$ 0,00</div>
+          <div class="kpi-finance-sub">Resultado Operacional</div>
         </div>
       </div>
-    </main>
 
-    <footer class="site-footer">
-      <span>&copy; 2024 ERP Fabrica — Todos os direitos reservados &nbsp;&nbsp;<span class="status-dot"></span> Sistema Online (Sincronizado)</span>
-      <div class="footer-links">
-        <a href="#">Suporte Tecnico</a>
-        <a href="#">Documentacao</a>
-        <span>IP: 192.168.1.15</span>
+      <div class="fin-card">
+        <h3>📊 Resumo Operacional</h3>
+        <p style="color:var(--text-secondary);font-size:13.5px">
+          Acesse os atalhos do menu <strong>💰 FINANCEIRO ▾</strong> acima para gerenciar o detalhamento de <strong>Contas a Pagar</strong> e <strong>Contas a Receber</strong>.
+        </p>
       </div>
-    </footer>
+
+    </div>
   </div>
 </div>
 
-<div id="toast-container"></div>
 <script>
-  const API = 'http://localhost:3001/api';
-  let allFaturas = [];
-  let filtered   = [];
-  const PAGE_SIZE = 6;
-  let page = 1;
+  const API_PEDIDOS = 'http://localhost:3001/api/comercial/pedidos';
+  const API_INSUMOS = 'http://localhost:3001/api/insumos';
 
-  function fmtBRL(v) { return Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
-  function fmtDate(s) { if(!s) return '—'; return new Date(s).toLocaleDateString('pt-BR'); }
-  function isOverdue(s) {
-    if(!s) return false;
-    return new Date(s) < new Date() && new Date(s).toDateString() !== new Date().toDateString();
-  }
+  function formatarDinheiro(val) { return Number(val||0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
 
-  function toast(msg,type=''){
-    const el=document.createElement('div'); el.className='toast '+type; el.textContent=msg;
-    document.getElementById('toast-container').appendChild(el);
-    setTimeout(()=>el.remove(),3500);
-  }
-
-  function statusBadge(s) {
-    const map = {
-      'CRIADO':    ['status-criado',   'Pendente'],
-      'PRODUZINDO':['badge-blue',      'Em Producao'],
-      'FATURADO':  ['status-pendente', 'Pendente'],
-      'ENTREGUE':  ['status-pago',     'Pago'],
-    };
-    const [cls,label] = map[s]||['badge-gray',s];
-    return `<span class="badge ${cls}">${label}</span>`;
-  }
-
-  async function loadFinanceiro() {
+  async function carregarFinanceiro() {
     try {
-      const [resumo, contas] = await Promise.all([
-        fetch(`${API}/financeiro/resumo`).then(r=>r.json()),
-        fetch(`${API}/financeiro/contas-receber`).then(r=>r.json()),
-      ]);
+      const [rPed, rIns] = await Promise.all([fetch(API_PEDIDOS), fetch(API_INSUMOS)]);
+      const peds    = await rPed.json();
+      const insumos = await rIns.json();
 
-      document.getElementById('fin-vencer').textContent   = fmtBRL(resumo.a_receber);
-      document.getElementById('fin-vencer-sub').textContent = `+12% em relacao ao mes anterior`;
-      document.getElementById('fin-atrasado').textContent  = fmtBRL(resumo.pendente_producao);
-      document.getElementById('fin-atrasado-sub').textContent = 'meta de reducao: &lt; R$30k';
-      document.getElementById('fin-fluxo').textContent    = fmtBRL(resumo.faturamento_total);
-      document.getElementById('rec-hoje').textContent     = fmtBRL(resumo.recebido);
-      document.getElementById('rec-mes').textContent      = fmtBRL(resumo.recebido);
-      document.getElementById('rec-total').textContent    = fmtBRL(resumo.faturamento_total);
+      let totalReceber = peds.filter(p => p.status !== 'CANCELADO' && p.status !== 'ORCAMENTO')
+                             .reduce((acc, c) => acc + parseFloat(c.valor_total || 0), 0);
 
-      allFaturas = Array.isArray(contas) ? contas : [];
-      filterFaturas();
-    } catch(err) {
-      toast('Servidor offline — dados de demonstracao.','error');
-      document.getElementById('fin-vencer').textContent   = 'R$ 142.680,00';
-      document.getElementById('fin-vencer-sub').textContent = '+12% em relacao ao mes anterior';
-      document.getElementById('fin-atrasado').textContent  = 'R$ 48.500,00';
-      document.getElementById('fin-atrasado-sub').textContent = 'meta de reducao: < R$30k';
-      document.getElementById('fin-fluxo').textContent    = 'R$ 285.900,00';
-      document.getElementById('rec-hoje').textContent     = 'R$ 4.200,00';
-      document.getElementById('rec-mes').textContent      = 'R$ 87.400,00';
-      document.getElementById('rec-total').textContent    = 'R$ 142.680,00';
+      let totalPagar = insumos.reduce((acc, i) => {
+        const preco = parseFloat(i.preco_pago || i.custo_unitario || 0);
+        const est   = parseFloat(i.estoque_atual || 0);
+        return acc + (preco * est);
+      }, 0);
 
-      allFaturas = [
-        { id:1, razao_social:'Metalurgica Silva S.A.', doc:'FAT-8842', data_entrega:'2024-05-15', valor_total:12450.00, status:'FATURADO' },
-        { id:2, razao_social:'Construtora Horizonte',  doc:'FAT-8843', data_entrega:'2024-05-10', valor_total:45300.00, status:'CRIADO' },
-        { id:3, razao_social:'Pecas Automotivas Turbo',doc:'FAT-8845', data_entrega:'2024-05-22', valor_total:8900.00,  status:'FATURADO' },
-        { id:4, razao_social:'Distribuidora Industrial',doc:'FAT-8790',data_entrega:'2024-04-30', valor_total:3200.00,  status:'CRIADO' },
-        { id:5, razao_social:'Moveis Projetados Ltda', doc:'FAT-8850', data_entrega:'2024-05-28', valor_total:15600.00, status:'ENTREGUE' },
-        { id:6, razao_social:'Serralheria Modelo',     doc:'FAT-8851', data_entrega:'2024-06-05', valor_total:2150.00,  status:'FATURADO' },
-      ];
-      filterFaturas();
+      document.getElementById('kpi-receber').textContent = formatarDinheiro(totalReceber);
+      document.getElementById('kpi-pagar').textContent   = formatarDinheiro(totalPagar);
+      document.getElementById('kpi-saldo').textContent   = formatarDinheiro(totalReceber - totalPagar);
+    } catch {
+      // fallback
     }
   }
 
-  function filterFaturas() {
-    const q = document.getElementById('fin-search').value.toLowerCase();
-    filtered = allFaturas.filter(f =>
-      f.razao_social?.toLowerCase().includes(q) ||
-      (f.doc||String(f.id)).toLowerCase().includes(q)
-    );
-    page = 1;
-    renderTable();
-  }
-
-  function renderTable() {
-    const start = (page-1)*PAGE_SIZE;
-    const slice = filtered.slice(start, start+PAGE_SIZE);
-    const tbody = document.getElementById('faturas-tbody');
-
-    if(!slice.length) {
-      tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--text-muted)">Nenhuma fatura encontrada.</td></tr>';
-    } else {
-      tbody.innerHTML = slice.map(f => {
-        const doc     = f.doc || `FAT-${String(f.id).padStart(4,'0')}`;
-        const overdue = isOverdue(f.data_entrega) && f.status !== 'ENTREGUE';
-        return `<tr>
-          <td style="font-weight:500">${f.razao_social}</td>
-          <td class="doc-col">${doc}</td>
-          <td class="${overdue?'date-overdue':''}">${fmtDate(f.data_entrega)}</td>
-          <td class="value-col">${fmtBRL(f.valor_total)}</td>
-          <td>${statusBadge(f.status)}</td>
-          <td>
-            <div class="action-icons">
-              <button title="Marcar como pago">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 8 12 12 14 14"/></svg>
-              </button>
-              <button title="Comentario">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-              </button>
-              <button title="Opcoes">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
-              </button>
-            </div>
-          </td>
-        </tr>`;
-      }).join('');
-    }
-
-    const total = Math.ceil(filtered.length / PAGE_SIZE);
-    document.getElementById('faturas-info').textContent =
-      `Exibindo ${start+1}–${Math.min(start+PAGE_SIZE,filtered.length)} de ${filtered.length} faturas`;
-    document.getElementById('btn-prev').disabled = page<=1;
-    document.getElementById('btn-next').disabled = page>=total;
-  }
-
-  function goPage(dir) {
-    const total = Math.ceil(filtered.length/PAGE_SIZE);
-    page = Math.max(1, Math.min(total, page+dir));
-    renderTable();
-  }
-
-  document.addEventListener('DOMContentLoaded', loadFinanceiro);
+  window.onload = carregarFinanceiro;
 </script>
 </body>
 </html>
@@ -13755,54 +13788,58 @@ module.exports = produtoController;
   <div class="main-wrap">
 
     <!-- TOPBAR COM NAVEGAÇÃO -->
-    <header class="topbar">
-      <a href="planejamento.html" class="topbar-logo">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-        </svg>
-        <span>ERP Fabrica</span>
-      </a>
-      <nav class="topbar-nav">
-        <!-- COMERCIAL -->
-        <div class="nav-dropdown">
-          <button class="nav-dropdown-btn">💼 Comercial ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="vendas.html">💰 Lançamento de Vendas</a>
-            <a href="orcamentos.html">📄 Orçamentos</a>
-            <a href="produtos.html">🍰 Produtos Finais</a>
-          </div>
-        </div>
-        <!-- ESTOQUE -->
-        <div class="nav-dropdown">
-          <button class="nav-dropdown-btn">📦 Estoque ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="almoxarifado.html">🌾 Matéria Prima (Almoxarifado)</a>
-            <a href="estoque_produtos.html">❄️ Produto Acabado (Câmara Fria)</a>
-          </div>
-        </div>
-        <!-- PRODUÇÃO -->
-        <div class="nav-dropdown active">
-          <button class="nav-dropdown-btn">🏭 Produção ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="planejamento.html" class="active">📅 Planejamento Maestro</a>
-            <a href="ordens_producao.html">📋 Fila de OPs</a>
-            <a href="colaboradores.html">👤 Equipe & Colaboradores</a>
-          </div>
-        </div>
-        <!-- FINANCEIRO -->
-        <div class="nav-dropdown">
-          <button class="nav-dropdown-btn">💵 Financeiro ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="financeiro_resumo.html">📊 Fluxo de Caixa</a>
-            <a href="contas_pagar.html">📤 Contas a Pagar</a>
-            <a href="contas_receber.html">📥 Contas a Receber</a>
-          </div>
-        </div>
-      </nav>
-      <div class="topbar-right">
-        <span class="badge-online">● Online</span>
+<header class="topbar">
+  <div class="topbar-logo">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    <span>ERP Fabrica</span>
+  </div>
+  
+  <nav class="topbar-nav">
+    <div class="dropdown">
+      <button class="dropbtn">📊 COMERCIAL</button>
+      <div class="dropdown-content">
+        <a href="vendas.html">Vendas</a>
+        <a href="orcamentos.html">Orçamentos</a>
+        <a href="produtos.html">Produtos Finais</a>
+        <a href="clientes.html">Clientes</a>
       </div>
-    </header>
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">📦 ESTOQUE</button>
+      <div class="dropdown-content">
+        <a href="almoxarifado.html">Matéria-Prima</a>
+        <a href="estoque_produtos.html">Produto Acabado</a>
+      </div>
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">🏭 PRODUÇÃO</button>
+      <div class="dropdown-content">
+        <a href="planejamento.html">Planejamento Maestro</a>
+        <a href="ordens_producao.html">Fila de OPs</a>
+        <a href="receitas.html">Receitas (Preparos)</a>
+        <a href="colaboradores.html">Colaboradores</a>
+      </div>
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">💰 FINANCEIRO</button>
+      <div class="dropdown-content">
+        <a href="financeiro.html">Fluxo de Caixa</a>
+        <a href="contas_receber.html">Contas a Receber</a>
+        <a href="contas_pagar.html">Contas a Pagar</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="topbar-right">
+    <span class="badge-online">● Sistema Online</span>
+    <div class="user-chip">
+      <div class="user-avatar">AD</div>
+    </div>
+  </div>
+</header>
 
     <div class="page-content">
 
@@ -15748,87 +15785,62 @@ module.exports = producaoController;
   </style>
 </head>
 
-<body>  <div class="erp-shell">
+<body>
+  <div class="erp-shell">
     <div class="main-wrap">
       <!-- TOPBAR COM NAVEGAÇÃO -->
-      <header class="topbar">
-        <a href="vendas.html" class="topbar-logo">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-          </svg>
-          <span>ERP Fabrica</span>
-        </a>
-        <nav class="topbar-nav">
-          <!-- COMERCIAL -->
-          <div class="nav-dropdown">
-            <button class="nav-dropdown-btn">💼 Comercial ▾</button>
-            <div class="nav-dropdown-menu">
-              <a href="vendas.html">💰 Lançamento de Vendas</a>
-              <a href="orcamentos.html">📄 Orçamentos</a>
-              <a href="produtos.html">🍰 Produtos Finais</a>
-            </div>
-          </div>
-          <!-- ESTOQUE -->
-          <div class="nav-dropdown">
-            <button class="nav-dropdown-btn">📦 Estoque ▾</button>
-            <div class="nav-dropdown-menu">
-              <a href="almoxarifado.html">🌾 Matéria Prima (Almoxarifado)</a>
-              <a href="estoque_produtos.html">❄️ Produto Acabado (Câmara Fria)</a>
-            </div>
-          </div>
-          <!-- PRODUÇÃO -->
-          <div class="nav-dropdown">
-            <button class="nav-dropdown-btn">🏭 Produção ▾</button>
-            <div class="nav-dropdown-menu">
-              <a href="planejamento.html">📅 Planejamento Maestro</a>
-              <a href="ordens_producao.html">📋 Fila de OPs</a>
-              <a href="colaboradores.html">👤 Equipe & Colaboradores</a>
-            </div>
-          </div>
-          <!-- FINANCEIRO -->
-          <div class="nav-dropdown">
-            <button class="nav-dropdown-btn">💵 Financeiro ▾</button>
-            <div class="nav-dropdown-menu">
-              <a href="financeiro_resumo.html">📊 Fluxo de Caixa</a>
-              <a href="contas_pagar.html">📤 Contas a Pagar</a>
-              <a href="contas_receber.html">📥 Contas a Receber</a>
-            </div>
-          </div>
-        </nav>
-        <div class="topbar-right">
-          <span class="badge-online">● Online</span>
-        </div>
-      </header>
-        <div class="topbar-search">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="11" cy="11" r="8" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
-          Busca global (Alt + S)
-        </div>
-        <div class="topbar-right">
-          <span class="badge-offline">Modo Offline</span>
-          <button class="topbar-icon-btn" title="Documentos">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-              <polyline points="14 2 14 8 20 8" />
-            </svg>
-          </button>
-          <button class="topbar-icon-btn" title="Notificacoes">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-            </svg>
-          </button>
-          <div class="user-chip">
-            <div>
-              <strong>Admin Fabrica</strong>
-              <span>Administrador</span>
-            </div>
-            <div class="user-avatar">AF</div>
-          </div>
-        </div>
-      </header>
+<header class="topbar">
+  <div class="topbar-logo">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    <span>ERP Fabrica</span>
+  </div>
+  
+  <nav class="topbar-nav">
+    <div class="dropdown">
+      <button class="dropbtn">📊 COMERCIAL</button>
+      <div class="dropdown-content">
+        <a href="vendas.html">Vendas</a>
+        <a href="orcamentos.html">Orçamentos</a>
+        <a href="produtos.html">Produtos Finais</a>
+        <a href="clientes.html">Clientes</a>
+      </div>
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">📦 ESTOQUE</button>
+      <div class="dropdown-content">
+        <a href="almoxarifado.html">Matéria-Prima</a>
+        <a href="estoque_produtos.html">Produto Acabado</a>
+      </div>
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">🏭 PRODUÇÃO</button>
+      <div class="dropdown-content">
+        <a href="planejamento.html">Planejamento Maestro</a>
+        <a href="ordens_producao.html">Fila de OPs</a>
+        <a href="receitas.html">Receitas (Preparos)</a>
+        <a href="colaboradores.html">Colaboradores</a>
+      </div>
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">💰 FINANCEIRO</button>
+      <div class="dropdown-content">
+        <a href="financeiro.html">Fluxo de Caixa</a>
+        <a href="contas_receber.html">Contas a Receber</a>
+        <a href="contas_pagar.html">Contas a Pagar</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="topbar-right">
+    <span class="badge-online">● Sistema Online</span>
+    <div class="user-chip">
+      <div class="user-avatar">AD</div>
+    </div>
+  </div>
+</header>
 
       <!-- CONTENT -->
       <main class="page-content">
@@ -16374,53 +16386,57 @@ module.exports = producaoController;
 
     <!-- TOPBAR COM NAVEGAÇÃO -->
     <header class="topbar">
-      <a href="vendas.html" class="topbar-logo">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-        </svg>
-        <span>ERP Fabrica</span>
-      </a>
-      <nav class="topbar-nav">
-        <!-- COMERCIAL -->
-        <div class="nav-dropdown active">
-          <button class="nav-dropdown-btn">💼 Comercial ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="vendas.html" class="active">💰 Lançamento de Vendas</a>
-            <a href="orcamentos.html">📄 Orçamentos</a>
-            <a href="produtos.html">🍰 Produtos Finais</a>
-          </div>
-        </div>
-        <!-- ESTOQUE -->
-        <div class="nav-dropdown">
-          <button class="nav-dropdown-btn">📦 Estoque ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="almoxarifado.html">🌾 Matéria Prima (Almoxarifado)</a>
-            <a href="estoque_produtos.html">❄️ Produto Acabado (Câmara Fria)</a>
-          </div>
-        </div>
-        <!-- PRODUÇÃO -->
-        <div class="nav-dropdown">
-          <button class="nav-dropdown-btn">🏭 Produção ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="planejamento.html">📅 Planejamento Maestro</a>
-            <a href="ordens_producao.html">📋 Fila de OPs</a>
-            <a href="colaboradores.html">👤 Equipe & Colaboradores</a>
-          </div>
-        </div>
-        <!-- FINANCEIRO -->
-        <div class="nav-dropdown">
-          <button class="nav-dropdown-btn">💵 Financeiro ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="financeiro_resumo.html">📊 Fluxo de Caixa</a>
-            <a href="contas_pagar.html">📤 Contas a Pagar</a>
-            <a href="contas_receber.html">📥 Contas a Receber</a>
-          </div>
-        </div>
-      </nav>
-      <div class="topbar-right">
-        <span class="badge-online">● Online</span>
+  <div class="topbar-logo">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    <span>ERP Fabrica</span>
+  </div>
+  
+  <nav class="topbar-nav">
+    <div class="dropdown">
+      <button class="dropbtn">📊 COMERCIAL</button>
+      <div class="dropdown-content">
+        <a href="vendas.html">Vendas</a>
+        <a href="orcamentos.html">Orçamentos</a>
+        <a href="produtos.html">Produtos Finais</a>
+        <a href="clientes.html">Clientes</a>
       </div>
-    </header>
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">📦 ESTOQUE</button>
+      <div class="dropdown-content">
+        <a href="almoxarifado.html">Matéria-Prima</a>
+        <a href="estoque_produtos.html">Produto Acabado</a>
+      </div>
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">🏭 PRODUÇÃO</button>
+      <div class="dropdown-content">
+        <a href="planejamento.html">Planejamento Maestro</a>
+        <a href="ordens_producao.html">Fila de OPs</a>
+        <a href="receitas.html">Receitas (Preparos)</a>
+        <a href="colaboradores.html">Colaboradores</a>
+      </div>
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">💰 FINANCEIRO</button>
+      <div class="dropdown-content">
+        <a href="financeiro.html">Fluxo de Caixa</a>
+        <a href="contas_receber.html">Contas a Receber</a>
+        <a href="contas_pagar.html">Contas a Pagar</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="topbar-right">
+    <span class="badge-online">● Sistema Online</span>
+    <div class="user-chip">
+      <div class="user-avatar">AD</div>
+    </div>
+  </div>
+</header>
 
     <div class="page-content">
 

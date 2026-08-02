@@ -128,14 +128,13 @@ body {
   margin-top: 8px;
 }
 
-/* ---- Main content area ---- */
 .main-wrap {
-  margin-left: 0;
+  margin-left: 0 !important;
+  width: 100%;
   flex: 1;
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  width: 100%;
 }
 
 /* ---- Topbar ---- */
@@ -149,7 +148,7 @@ body {
   gap: 16px;
   position: sticky;
   top: 0;
-  z-index: 50;
+  z-index: 500;
 }
 
 .topbar-nav {
@@ -159,37 +158,37 @@ body {
   margin-left: 20px;
 }
 
-.nav-dropdown {
+.dropdown {
   position: relative;
   display: inline-block;
 }
 
-.nav-dropdown-btn {
+.dropbtn {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 7px 14px;
+  padding: 8px 14px;
   font-size: 13.5px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text-secondary);
-  background: none;
+  background: transparent;
   border: none;
   border-radius: var(--radius);
   cursor: pointer;
   transition: background .15s, color .15s;
 }
 
-.nav-dropdown-btn:hover,
-.nav-dropdown.active .nav-dropdown-btn {
+.dropdown:hover .dropbtn,
+.dropbtn:hover {
   background: var(--brand-light);
   color: var(--brand);
 }
 
-.nav-dropdown-menu {
+.dropdown-content {
   position: absolute;
   top: 100%;
   left: 0;
-  margin-top: 4px;
+  margin-top: 0;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -197,15 +196,24 @@ body {
   min-width: 210px;
   padding: 6px;
   display: none;
-  z-index: 100;
+  z-index: 1000;
 }
 
-.nav-dropdown:hover .nav-dropdown-menu,
-.nav-dropdown:focus-within .nav-dropdown-menu {
+/* Ponte transparente que impede a perda do hover ao mover o cursor */
+.dropdown-content::before {
+  content: "";
+  position: absolute;
+  top: -10px;
+  left: 0;
+  right: 0;
+  height: 10px;
+}
+
+.dropdown:hover .dropdown-content {
   display: block;
 }
 
-.nav-dropdown-menu a {
+.dropdown-content a {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -218,8 +226,8 @@ body {
   transition: background .12s, color .12s;
 }
 
-.nav-dropdown-menu a:hover,
-.nav-dropdown-menu a.active {
+.dropdown-content a:hover,
+.dropdown-content a.active {
   background: var(--brand-light);
   color: var(--brand);
   font-weight: 600;

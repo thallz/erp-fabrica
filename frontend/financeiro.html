@@ -1,411 +1,161 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <script src="https://tailwindcss.com"></script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Financeiro — ERP Fabrica</title>
+  <title>Fluxo de Caixa — ERP Fabrica</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/global.css" />
   <style>
-    .fin-grid {
-      display: grid;
-      grid-template-columns: 1fr 320px;
-      gap: 20px;
-    }
-
     .kpi-finance-grid {
-      display: grid;
-      grid-template-columns: repeat(3,1fr);
-      gap: 16px;
-      margin-bottom: 24px;
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px;
     }
-    .kpi-finance {
-      border-radius: var(--radius-lg);
-      padding: 22px 24px;
-      color: #fff;
-    }
+    .kpi-finance { border-radius: var(--radius-lg); padding: 22px 24px; color: #fff; }
     .kpi-finance.purple { background: var(--brand); }
+    .kpi-finance.green  { background: #16a34a; }
     .kpi-finance.red    { background: #dc2626; }
-    .kpi-finance.teal   { background: #0891b2; }
-    .kpi-finance-label {
-      font-size: 11px; font-weight: 700; letter-spacing: .08em;
-      text-transform: uppercase; opacity: .8; margin-bottom: 10px;
+    .kpi-finance-label { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; opacity: .85; margin-bottom: 10px; }
+    .kpi-finance-value { font-size: 26px; font-weight: 800; letter-spacing: -.5px; }
+    .kpi-finance-sub   { font-size: 12px; opacity: .8; margin-top: 6px; }
+
+    .fin-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+      box-shadow: var(--shadow); padding: 20px; margin-bottom: 20px;
     }
-    .kpi-finance-value { font-size: 26px; font-weight: 700; letter-spacing: -.5px; }
-    .kpi-finance-sub   { font-size: 12px; opacity: .75; margin-top: 6px; }
-
-    .filter-bar {
-      display: flex; align-items: center; gap: 10px;
-      margin-bottom: 4px; flex-wrap: wrap;
-    }
-    .filter-bar .search-bar { flex: 1; max-width: 340px; }
-
-    .status-pendente { background: #fef3c7; color: #b45309; }
-    .status-atrasado { background: #fee2e2; color: #dc2626; font-weight: 600; }
-    .status-pago     { background: #dcfce7; color: #16a34a; font-weight: 600; }
-    .status-criado   { background: #f3f4f6; color: #6b7280; }
-
-    td.date-overdue { color: var(--red); font-weight: 600; }
-    td.value-col    { text-align: right; font-weight: 600; white-space: nowrap; }
-    td.doc-col      { font-family: monospace; font-size: 12px; color: var(--text-muted); }
-
-    .action-icons { display: flex; gap: 4px; }
-    .action-icons button {
-      width: 28px; height: 28px;
-      display: flex; align-items: center; justify-content: center;
-      border: 1px solid var(--border); border-radius: 6px;
-      background: var(--surface); cursor: pointer;
-      color: var(--text-secondary); transition: border-color .12s, color .12s;
-    }
-    .action-icons button:hover { border-color: var(--brand); color: var(--brand); }
-
-    .tbl-footer {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 12px 16px; border-top: 1px solid var(--border);
-      font-size: 12.5px; color: var(--text-muted);
-    }
-
-    .reports-panel { display: flex; flex-direction: column; gap: 16px; }
-    .reports-panel label { margin-bottom: 5px; display: block; }
-    select { width: 100%; }
-
-    .resumo-recebimento {
-      background: var(--brand-light);
-      border: 1px solid #c4b9f9;
-      border-radius: var(--radius-lg);
-      padding: 16px 20px;
-    }
-    .resumo-recebimento h3 {
-      font-size: 13px; font-weight: 600; color: var(--brand); margin-bottom: 10px;
-      display: flex; align-items: center; gap: 6px;
-    }
-    .resumo-row { display: flex; justify-content: space-between; font-size: 13px; padding: 5px 0; border-bottom: 1px dashed #ddd6fe; }
-    .resumo-row:last-child { border-bottom: none; font-weight: 700; }
-
-    @media (max-width: 900px) { .fin-grid { grid-template-columns: 1fr; } .kpi-finance-grid { grid-template-columns: 1fr; } }
+    .fin-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
   </style>
 </head>
 <body>
+
+<div id="toast-container"></div>
+
 <div class="erp-shell">
   <div class="main-wrap">
-    <!-- TOPBAR COM NAVEGAÇÃO -->
-    <header class="topbar">
-      <a href="financeiro.html" class="topbar-logo">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-        </svg>
-        <span>ERP Fabrica</span>
-      </a>
-      <nav class="topbar-nav">
-        <a href="almoxarifado.html">📦 Almoxarifado</a>
-        <a href="receitas.html">👨🍳 Receitas</a>
-        <a href="produtos.html">🍰 Produtos Finais</a>
-        <a href="clientes.html">👥 Clientes</a>
-        <a href="vendas.html">💰 Lançar Vendas</a>
-        <a href="ordens_producao.html">🏭 Produção</a>
-        <a href="colaboradores.html">👤 Colaboradores</a>
-        <a href="planejamento.html">📅 Planejamento</a>
-      </nav>
-      <div class="topbar-right">
-        <span class="badge-online">● Online</span>
-      </div>
-    </header>
-      <div class="topbar-search">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        Busca global (Alt + S)
-      </div>
-      <div class="topbar-right">
-        <span class="badge-online">Online</span>
-        <button class="topbar-icon-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></button>
-        <button class="topbar-icon-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></button>
-        <div class="user-chip">
-          <div><strong>Admin Fabrica</strong><span>Administrador</span></div>
-          <div class="user-avatar">AF</div>
-        </div>
-      </div>
-    </header>
 
-    <main class="page-content">
+    <!-- TOPBAR GLOBAL DROPDOWN -->
+<header class="topbar">
+  <div class="topbar-logo">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    <span>ERP Fabrica</span>
+  </div>
+  
+  <nav class="topbar-nav">
+    <div class="dropdown">
+      <button class="dropbtn">📊 COMERCIAL</button>
+      <div class="dropdown-content">
+        <a href="vendas.html">Vendas</a>
+        <a href="orcamentos.html">Orçamentos</a>
+        <a href="produtos.html">Produtos Finais</a>
+        <a href="clientes.html">Clientes</a>
+      </div>
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">📦 ESTOQUE</button>
+      <div class="dropdown-content">
+        <a href="almoxarifado.html">Matéria-Prima</a>
+        <a href="estoque_produtos.html">Produto Acabado</a>
+      </div>
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">🏭 PRODUÇÃO</button>
+      <div class="dropdown-content">
+        <a href="planejamento.html">Planejamento Maestro</a>
+        <a href="ordens_producao.html">Fila de OPs</a>
+        <a href="receitas.html">Receitas (Preparos)</a>
+        <a href="colaboradores.html">Colaboradores</a>
+      </div>
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">💰 FINANCEIRO</button>
+      <div class="dropdown-content">
+        <a href="financeiro.html">Fluxo de Caixa</a>
+        <a href="contas_receber.html">Contas a Receber</a>
+        <a href="contas_pagar.html">Contas a Pagar</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="topbar-right">
+    <span class="badge-online">● Sistema Online</span>
+    <div class="user-chip">
+      <div class="user-avatar">AD</div>
+    </div>
+  </div>
+</header>
+
+    <div class="page-content">
+
       <div class="page-header">
         <div class="page-header-left">
-          <h1>Financeiro</h1>
-          <p>Gestao de recebiveis, indicadores de fluxo e relatorios fiscais.</p>
-        </div>
-        <div class="page-header-actions">
-          <button class="btn btn-outline">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-            Imprimir Relatorios
-          </button>
-          <button class="btn btn-outline">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            Exportar CSV
-          </button>
-          <button class="btn btn-primary">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Nova Recepcao
-          </button>
+          <h1>Resumo do Fluxo de Caixa</h1>
+          <p>Visão consolidada das receitas e despesas operacionais da fábrica.</p>
         </div>
       </div>
 
-      <!-- KPI CARDS FINANCEIROS -->
+      <!-- KPIS FINANCEIROS -->
       <div class="kpi-finance-grid">
-        <div class="kpi-finance purple">
-          <div class="kpi-finance-label">Total a Vencer (30d)</div>
-          <div class="kpi-finance-value" id="fin-vencer">—</div>
-          <div class="kpi-finance-sub" id="fin-vencer-sub">carregando...</div>
+        <div class="kpi-finance green">
+          <div class="kpi-finance-label">Contas a Receber (Vendas B2B)</div>
+          <div class="kpi-finance-value" id="kpi-receber">R$ 0,00</div>
+          <div class="kpi-finance-sub">Faturamentos previstos</div>
         </div>
         <div class="kpi-finance red">
-          <div class="kpi-finance-label">Vencidos &gt; 30 Dias</div>
-          <div class="kpi-finance-value" id="fin-atrasado">—</div>
-          <div class="kpi-finance-sub" id="fin-atrasado-sub">carregando...</div>
+          <div class="kpi-finance-label">Contas a Pagar (Insumos/Operação)</div>
+          <div class="kpi-finance-value" id="kpi-pagar">R$ 0,00</div>
+          <div class="kpi-finance-sub">Compromissos pendentes</div>
         </div>
-        <div class="kpi-finance teal">
-          <div class="kpi-finance-label">Fluxo Previsto (Junho)</div>
-          <div class="kpi-finance-value" id="fin-fluxo">—</div>
-          <div class="kpi-finance-sub">Projecao baseada em pedidos ativos</div>
-        </div>
-      </div>
-
-      <div class="fin-grid">
-        <!-- TABLE -->
-        <div>
-          <div class="card">
-            <div class="card-header" style="padding-bottom:12px">
-              <div class="flex justify-between items-center">
-                <div>
-                  <h2>Contas a Receber</h2>
-                  <p>Lista detalhada de faturas pendentes e recebidas</p>
-                </div>
-                <div class="filter-bar" style="margin:0">
-                  <div class="search-bar" style="max-width:240px">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                    <input type="text" id="fin-search" placeholder="Filtrar cliente ou doc..." oninput="filterFaturas()" style="border:none;outline:none;background:transparent;font-size:13px;color:var(--text-primary)" />
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Cliente</th>
-                    <th>Documento</th>
-                    <th>Data Venc.</th>
-                    <th style="text-align:right">Valor</th>
-                    <th>Status</th>
-                    <th>Acoes</th>
-                  </tr>
-                </thead>
-                <tbody id="faturas-tbody">
-                  <tr><td colspan="6" style="text-align:center;padding:30px;color:var(--text-muted)">Carregando...</td></tr>
-                </tbody>
-              </table>
-            </div>
-            <div class="tbl-footer">
-              <span id="faturas-info">—</span>
-              <div class="flex gap-2">
-                <button class="btn btn-outline btn-sm" id="btn-prev" onclick="goPage(-1)">Anterior</button>
-                <button class="btn btn-outline btn-sm" id="btn-next" onclick="goPage(+1)">Proximo</button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- SIDE PANEL -->
-        <div class="reports-panel">
-          <div class="card">
-            <div class="card-header">
-              <h2 style="display:flex;align-items:center;gap:6px">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                Relatorios Gerenciais
-              </h2>
-              <p>Gere demonstrativos em PDF com cabecalho oficial</p>
-            </div>
-            <div class="card-body">
-              <div class="form-row cols-2" style="margin-bottom:12px">
-                <div class="form-group">
-                  <label>Data Inicio</label>
-                  <input type="date" id="rep-inicio" value="2024-05-01" />
-                </div>
-                <div class="form-group">
-                  <label>Data Fim</label>
-                  <input type="date" id="rep-fim" value="2024-05-31" />
-                </div>
-              </div>
-              <div class="form-group">
-                <label>Tipo de Relatorio</label>
-                <select>
-                  <option value="">Selecione o tipo...</option>
-                  <option>Contas a Receber</option>
-                  <option>DRE Resumido</option>
-                  <option>CMV por Produto</option>
-                  <option>Fluxo de Caixa</option>
-                </select>
-              </div>
-              <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:4px">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Gerar PDF Profissional
-              </button>
-            </div>
-          </div>
-
-          <div class="resumo-recebimento">
-            <h3>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-              Resumo de Recebimentos
-            </h3>
-            <div class="resumo-row"><span>Recebido Hoje</span><span id="rec-hoje">—</span></div>
-            <div class="resumo-row"><span>Recebido no Mes</span><span id="rec-mes">—</span></div>
-            <div class="resumo-row"><span>Total Faturado</span><span id="rec-total">—</span></div>
-          </div>
+        <div class="kpi-finance purple">
+          <div class="kpi-finance-label">Saldo Líquido Previsto</div>
+          <div class="kpi-finance-value" id="kpi-saldo">R$ 0,00</div>
+          <div class="kpi-finance-sub">Resultado Operacional</div>
         </div>
       </div>
-    </main>
 
-    <footer class="site-footer">
-      <span>&copy; 2024 ERP Fabrica — Todos os direitos reservados &nbsp;&nbsp;<span class="status-dot"></span> Sistema Online (Sincronizado)</span>
-      <div class="footer-links">
-        <a href="#">Suporte Tecnico</a>
-        <a href="#">Documentacao</a>
-        <span>IP: 192.168.1.15</span>
+      <div class="fin-card">
+        <h3>📊 Resumo Operacional</h3>
+        <p style="color:var(--text-secondary);font-size:13.5px">
+          Acesse os atalhos do menu <strong>💰 FINANCEIRO ▾</strong> acima para gerenciar o detalhamento de <strong>Contas a Pagar</strong> e <strong>Contas a Receber</strong>.
+        </p>
       </div>
-    </footer>
+
+    </div>
   </div>
 </div>
 
-<div id="toast-container"></div>
 <script>
-  const API = 'http://localhost:3001/api';
-  let allFaturas = [];
-  let filtered   = [];
-  const PAGE_SIZE = 6;
-  let page = 1;
+  const API_PEDIDOS = 'http://localhost:3001/api/comercial/pedidos';
+  const API_INSUMOS = 'http://localhost:3001/api/insumos';
 
-  function fmtBRL(v) { return Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
-  function fmtDate(s) { if(!s) return '—'; return new Date(s).toLocaleDateString('pt-BR'); }
-  function isOverdue(s) {
-    if(!s) return false;
-    return new Date(s) < new Date() && new Date(s).toDateString() !== new Date().toDateString();
-  }
+  function formatarDinheiro(val) { return Number(val||0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
 
-  function toast(msg,type=''){
-    const el=document.createElement('div'); el.className='toast '+type; el.textContent=msg;
-    document.getElementById('toast-container').appendChild(el);
-    setTimeout(()=>el.remove(),3500);
-  }
-
-  function statusBadge(s) {
-    const map = {
-      'CRIADO':    ['status-criado',   'Pendente'],
-      'PRODUZINDO':['badge-blue',      'Em Producao'],
-      'FATURADO':  ['status-pendente', 'Pendente'],
-      'ENTREGUE':  ['status-pago',     'Pago'],
-    };
-    const [cls,label] = map[s]||['badge-gray',s];
-    return `<span class="badge ${cls}">${label}</span>`;
-  }
-
-  async function loadFinanceiro() {
+  async function carregarFinanceiro() {
     try {
-      const [resumo, contas] = await Promise.all([
-        fetch(`${API}/financeiro/resumo`).then(r=>r.json()),
-        fetch(`${API}/financeiro/contas-receber`).then(r=>r.json()),
-      ]);
+      const [rPed, rIns] = await Promise.all([fetch(API_PEDIDOS), fetch(API_INSUMOS)]);
+      const peds    = await rPed.json();
+      const insumos = await rIns.json();
 
-      document.getElementById('fin-vencer').textContent   = fmtBRL(resumo.a_receber);
-      document.getElementById('fin-vencer-sub').textContent = `+12% em relacao ao mes anterior`;
-      document.getElementById('fin-atrasado').textContent  = fmtBRL(resumo.pendente_producao);
-      document.getElementById('fin-atrasado-sub').textContent = 'meta de reducao: &lt; R$30k';
-      document.getElementById('fin-fluxo').textContent    = fmtBRL(resumo.faturamento_total);
-      document.getElementById('rec-hoje').textContent     = fmtBRL(resumo.recebido);
-      document.getElementById('rec-mes').textContent      = fmtBRL(resumo.recebido);
-      document.getElementById('rec-total').textContent    = fmtBRL(resumo.faturamento_total);
+      let totalReceber = peds.filter(p => p.status !== 'CANCELADO' && p.status !== 'ORCAMENTO')
+                             .reduce((acc, c) => acc + parseFloat(c.valor_total || 0), 0);
 
-      allFaturas = Array.isArray(contas) ? contas : [];
-      filterFaturas();
-    } catch(err) {
-      toast('Servidor offline — dados de demonstracao.','error');
-      document.getElementById('fin-vencer').textContent   = 'R$ 142.680,00';
-      document.getElementById('fin-vencer-sub').textContent = '+12% em relacao ao mes anterior';
-      document.getElementById('fin-atrasado').textContent  = 'R$ 48.500,00';
-      document.getElementById('fin-atrasado-sub').textContent = 'meta de reducao: < R$30k';
-      document.getElementById('fin-fluxo').textContent    = 'R$ 285.900,00';
-      document.getElementById('rec-hoje').textContent     = 'R$ 4.200,00';
-      document.getElementById('rec-mes').textContent      = 'R$ 87.400,00';
-      document.getElementById('rec-total').textContent    = 'R$ 142.680,00';
+      let totalPagar = insumos.reduce((acc, i) => {
+        const preco = parseFloat(i.preco_pago || i.custo_unitario || 0);
+        const est   = parseFloat(i.estoque_atual || 0);
+        return acc + (preco * est);
+      }, 0);
 
-      allFaturas = [
-        { id:1, razao_social:'Metalurgica Silva S.A.', doc:'FAT-8842', data_entrega:'2024-05-15', valor_total:12450.00, status:'FATURADO' },
-        { id:2, razao_social:'Construtora Horizonte',  doc:'FAT-8843', data_entrega:'2024-05-10', valor_total:45300.00, status:'CRIADO' },
-        { id:3, razao_social:'Pecas Automotivas Turbo',doc:'FAT-8845', data_entrega:'2024-05-22', valor_total:8900.00,  status:'FATURADO' },
-        { id:4, razao_social:'Distribuidora Industrial',doc:'FAT-8790',data_entrega:'2024-04-30', valor_total:3200.00,  status:'CRIADO' },
-        { id:5, razao_social:'Moveis Projetados Ltda', doc:'FAT-8850', data_entrega:'2024-05-28', valor_total:15600.00, status:'ENTREGUE' },
-        { id:6, razao_social:'Serralheria Modelo',     doc:'FAT-8851', data_entrega:'2024-06-05', valor_total:2150.00,  status:'FATURADO' },
-      ];
-      filterFaturas();
+      document.getElementById('kpi-receber').textContent = formatarDinheiro(totalReceber);
+      document.getElementById('kpi-pagar').textContent   = formatarDinheiro(totalPagar);
+      document.getElementById('kpi-saldo').textContent   = formatarDinheiro(totalReceber - totalPagar);
+    } catch {
+      // fallback
     }
   }
 
-  function filterFaturas() {
-    const q = document.getElementById('fin-search').value.toLowerCase();
-    filtered = allFaturas.filter(f =>
-      f.razao_social?.toLowerCase().includes(q) ||
-      (f.doc||String(f.id)).toLowerCase().includes(q)
-    );
-    page = 1;
-    renderTable();
-  }
-
-  function renderTable() {
-    const start = (page-1)*PAGE_SIZE;
-    const slice = filtered.slice(start, start+PAGE_SIZE);
-    const tbody = document.getElementById('faturas-tbody');
-
-    if(!slice.length) {
-      tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--text-muted)">Nenhuma fatura encontrada.</td></tr>';
-    } else {
-      tbody.innerHTML = slice.map(f => {
-        const doc     = f.doc || `FAT-${String(f.id).padStart(4,'0')}`;
-        const overdue = isOverdue(f.data_entrega) && f.status !== 'ENTREGUE';
-        return `<tr>
-          <td style="font-weight:500">${f.razao_social}</td>
-          <td class="doc-col">${doc}</td>
-          <td class="${overdue?'date-overdue':''}">${fmtDate(f.data_entrega)}</td>
-          <td class="value-col">${fmtBRL(f.valor_total)}</td>
-          <td>${statusBadge(f.status)}</td>
-          <td>
-            <div class="action-icons">
-              <button title="Marcar como pago">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 8 12 12 14 14"/></svg>
-              </button>
-              <button title="Comentario">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-              </button>
-              <button title="Opcoes">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
-              </button>
-            </div>
-          </td>
-        </tr>`;
-      }).join('');
-    }
-
-    const total = Math.ceil(filtered.length / PAGE_SIZE);
-    document.getElementById('faturas-info').textContent =
-      `Exibindo ${start+1}–${Math.min(start+PAGE_SIZE,filtered.length)} de ${filtered.length} faturas`;
-    document.getElementById('btn-prev').disabled = page<=1;
-    document.getElementById('btn-next').disabled = page>=total;
-  }
-
-  function goPage(dir) {
-    const total = Math.ceil(filtered.length/PAGE_SIZE);
-    page = Math.max(1, Math.min(total, page+dir));
-    renderTable();
-  }
-
-  document.addEventListener('DOMContentLoaded', loadFinanceiro);
+  window.onload = carregarFinanceiro;
 </script>
 </body>
 </html>

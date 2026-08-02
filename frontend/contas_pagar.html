@@ -19,6 +19,17 @@
     }
     .pagar-card tbody tr { border-bottom: 1px solid var(--border-light); }
     .pagar-card tbody td { padding: 13px 16px; font-size: 13.5px; }
+
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 1100;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity .2s;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+    .modal-box {
+      background: var(--surface); border-radius: 16px; box-shadow: var(--shadow-lg);
+      width: 480px; max-width: calc(100vw - 32px); padding: 24px; display: flex; flex-direction: column;
+    }
   </style>
 </head>
 <body>
@@ -29,54 +40,58 @@
   <div class="main-wrap">
 
     <!-- TOPBAR GLOBAL DROPDOWN -->
-    <header class="topbar">
-      <a href="vendas.html" class="topbar-logo">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-        </svg>
-        <span>ERP Fabrica</span>
-      </a>
-      <nav class="topbar-nav">
-        <!-- COMERCIAL -->
-        <div class="nav-dropdown">
-          <button class="nav-dropdown-btn">💼 Comercial ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="vendas.html">💰 Lançamento de Vendas</a>
-            <a href="orcamentos.html">📄 Orçamentos</a>
-            <a href="produtos.html">🍰 Produtos Finais</a>
-          </div>
-        </div>
-        <!-- ESTOQUE -->
-        <div class="nav-dropdown">
-          <button class="nav-dropdown-btn">📦 Estoque ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="almoxarifado.html">🌾 Matéria Prima (Almoxarifado)</a>
-            <a href="estoque_produtos.html">❄️ Produto Acabado (Câmara Fria)</a>
-          </div>
-        </div>
-        <!-- PRODUÇÃO -->
-        <div class="nav-dropdown">
-          <button class="nav-dropdown-btn">🏭 Produção ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="planejamento.html">📅 Planejamento Maestro</a>
-            <a href="ordens_producao.html">📋 Fila de OPs</a>
-            <a href="colaboradores.html">👤 Equipe & Colaboradores</a>
-          </div>
-        </div>
-        <!-- FINANCEIRO -->
-        <div class="nav-dropdown active">
-          <button class="nav-dropdown-btn">💵 Financeiro ▾</button>
-          <div class="nav-dropdown-menu">
-            <a href="financeiro_resumo.html">📊 Fluxo de Caixa</a>
-            <a href="contas_pagar.html" class="active">📤 Contas a Pagar</a>
-            <a href="contas_receber.html">📥 Contas a Receber</a>
-          </div>
-        </div>
-      </nav>
-      <div class="topbar-right">
-        <span class="badge-online">● Online</span>
+<header class="topbar">
+  <div class="topbar-logo">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    <span>ERP Fabrica</span>
+  </div>
+  
+  <nav class="topbar-nav">
+    <div class="dropdown">
+      <button class="dropbtn">📊 COMERCIAL</button>
+      <div class="dropdown-content">
+        <a href="vendas.html">Vendas</a>
+        <a href="orcamentos.html">Orçamentos</a>
+        <a href="produtos.html">Produtos Finais</a>
+        <a href="clientes.html">Clientes</a>
       </div>
-    </header>
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">📦 ESTOQUE</button>
+      <div class="dropdown-content">
+        <a href="almoxarifado.html">Matéria-Prima</a>
+        <a href="estoque_produtos.html">Produto Acabado</a>
+      </div>
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">🏭 PRODUÇÃO</button>
+      <div class="dropdown-content">
+        <a href="planejamento.html">Planejamento Maestro</a>
+        <a href="ordens_producao.html">Fila de OPs</a>
+        <a href="receitas.html">Receitas (Preparos)</a>
+        <a href="colaboradores.html">Colaboradores</a>
+      </div>
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">💰 FINANCEIRO</button>
+      <div class="dropdown-content">
+        <a href="financeiro.html">Fluxo de Caixa</a>
+        <a href="contas_receber.html">Contas a Receber</a>
+        <a href="contas_pagar.html">Contas a Pagar</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="topbar-right">
+    <span class="badge-online">● Sistema Online</span>
+    <div class="user-chip">
+      <div class="user-avatar">AD</div>
+    </div>
+  </div>
+</header>
 
     <div class="page-content">
 
@@ -84,6 +99,14 @@
         <div class="page-header-left">
           <h1>Contas a Pagar (Compras & Operacional)</h1>
           <p>Acompanhe os custos com fornecedores de insumos, embalagens e despesas operacionais da fábrica.</p>
+        </div>
+        <div class="page-header-actions">
+          <button class="btn btn-primary" onclick="openPagarModal()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            + Lançar
+          </button>
         </div>
       </div>
 
@@ -111,41 +134,127 @@
   </div>
 </div>
 
+<!-- MODAL LANÇAR CONTA A PAGAR -->
+<div class="modal-overlay" id="pagar-modal-overlay" onclick="if(event.target===this)closePagarModal()">
+  <div class="modal-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h3 style="margin:0;font-size:17px;font-weight:700">📤 Lançar Conta a Pagar</h3>
+      <button onclick="closePagarModal()" style="background:none;border:none;cursor:pointer;font-size:20px">✕</button>
+    </div>
+    <form id="form-pagar" onsubmit="salvarDespesa(event)">
+      <div class="form-group" style="margin-bottom:12px">
+        <label>Descrição da Despesa *</label>
+        <input type="text" id="pagar-desc" placeholder="Ex: Conta de Energia / Compra de Sacos" required />
+      </div>
+      <div class="form-row cols-2" style="margin-bottom:16px">
+        <div class="form-group">
+          <label>Categoria</label>
+          <select id="pagar-cat">
+            <option>Matéria-Prima</option>
+            <option>Embalagens</option>
+            <option>Energia / Água</option>
+            <option>Manutenção</option>
+            <option>Outros</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Valor Total (R$) *</label>
+          <input type="number" step="0.01" id="pagar-valor" placeholder="0,00" required />
+        </div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px">
+        <button type="button" class="btn btn-outline" onclick="closePagarModal()">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Salvar Lançamento</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script>
   const API_INSUMOS = 'http://localhost:3001/api/insumos';
 
   function formatarDinheiro(val) { return Number(val||0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
 
+  function showToast(msg, type='') {
+    const el = document.createElement('div'); el.className = 'toast ' + type; el.textContent = msg;
+    document.getElementById('toast-container').appendChild(el); setTimeout(() => el.remove(), 4000);
+  }
+
+  let lancamentosAdicionais = [];
+
   async function carregarPagar() {
     try {
       const res = await fetch(API_INSUMOS);
       const insumos = await res.json();
-      const tbody = document.getElementById('pagar-tbody');
+      renderizarTabela(insumos);
+    } catch {
+      renderizarTabela([]);
+    }
+  }
 
-      if (!insumos.length) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted)">Nenhuma compra ou insumo cadastrado.</td></tr>`;
-        return;
-      }
-
-      tbody.innerHTML = insumos.map(i => {
+  function renderizarTabela(insumos) {
+    const tbody = document.getElementById('pagar-tbody');
+    const todos = [
+      ...insumos.map(i => {
         const est = parseFloat(i.estoque_atual || 0);
         const custo = parseFloat(i.preco_pago || i.custo_unitario || 0);
-        const total = est * custo;
+        return {
+          nome: i.nome,
+          categoria: i.categoria || 'Almoxarifado',
+          estoque: `${est} ${i.unidade_medida || 'kg'}`,
+          custo,
+          total: est * custo,
+          status: '✓ Alocado'
+        };
+      }),
+      ...lancamentosAdicionais
+    ];
 
-        return `
-          <tr>
-            <td><strong>${i.nome}</strong></td>
-            <td><span class="badge badge-purple">${i.categoria || 'Almoxarifado'}</span></td>
-            <td>${est} ${i.unidade_medida || 'kg'}</td>
-            <td style="text-align:right">${formatarDinheiro(custo)}</td>
-            <td style="text-align:right;font-weight:700;color:var(--red)">${formatarDinheiro(total)}</td>
-            <td style="text-align:center"><span class="badge badge-green">✓ Alocado</span></td>
-          </tr>
-        `;
-      }).join('');
-    } catch {
-      // fallback
+    if (!todos.length) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted)">Nenhuma conta a pagar cadastrada. Clique em + Lançar.</td></tr>`;
+      return;
     }
+
+    tbody.innerHTML = todos.map(item => `
+      <tr>
+        <td><strong>${item.nome}</strong></td>
+        <td><span class="badge badge-purple">${item.categoria}</span></td>
+        <td>${item.estoque}</td>
+        <td style="text-align:right">${formatarDinheiro(item.custo)}</td>
+        <td style="text-align:right;font-weight:700;color:var(--red)">${formatarDinheiro(item.total)}</td>
+        <td style="text-align:center"><span class="badge badge-green">${item.status}</span></td>
+      </tr>
+    `).join('');
+  }
+
+  function openPagarModal() {
+    document.getElementById('form-pagar').reset();
+    document.getElementById('pagar-modal-overlay').classList.add('open');
+  }
+  function closePagarModal() {
+    document.getElementById('pagar-modal-overlay').classList.remove('open');
+  }
+
+  function salvarDespesa(e) {
+    e.preventDefault();
+    const desc  = document.getElementById('pagar-desc').value.trim();
+    const cat   = document.getElementById('pagar-cat').value;
+    const valor = parseFloat(document.getElementById('pagar-valor').value || 0);
+
+    if (!desc || !valor) return;
+
+    lancamentosAdicionais.push({
+      nome: desc,
+      categoria: cat,
+      estoque: '1 serv',
+      custo: valor,
+      total: valor,
+      status: '⏳ Pendente'
+    });
+
+    showToast('✅ Despesa lançada com sucesso!', 'success');
+    closePagarModal();
+    carregarPagar();
   }
 
   window.onload = carregarPagar;

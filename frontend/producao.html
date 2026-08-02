@@ -64,41 +64,58 @@
 <div class="erp-shell">
   <div class="main-wrap">
     <!-- TOPBAR COM NAVEGAÇÃO -->
-    <header class="topbar">
-      <a href="ordens_producao.html" class="topbar-logo">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-        </svg>
-        <span>ERP Fabrica</span>
-      </a>
-      <nav class="topbar-nav">
-        <a href="almoxarifado.html">📦 Almoxarifado</a>
-        <a href="receitas.html">👨🍳 Receitas</a>
-        <a href="produtos.html">🍰 Produtos Finais</a>
-        <a href="clientes.html">👥 Clientes</a>
-        <a href="vendas.html">💰 Lançar Vendas</a>
-        <a href="ordens_producao.html" class="active">🏭 Produção</a>
-        <a href="colaboradores.html">👤 Colaboradores</a>
-        <a href="planejamento.html">📅 Planejamento</a>
-      </nav>
-      <div class="topbar-right">
-        <span class="badge-online">● Online</span>
+<header class="topbar">
+  <div class="topbar-logo">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    <span>ERP Fabrica</span>
+  </div>
+  
+  <nav class="topbar-nav">
+    <div class="dropdown">
+      <button class="dropbtn">📊 COMERCIAL</button>
+      <div class="dropdown-content">
+        <a href="vendas.html">Vendas</a>
+        <a href="orcamentos.html">Orçamentos</a>
+        <a href="produtos.html">Produtos Finais</a>
+        <a href="clientes.html">Clientes</a>
       </div>
-    </header>
-      <div class="topbar-search">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        Busca global (Alt + S)
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">📦 ESTOQUE</button>
+      <div class="dropdown-content">
+        <a href="almoxarifado.html">Matéria-Prima</a>
+        <a href="estoque_produtos.html">Produto Acabado</a>
       </div>
-      <div class="topbar-right">
-        <span class="badge-offline">Modo Offline</span>
-        <button class="topbar-icon-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></button>
-        <button class="topbar-icon-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></button>
-        <div class="user-chip">
-          <div><strong>Admin Fabrica</strong><span>Administrador</span></div>
-          <div class="user-avatar">AF</div>
-        </div>
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">🏭 PRODUÇÃO</button>
+      <div class="dropdown-content">
+        <a href="planejamento.html">Planejamento Maestro</a>
+        <a href="ordens_producao.html">Fila de OPs</a>
+        <a href="receitas.html">Receitas (Preparos)</a>
+        <a href="colaboradores.html">Colaboradores</a>
       </div>
-    </header>
+    </div>
+    
+    <div class="dropdown">
+      <button class="dropbtn">💰 FINANCEIRO</button>
+      <div class="dropdown-content">
+        <a href="financeiro.html">Fluxo de Caixa</a>
+        <a href="contas_receber.html">Contas a Receber</a>
+        <a href="contas_pagar.html">Contas a Pagar</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="topbar-right">
+    <span class="badge-online">● Sistema Online</span>
+    <div class="user-chip">
+      <div class="user-avatar">AD</div>
+    </div>
+  </div>
+</header>
 
     <main class="page-content">
       <div class="page-header">
