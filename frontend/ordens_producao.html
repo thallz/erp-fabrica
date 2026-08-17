@@ -187,10 +187,10 @@
     </div>
     
     <div class="dropdown">
-      <button class="dropbtn">🏭 PRODUÇÃO</button>
+      <button class="dropbtn" style="color:var(--brand)">🏭 PRODUÇÃO</button>
       <div class="dropdown-content">
         <a href="planejamento.html">Planejamento Maestro</a>
-        <a href="ordens_producao.html">Fila de OPs</a>
+        <a href="ordens_producao.html" class="active">Fila de OPs</a>
         <a href="receitas.html">Receitas (Preparos)</a>
         <a href="colaboradores.html">Colaboradores</a>
       </div>
@@ -231,16 +231,13 @@
         </div>
       </div>
 
-      <!-- TABS DE NAVEGAÇÃO DE STATUS -->
+      <!-- TABS DE NAVEGAÇÃO DE STATUS (FOCADAS NA ESTEIRA ATIVA) -->
       <div class="filter-pills">
         <span class="pill-tab active" onclick="selecionarTab('FILA', this)">
-          ⏳ Fila de Espera <span class="count-badge" id="count-fila">0</span>
+          ⏳ Aguardando Início <span class="count-badge" id="count-fila">0</span>
         </span>
         <span class="pill-tab" onclick="selecionarTab('PRODUZINDO', this)">
-          ⚙️ Em Produção <span class="count-badge" id="count-produzindo">0</span>
-        </span>
-        <span class="pill-tab" onclick="selecionarTab('CONCLUIDA', this)">
-          ✅ Finalizadas <span class="count-badge" id="count-concluida">0</span>
+          ⚙️ Em Execução <span class="count-badge" id="count-produzindo">0</span>
         </span>
       </div>
 
@@ -295,11 +292,11 @@
   function atualizarContadores() {
     const countFila       = todasOPs.filter(o => o.status === 'FILA').length;
     const countProduzindo = todasOPs.filter(o => o.status === 'PRODUZINDO').length;
-    const countConcluida  = todasOPs.filter(o => o.status === 'CONCLUIDA').length;
 
-    document.getElementById('count-fila').textContent       = countFila;
-    document.getElementById('count-produzindo').textContent = countProduzindo;
-    document.getElementById('count-concluida').textContent  = countConcluida;
+    const elFila = document.getElementById('count-fila');
+    const elProd = document.getElementById('count-produzindo');
+    if (elFila) elFila.textContent = countFila;
+    if (elProd) elProd.textContent = countProduzindo;
   }
 
   function selecionarTab(status, el) {
@@ -325,9 +322,8 @@
 
     if (!lista.length) {
       const msgVazio = {
-        FILA: 'Nenhuma ordem de produção na fila de espera.',
-        PRODUZINDO: 'Nenhuma ordem de produção em andamento.',
-        CONCLUIDA: 'Nenhuma ordem de produção finalizada.'
+        FILA: 'Nenhuma ordem de produção aguardando início.',
+        PRODUZINDO: 'Nenhuma ordem de produção em execução no momento.'
       }[tabAtiva] || 'Nenhuma OP encontrada.';
 
       grid.innerHTML = `<p style="grid-column:1/-1;text-align:center;padding:50px;color:var(--text-muted)">

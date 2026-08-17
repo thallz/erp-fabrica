@@ -211,9 +211,9 @@
     </div>
     
     <div class="dropdown">
-      <button class="dropbtn">🏭 PRODUÇÃO</button>
+      <button class="dropbtn" style="color:var(--brand)">🏭 PRODUÇÃO</button>
       <div class="dropdown-content">
-        <a href="planejamento.html">Planejamento Maestro</a>
+        <a href="planejamento.html" class="active">Planejamento Maestro</a>
         <a href="ordens_producao.html">Fila de OPs</a>
         <a href="receitas.html">Receitas (Preparos)</a>
         <a href="colaboradores.html">Colaboradores</a>
@@ -425,14 +425,13 @@
 
   /* ======================== DIVIDIR OP ======================== */
   async function dividirOP(opId, totalQtd) {
-    const valor = prompt(`Esta OP tem ${totalQtd} unidades.\nQuantas unidades você deseja mover para a NOVA OP secundária?`);
+    const valor = prompt('Quantas unidades deseja separar para a nova OP?');
     if (!valor) return;
     const qtdNova = parseFloat(valor.replace(',', '.'));
-    if (isNaN(qtdNova) || qtdNova <= 0 || qtdNova >= totalQtd) {
-      showToast(`Digite um valor válido maior que 0 e menor que ${totalQtd}.`, 'error');
+    if (isNaN(qtdNova) || qtdNova <= 0 || (totalQtd && qtdNova >= totalQtd)) {
+      showToast(`Digite uma quantidade válida maior que 0 e menor que o total${totalQtd ? ` (${totalQtd} un)` : ''}.`, 'error');
       return;
     }
-    const qtdRestante = totalQtd - qtdNova;
 
     try {
       const res = await fetch(`${API_PLANEJAMENTO}/split-op`, {
@@ -440,14 +439,13 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           op_id: opId,
-          quantidade_colaborador_1: qtdRestante,
-          quantidade_colaborador_2: qtdNova
+          quantidade_separar: qtdNova
         })
       });
 
       const data = await res.json();
       if (res.ok && data.status !== 'erro') {
-        showToast(`✂️ OP dividida com sucesso em duas! (${qtdRestante} un + ${qtdNova} un)`, 'success');
+        showToast(`✂️ OP dividida com sucesso! Nova OP de ${qtdNova} un criada.`, 'success');
         carregarTudo();
       } else {
         showToast('Erro: ' + (data.erro || 'Não foi possível dividir a OP.'), 'error');

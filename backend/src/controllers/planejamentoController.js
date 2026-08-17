@@ -464,16 +464,15 @@ const planejamentoController = {
                 data_1, 
                 quantidade_colaborador_2, 
                 colaborador_2_id, 
-                data_2 
+                data_2,
+                quantidade_separar,
+                quantidade_nova
             } = req.body;
 
             const targetOpId = op_id;
-            const qtd1 = parseFloat(quantidade_colaborador_1);
-            const qtd2 = parseFloat(quantidade_colaborador_2);
-
-            if (!targetOpId || isNaN(qtd1) || isNaN(qtd2) || qtd1 <= 0 || qtd2 <= 0) {
+            if (!targetOpId) {
                 await client.query('ROLLBACK');
-                return res.status(400).json({ status: 'erro', erro: 'Quantidades válidas são obrigatórias para a divisão.' });
+                return res.status(400).json({ status: 'erro', erro: 'ID da OP é obrigatório.' });
             }
 
             // Buscar OP original
@@ -483,6 +482,27 @@ const planejamentoController = {
                 return res.status(404).json({ status: 'erro', erro: 'OP original não encontrada' });
             }
             const originalOp = opRow.rows[0];
+            const qtdTotalOriginal = parseFloat(originalOp.quantidade_planejada || 0);
+
+            let qtd1, qtd2;
+
+            // Se enviou quantidade a separar para a nova OP
+            const separar = parseFloat(quantidade_separar ?? quantidade_nova);
+            if (!isNaN(separar) && separar > 0) {
+                qtd2 = separar;
+                qtd1 = qtdTotalOriginal - qtd2;
+            } else {
+                qtd1 = parseFloat(quantidade_colaborador_1);
+                qtd2 = parseFloat(quantidade_colaborador_2);
+            }
+
+            if (isNaN(qtd1) || isNaN(qtd2) || qtd1 <= 0 || qtd2 <= 0) {
+                await client.query('ROLLBACK');
+                return res.status(400).json({ 
+                    status: 'erro', 
+                    erro: `Quantidades inválidas. A OP original tem ${qtdTotalOriginal} unidades. A quantidade a separar deve ser menor que o total.` 
+                });
+            }
 
             // Atualizar a OP original com a quantidade reduzida
             await client.query(
@@ -494,31 +514,28 @@ const planejamentoController = {
                 [qtd1, colaborador_1_id || null, data_1 || null, targetOpId]
             );
 
-            // Criar a nova OP com a quantidade restante
-            let novaOp = null;
-            if (qtd2 > 0) {
-                novaOp = await client.query(
-                    `INSERT INTO ordem_producao (produto_id, quantidade_planejada, status, colaborador_id, data_programada, categoria_producao, tipo_op, receita_id, parent_op_id)
-                     VALUES ($1, $2, 'FILA', $3, $4, $5, $6, $7, $8) RETURNING *`,
-                    [
-                        originalOp.produto_id, 
-                        qtd2, 
-                        colaborador_2_id || null, 
-                        data_2 || null, 
-                        originalOp.categoria_producao,
-                        originalOp.tipo_op || 'MONTAGEM',
-                        originalOp.receita_id || null,
-                        originalOp.parent_op_id || null
-                    ]
-                );
-            }
+            // Criar a nova OP com a quantidade separada
+            const novaOp = await client.query(
+                `INSERT INTO ordem_producao (produto_id, quantidade_planejada, status, colaborador_id, data_programada, categoria_producao, tipo_op, receita_id, parent_op_id)
+                 VALUES ($1, $2, 'FILA', $3, $4, $5, $6, $7, $8) RETURNING *`,
+                [
+                    originalOp.produto_id, 
+                    qtd2, 
+                    colaborador_2_id || null, 
+                    data_2 || null, 
+                    originalOp.categoria_producao,
+                    originalOp.tipo_op || 'MONTAGEM',
+                    originalOp.receita_id || null,
+                    originalOp.parent_op_id || null
+                ]
+            );
 
             await client.query('COMMIT');
             res.json({
                 status: 'sucesso',
                 mensagem: 'OP dividida com sucesso em duas ordens menores.',
                 op_original_atualizada_id: targetOpId,
-                nova_op_criada: novaOp ? novaOp.rows[0] : null
+                nova_op_criada: novaOp.rows[0]
             });
         } catch (error) {
             await client.query('ROLLBACK');

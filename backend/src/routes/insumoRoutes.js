@@ -7,6 +7,7 @@ router.post('/', insumoController.criar);
 router.get('/', insumoController.listar);
 router.put('/:id', insumoController.atualizar);
 router.post('/:id/entrada', insumoController.darEntrada);
+router.put('/:id/entrada', insumoController.darEntrada);
 router.delete('/:id', insumoController.excluir);
 
 module.exports = router;

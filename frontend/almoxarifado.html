@@ -186,9 +186,9 @@
     </div>
     
     <div class="dropdown">
-      <button class="dropbtn">📦 ESTOQUE</button>
+      <button class="dropbtn" style="color:var(--brand)">📦 ESTOQUE</button>
       <div class="dropdown-content">
-        <a href="almoxarifado.html">Matéria-Prima</a>
+        <a href="almoxarifado.html" class="active">Matéria-Prima</a>
         <a href="estoque_produtos.html">Produto Acabado</a>
       </div>
     </div>
@@ -628,7 +628,7 @@
 
   /* ======================== ENTRADA DE COMPRAS ======================== */
   async function darEntradaInsumo(id, nome, unidade) {
-    const valor = prompt(`Quantos ${unidade === 'un' ? 'unidades' : 'quilos'} de "${nome}" chegaram do fornecedor?`);
+    const valor = prompt('Quantidade recebida do fornecedor?');
     if (!valor) return;
     const qtd = parseFloat(valor.replace(',', '.'));
     if (isNaN(qtd) || qtd <= 0) {
@@ -638,7 +638,7 @@
 
     try {
       const res = await fetch(`${API_INSUMOS}/${id}/entrada`, {
-        method: 'POST',
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ quantidade: qtd })
       });

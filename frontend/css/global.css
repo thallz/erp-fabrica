@@ -151,87 +151,26 @@ body {
   z-index: 500;
 }
 
-.topbar-nav {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-left: 20px;
+.topbar-nav { display: flex; gap: 15px; margin-left: 30px; }
+.dropdown { position: relative; display: inline-block; }
+.dropbtn { background: none; border: none; font-weight: 700; color: var(--text-secondary); cursor: pointer; padding: 10px; font-size: 13px; }
+.dropdown-content { 
+    display: none; position: absolute; background-color: #fff; min-width: 180px; 
+    box-shadow: var(--shadow-md); border-radius: 8px; z-index: 1000; border: 1px solid var(--border);
+    margin-top: 0; padding: 4px 0;
 }
-
-.dropdown {
-  position: relative;
-  display: inline-block;
-}
-
-.dropbtn {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 8px 14px;
-  font-size: 13.5px;
-  font-weight: 700;
-  color: var(--text-secondary);
-  background: transparent;
-  border: none;
-  border-radius: var(--radius);
-  cursor: pointer;
-  transition: background .15s, color .15s;
-}
-
-.dropdown:hover .dropbtn,
-.dropbtn:hover {
-  background: var(--brand-light);
-  color: var(--brand);
-}
-
-.dropdown-content {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  margin-top: 0;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.12);
-  min-width: 210px;
-  padding: 6px;
-  display: none;
-  z-index: 1000;
-}
-
 /* Ponte transparente que impede a perda do hover ao mover o cursor */
 .dropdown-content::before {
-  content: "";
-  position: absolute;
-  top: -10px;
-  left: 0;
-  right: 0;
-  height: 10px;
+    content: ""; position: absolute; top: -10px; left: 0; right: 0; height: 10px;
 }
-
-.dropdown:hover .dropdown-content {
-  display: block;
+.dropdown-content a { 
+    color: var(--text-primary); padding: 10px 16px; text-decoration: none; display: block; font-size: 13px;
+    transition: background-color .15s, color .15s;
 }
-
-.dropdown-content a {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-secondary);
-  text-decoration: none;
-  border-radius: 8px;
-  transition: background .12s, color .12s;
-}
-
 .dropdown-content a:hover,
-.dropdown-content a.active {
-  background: var(--brand-light);
-  color: var(--brand);
-  font-weight: 600;
-}
+.dropdown-content a.active { background-color: var(--brand-light); color: var(--brand); font-weight: 600; }
+.dropdown:hover .dropdown-content { display: block; }
+.dropdown:hover .dropbtn { color: var(--brand); }
 
 .topbar-logo {
   display: flex; align-items: center; gap: 8px;
