@@ -260,22 +260,53 @@ const produtoController = {
         }
     },
 
-    // 4. AJUSTAR ESTOQUE CÂMARA FRIA
+    // 4. AJUSTAR ESTOQUE CÂMARA FRIA (com registro no Kardex)
     ajustarEstoque: async (req, res) => {
+        const client = await pool.connect();
         try {
+            await client.query('BEGIN');
             const { id } = req.params;
-            const { estoque_atual } = req.body;
+            const { estoque_atual, observacao } = req.body;
             const valor = Math.max(0, parseInt(estoque_atual, 10) || 0);
-            const result = await pool.query(
+
+            const antRes = await client.query(
+                'SELECT id, nome, COALESCE(estoque_atual, 0) AS estoque_atual, COALESCE(cmv_estimado, 0) AS cmv_estimado FROM produto WHERE id = $1 FOR UPDATE',
+                [id]
+            );
+            if (antRes.rows.length === 0) {
+                await client.query('ROLLBACK');
+                return res.status(404).json({ status: 'erro', erro: 'Produto não encontrado' });
+            }
+
+            const saldoAnt = parseInt(antRes.rows[0].estoque_atual || 0, 10);
+            const result = await client.query(
                 'UPDATE produto SET estoque_atual = $1 WHERE id = $2 RETURNING id, nome, estoque_atual',
                 [valor, id]
             );
-            if (result.rows.length === 0) {
-                return res.status(404).json({ status: 'erro', erro: 'Produto não encontrado' });
-            }
+
+            await client.query(
+                `INSERT INTO movimentacao_estoque (
+                    tipo_estoque, insumo_id, produto_id, tipo_movimento, motivo,
+                    quantidade, unidade_medida, custo_unitario_momento,
+                    saldo_anterior, saldo_posterior, documento_ref, observacao
+                ) VALUES ('PRODUTO_ACABADO', NULL, $1, 'AJUSTE', 'INVENTARIO_BALANCO', $2, 'un', $3, $4, $5, NULL, $6)`,
+                [
+                    id,
+                    Math.abs(valor - saldoAnt),
+                    parseFloat(antRes.rows[0].cmv_estimado || 0),
+                    saldoAnt,
+                    valor,
+                    observacao || 'Ajuste de balanço da Câmara Fria'
+                ]
+            );
+
+            await client.query('COMMIT');
             res.json(result.rows[0]);
         } catch (error) {
+            await client.query('ROLLBACK');
             res.status(500).json({ status: 'erro', erro: error.message });
+        } finally {
+            client.release();
         }
     },
 

@@ -6,10 +6,16 @@ SET session_replication_role = 'replica';
 
 -- 2. Limpar conteúdo das tabelas de dados
 TRUNCATE TABLE 
+    conta_receber,
+    item_orcamento,
+    orcamento,
+    conta_pagar,
+    movimentacao_estoque,
     apontamento_intercorrencia,
     item_pedido,
     pedido,
     ordem_producao,
+    ficha_tecnica_produto,
     ficha_tecnica_insumo,
     ficha_tecnica_embalagem,
     ficha_tecnica_receita,

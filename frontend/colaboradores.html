@@ -204,7 +204,7 @@
 </div>
 
 <!-- ==================== MODAL CENTRALIZADO DE COLABORADOR (440px) ==================== -->
-<div class="modal-overlay" id="colab-modal-overlay" onclick="closeColaboradorModalOnBackdrop(event)">
+<div class="modal-overlay" id="colab-modal-overlay">
   <div class="modal-box">
     <div class="modal-header">
       <h3 id="colab-modal-title">
@@ -302,14 +302,6 @@
   function closeColaboradorModal() {
     document.getElementById('colab-modal-overlay').classList.remove('open');
   }
-
-  function closeColaboradorModalOnBackdrop(event) {
-    if (event.target === document.getElementById('colab-modal-overlay')) closeColaboradorModal();
-  }
-
-  window.addEventListener('keydown', e => {
-    if (e.key === 'Escape') closeColaboradorModal();
-  });
 
   /* ======================== LOAD / RENDER ======================== */
   async function carregarColaboradores() {

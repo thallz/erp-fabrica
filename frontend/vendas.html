@@ -305,7 +305,7 @@
 </div>
 
 <!-- ==================== MODAL CENTRALIZADO DE PEDIDO (680px) ==================== -->
-<div class="modal-overlay" id="pedido-modal-overlay" onclick="closePedidoModalOnBackdrop(event)">
+<div class="modal-overlay" id="pedido-modal-overlay">
   <div class="modal-box">
     <div class="modal-header">
       <h3 id="pedido-modal-title">
@@ -332,6 +332,25 @@
           <div class="form-group">
             <label>Data de Entrega *</label>
             <input type="date" id="pedido-data-entrega" required />
+          </div>
+        </div>
+
+        <!-- FINANCEIRO / CONTAS A RECEBER -->
+        <div class="form-section-header">💰 Faturamento (Contas a Receber)</div>
+        <div class="form-row cols-2">
+          <div class="form-group">
+            <label>Forma de Pagamento</label>
+            <select id="pedido-forma-condicao" onchange="aoMudarFormaPedido()">
+              <option value="BOLETO|A_PRAZO">Boleto a Prazo (Gera Contas a Receber)</option>
+              <option value="PIX|A_PRAZO">PIX a Prazo (Gera Contas a Receber)</option>
+              <option value="PIX|A_VISTA">PIX à Vista (Já Recebido)</option>
+              <option value="DINHEIRO|A_VISTA">Dinheiro à Vista (Já Recebido)</option>
+              <option value="CARTAO|A_VISTA">Cartão à Vista (Já Recebido)</option>
+            </select>
+          </div>
+          <div class="form-group" id="grupo-pedido-vencimento">
+            <label>Vencimento do Boleto / Cobrança</label>
+            <input type="date" id="pedido-data-vencimento" />
           </div>
         </div>
 
@@ -372,7 +391,7 @@
 </div>
 
 <!-- ==================== MODAL DE DETALHES DO PEDIDO ==================== -->
-<div class="modal-overlay" id="detalhe-modal-overlay" onclick="if(event.target===this)this.classList.remove('open')">
+<div class="modal-overlay" id="detalhe-modal-overlay">
   <div class="modal-box" style="width:560px">
     <div class="modal-header">
       <h3 id="detalhe-modal-title">Detalhes do Pedido</h3>
@@ -514,16 +533,31 @@
   }
 
   /* ======================== MODAL DE PEDIDO ======================== */
+  function aoMudarFormaPedido() {
+    const val = document.getElementById('pedido-forma-condicao').value || 'BOLETO|A_PRAZO';
+    const [, pgtoTipo] = val.split('|');
+    const grp = document.getElementById('grupo-pedido-vencimento');
+    if (grp) {
+      grp.style.display = pgtoTipo === 'A_VISTA' ? 'none' : 'block';
+    }
+  }
+
   function openPedidoModal() {
     document.getElementById('form-pedido').reset();
     document.getElementById('item-rows').innerHTML = '';
     document.getElementById('pedido-total').textContent = 'R$ 0,00';
     popularClienteSelect();
 
-    // Pré-selecionar data de hoje + 1 dia
+    // Pré-selecionar data de entrega (hoje + 1 dia) e vencimento padrão (hoje + 15 dias)
     const amanha = new Date();
     amanha.setDate(amanha.getDate() + 1);
     document.getElementById('pedido-data-entrega').value = amanha.toISOString().split('T')[0];
+
+    const venc15 = new Date();
+    venc15.setDate(venc15.getDate() + 15);
+    document.getElementById('pedido-data-vencimento').value = venc15.toISOString().split('T')[0];
+    document.getElementById('pedido-forma-condicao').value = 'BOLETO|A_PRAZO';
+    aoMudarFormaPedido();
 
     adicionarLinhaItem();
 
@@ -534,13 +568,36 @@
     document.getElementById('pedido-modal-overlay').classList.remove('open');
   }
 
-  function closePedidoModalOnBackdrop(event) {
-    if (event.target === document.getElementById('pedido-modal-overlay')) closePedidoModal();
+  /* ======================== UTILITÁRIOS DE MOEDA ======================== */
+  function parseMoeda(valor) {
+    if (typeof valor === 'number') return isNaN(valor) ? 0 : valor;
+    if (!valor) return 0;
+    let str = String(valor).replace(/[R$\s]/g, '');
+    if (str.includes(',') && str.includes('.')) {
+      str = str.replace(/\./g, '').replace(',', '.');
+    } else if (str.includes(',')) {
+      str = str.replace(',', '.');
+    }
+    const num = parseFloat(str);
+    return isNaN(num) ? 0 : num;
   }
 
-  window.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { closePedidoModal(); }
-  });
+  function formatarInputMoeda(el) {
+    const val = parseMoeda(el.value);
+    if (el.value && el.value.trim() !== '' && !isNaN(val) && val > 0) {
+      el.value = val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    }
+  }
+
+  function limparInputMoeda(el) {
+    if (!el.value) return;
+    const val = parseMoeda(el.value);
+    if (!isNaN(val) && val > 0) {
+      el.value = val.toFixed(2).replace('.', ',');
+    } else if (el.value.trim() === 'R$ 0,00' || val === 0) {
+      el.value = '';
+    }
+  }
 
   /* ======================== LINHAS DE ITEM ======================== */
   function adicionarLinhaItem() {
@@ -564,8 +621,8 @@
       </div>
       <input type="number" class="qtd-input" min="1" step="1" value="1" placeholder="Qtd"
              required oninput="onQtdChange('${rowId}')" />
-      <input type="number" class="preco-input" min="0" step="0.01" placeholder="R$"
-             required oninput="recalcTotal()" />
+      <input type="text" inputmode="decimal" class="preco-input" placeholder="R$ 0,00"
+             required onfocus="limparInputMoeda(this)" onblur="formatarInputMoeda(this); recalcTotal();" oninput="recalcTotal()" />
       <button type="button" class="row-remove" onclick="removerLinha('${rowId}')">×</button>
     `;
     container.appendChild(div);
@@ -583,7 +640,7 @@
     const opt    = select.options[select.selectedIndex];
     const preco  = opt ? parseFloat(opt.dataset.preco || 0) : 0;
 
-    row.querySelector('.preco-input').value = preco ? preco.toFixed(2) : '';
+    row.querySelector('.preco-input').value = preco > 0 ? preco.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '';
     onQtdChange(rowId);
     recalcTotal();
   }
@@ -613,7 +670,7 @@
     let total = 0;
     document.querySelectorAll('.item-row').forEach(row => {
       const qtd   = parseFloat(row.querySelector('.qtd-input').value || 0);
-      const preco = parseFloat(row.querySelector('.preco-input').value || 0);
+      const preco = parseMoeda(row.querySelector('.preco-input').value);
       total += qtd * preco;
     });
     document.getElementById('pedido-total').textContent = formatarDinheiro(total);
@@ -635,12 +692,23 @@
     for (const row of rows) {
       const prodId = row.querySelector('.produto-select').value;
       const qtd    = parseFloat(row.querySelector('.qtd-input').value);
-      const preco  = parseFloat(row.querySelector('.preco-input').value);
+      const preco  = parseMoeda(row.querySelector('.preco-input').value);
       if (!prodId || !qtd || !preco) { showToast('Preencha todos os produtos corretamente.', 'error'); return; }
       itens.push({ produto_id: parseInt(prodId, 10), quantidade: qtd, preco_unitario: preco });
     }
 
-    const body = { cliente_id: parseInt(clienteId, 10), data_entrega: dataEntrega, itens };
+    const formaCondicaoVal = document.getElementById('pedido-forma-condicao').value || 'BOLETO|A_PRAZO';
+    const [forma_pagamento, pagamento_tipo] = formaCondicaoVal.split('|');
+    const dataVencimento = document.getElementById('pedido-data-vencimento').value || null;
+
+    const body = {
+      cliente_id: parseInt(clienteId, 10),
+      data_entrega: dataEntrega,
+      forma_pagamento,
+      pagamento_tipo,
+      data_vencimento: pagamento_tipo === 'A_PRAZO' ? dataVencimento : null,
+      itens
+    };
 
     const btn = document.querySelector('#pedido-modal-overlay .btn-primary');
     btn.disabled = true;
@@ -657,10 +725,12 @@
 
       if (res.ok) {
         closePedidoModal();
-        showToast(`✅ Pedido #${data.pedido_id} lançado com sucesso!`, 'success');
+        const msgFin = pagamento_tipo === 'A_VISTA'
+          ? 'Recebimento à vista registrado!'
+          : 'Título gerado em Contas a Receber!';
+        showToast(`✅ Pedido #${data.pedido_id} lançado! ${msgFin}`, 'success');
 
         if (data.ops_geradas && data.ops_geradas.length) {
-          const opNomes = data.ops_geradas.map(op => `• ${op.produto} — ${op.quantidade_planejada} un`).join('\n');
           setTimeout(() => showToast(`🏭 ${data.ops_geradas.length} OP(s) gerada(s): ${data.ops_geradas.map(o => o.produto).join(', ')}`, ''), 500);
         }
 
@@ -691,8 +761,20 @@
       document.getElementById('detalhe-modal-title').textContent = `Pedido #${data.id}`;
       document.getElementById('detalhe-status-select').value = data.status || 'CRIADO';
 
+      const cr = data.conta_receber;
+      const crBanner = cr
+        ? `<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;font-size:12.5px">
+             <div>
+               <strong>💰 Financeiro:</strong> ${cr.forma_pagamento} · Venc. <strong>${formatarData(cr.data_vencimento)}</strong>
+             </div>
+             <span class="badge ${cr.status === 'RECEBIDO' ? 'badge-green' : cr.status === 'CANCELADO' ? 'badge-gray' : 'badge-amber'}">
+               ${cr.status}
+             </span>
+           </div>`
+        : '';
+
       body.innerHTML = `
-        <div style="display:flex;gap:20px;margin-bottom:18px">
+        <div style="display:flex;gap:20px;margin-bottom:14px;flex-wrap:wrap">
           <div>
             <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:2px">Cliente</div>
             <div style="font-weight:700">${data.razao_social}</div>
@@ -707,6 +789,7 @@
             <span class="badge-status ${statusKey}">${data.status}</span>
           </div>
         </div>
+        ${crBanner}
 
         <table style="width:100%;border-collapse:collapse">
           <thead>

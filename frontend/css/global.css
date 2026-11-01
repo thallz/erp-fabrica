@@ -522,6 +522,22 @@ input::placeholder, textarea::placeholder { color: var(--text-muted); }
   to   { transform: translateY(0);    opacity: 1; }
 }
 
+/* ---- Badge de Peso / Equivalência Humana ---- */
+.badge-peso-hint {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--brand);
+  background: var(--brand-light);
+  border: 1px solid #dcd7fa;
+  border-radius: 6px;
+  padding: 3px 8px;
+  margin-top: 5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  width: fit-content;
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }

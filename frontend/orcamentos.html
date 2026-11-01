@@ -3,11 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Orçamentos — ERP Fabrica</title>
+  <title>Orçamentos Comerciais — ERP Fabrica</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/global.css" />
   <style>
+    /* ============ TABELA DE ORÇAMENTOS ============ */
     .orcamentos-card {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -17,43 +18,206 @@
     }
     .orcamentos-card table { width: 100%; border-collapse: collapse; }
     .orcamentos-card thead th {
-      background: var(--bg); font-size: 11px; font-weight: 700;
-      text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted);
-      padding: 12px 16px; border-bottom: 1px solid var(--border-light); text-align: left;
+      background: var(--bg);
+      font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .05em;
+      color: var(--text-muted);
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-light);
+      text-align: left;
     }
-    .orcamentos-card tbody tr { border-bottom: 1px solid var(--border-light); transition: background .12s; }
+    .orcamentos-card tbody tr {
+      border-bottom: 1px solid var(--border-light);
+      transition: background .12s;
+    }
     .orcamentos-card tbody tr:last-child { border-bottom: none; }
     .orcamentos-card tbody tr:hover { background: var(--bg); }
-    .orcamentos-card tbody td { padding: 13px 16px; font-size: 13.5px; vertical-align: middle; }
+    .orcamentos-card tbody td {
+      padding: 13px 16px;
+      font-size: 13.5px;
+      vertical-align: middle;
+    }
 
+    .orc-id { font-weight: 700; color: var(--brand); font-size: 13px; }
+    .orc-cliente { font-weight: 600; color: var(--text-primary); }
+    .orc-sub { font-size: 11.5px; color: var(--text-muted); margin-top: 2px; }
+    .orc-valor { font-weight: 700; color: var(--text-primary); }
+
+    /* Status badges (Amarelo=Pendente, Verde=Aprovado, Vermelho=Recusado) */
+    .badge-orc {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 4px 10px; border-radius: 20px;
+      font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .04em;
+    }
+    .badge-orc.pendente { background: var(--amber-bg); color: var(--amber); border: 1px solid #fcd34d; }
+    .badge-orc.aprovado { background: var(--green-bg); color: var(--green); border: 1px solid #86efac; }
+    .badge-orc.recusado { background: var(--red-bg);   color: var(--red);   border: 1px solid #fca5a5; }
+
+    .pedido-link-chip {
+      display: inline-block;
+      margin-top: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--brand);
+      background: var(--brand-light);
+      padding: 2px 8px;
+      border-radius: 12px;
+      text-decoration: none;
+    }
+    .pedido-link-chip:hover { text-decoration: underline; }
+
+    /* Filtros de status */
+    .filter-pills {
+      display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px;
+    }
+    .pill {
+      border: 1px solid var(--border);
+      background: var(--surface);
+      border-radius: 20px; padding: 5px 14px;
+      font-size: 12.5px; font-weight: 600; cursor: pointer;
+      color: var(--text-secondary);
+      transition: all .12s;
+    }
+    .pill.active, .pill:hover {
+      background: var(--brand); color: #fff; border-color: var(--brand);
+    }
+
+    /* Botões de Ação */
+    .acoes-group {
+      display: flex;
+      gap: 6px;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
+    .btn-aprovar {
+      background: var(--green);
+      color: #fff;
+      border: 1px solid var(--green);
+      font-weight: 700;
+    }
+    .btn-aprovar:hover { opacity: 0.92; }
+    .btn-recusar {
+      background: var(--surface);
+      color: var(--red);
+      border: 1px solid #fca5a5;
+      font-weight: 600;
+    }
+    .btn-recusar:hover { background: var(--red-bg); }
+    .btn-whats {
+      background: #ecfdf5;
+      color: #047857;
+      border: 1px solid #6ee7b7;
+      font-weight: 600;
+    }
+    .btn-whats:hover { background: #d1fae5; }
+
+    /* ============ MODAIS CENTRALIZADOS ============ */
     .modal-overlay {
-      position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 1100;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.5);
+      z-index: 1100;
       display: flex; align-items: center; justify-content: center;
-      opacity: 0; pointer-events: none; transition: opacity .2s;
+      opacity: 0; pointer-events: none;
+      transition: opacity .2s;
     }
     .modal-overlay.open { opacity: 1; pointer-events: all; }
+
     .modal-box {
-      background: var(--surface); border-radius: 16px; box-shadow: var(--shadow-lg);
-      width: 680px; max-width: calc(100vw - 32px); max-height: 92vh;
-      display: flex; flex-direction: column; transform: translateY(14px) scale(.97);
-      transition: transform .22s;
+      background: var(--surface);
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.2);
+      width: 680px;
+      max-width: calc(100vw - 32px);
+      max-height: 92vh;
+      display: flex; flex-direction: column;
+      transform: translateY(14px) scale(.97);
+      transition: transform .22s cubic-bezier(.22,1,.36,1);
     }
     .modal-overlay.open .modal-box { transform: none; }
-    .modal-header { padding: 22px 26px 16px; border-bottom: 1px solid var(--border-light); display: flex; align-items: center; justify-content: space-between; }
-    .modal-header h3 { font-size: 17px; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 8px; }
-    .modal-close { background: none; border: none; cursor: pointer; font-size: 20px; color: var(--text-muted); line-height: 1; padding: 3px 7px; border-radius: 6px; }
-    .modal-close:hover { background: var(--bg); color: var(--text-primary); }
-    .modal-body { padding: 22px 26px; overflow-y: auto; flex: 1; }
-    .modal-footer { padding: 14px 26px 20px; border-top: 1px solid var(--border-light); display: flex; justify-content: space-between; align-items: center; }
 
-    .item-row {
-      display: grid; grid-template-columns: 1fr 80px 100px auto; gap: 8px; align-items: center;
-      background: var(--bg); border: 1px solid var(--border-light); border-radius: 10px; padding: 10px 12px; margin-top: 8px;
+    .modal-header {
+      padding: 20px 24px 15px;
+      border-bottom: 1px solid var(--border-light);
+      display: flex; align-items: center; justify-content: space-between;
     }
-    .item-row select, .item-row input { padding: 7px 10px; font-size: 13px; }
-    .row-remove { background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 20px; }
+    .modal-header h3 {
+      font-size: 16.5px; font-weight: 700; margin: 0;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .modal-close {
+      background: none; border: none; cursor: pointer;
+      font-size: 20px; color: var(--text-muted);
+      line-height: 1; padding: 3px 7px; border-radius: 6px;
+    }
+    .modal-close:hover { background: var(--bg); color: var(--text-primary); }
+
+    .modal-body { padding: 20px 24px; overflow-y: auto; flex: 1; }
+    .modal-footer {
+      padding: 14px 24px 18px;
+      border-top: 1px solid var(--border-light);
+      display: flex; justify-content: space-between; align-items: center; gap: 8px;
+    }
+    .modal-footer-total { font-size: 15.5px; font-weight: 800; color: var(--text-primary); }
+    .modal-footer-actions { display: flex; gap: 8px; }
+
+    /* Linhas dinâmicas de itens (idêntico ao modal de Vendas) */
+    .item-rows { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+    .item-row {
+      display: grid;
+      grid-template-columns: 1fr 90px 125px auto;
+      gap: 8px; align-items: start;
+      background: var(--bg);
+      border: 1px solid var(--border-light);
+      border-radius: 10px;
+      padding: 10px 12px;
+    }
+    .item-row select,
+    .item-row input { padding: 7px 10px; font-size: 13px; }
+
+    .item-stock-hint {
+      font-size: 11px; font-weight: 500;
+      margin-top: 4px; color: var(--text-secondary);
+      display: none;
+    }
+    .item-stock-hint.visible { display: block; }
+
+    .row-remove {
+      background: none; border: none; cursor: pointer;
+      color: var(--text-muted); font-size: 20px; line-height: 1;
+      padding: 4px; transition: color .12s;
+    }
     .row-remove:hover { color: var(--red); }
-    .btn-add-row { background: none; border: none; cursor: pointer; color: var(--brand); font-size: 12.5px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; margin-top: 10px; }
+
+    .btn-add-row {
+      background: none; border: none; cursor: pointer;
+      color: var(--brand); font-size: 12.5px; font-weight: 700;
+      display: inline-flex; align-items: center; gap: 4px;
+      margin-top: 10px; padding: 0;
+    }
+    .btn-add-row:hover { text-decoration: underline; }
+
+    .form-section-header {
+      font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .06em;
+      color: var(--text-muted);
+      margin: 18px 0 10px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .form-section-header::after {
+      content: ''; flex: 1; height: 1px; background: var(--border-light);
+    }
+
+    .info-banner-cotacao {
+      background: #f5f3ff;
+      border: 1px solid #ddd6fe;
+      color: #5b21b6;
+      border-radius: 8px;
+      padding: 9px 12px;
+      font-size: 12px;
+      margin-bottom: 14px;
+      font-weight: 500;
+    }
   </style>
 </head>
 <body>
@@ -63,67 +227,74 @@
 <div class="erp-shell">
   <div class="main-wrap">
 
-    <!-- TOPBAR COM DROPDOWN SETORIAL GLOBAL -->
-<header class="topbar">
-  <div class="topbar-logo">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-    <span>ERP Fabrica</span>
-  </div>
-  
-  <nav class="topbar-nav">
-    <div class="dropdown">
-      <button class="dropbtn">📊 COMERCIAL</button>
-      <div class="dropdown-content">
-        <a href="vendas.html">Vendas</a>
-        <a href="orcamentos.html">Orçamentos</a>
-        <a href="produtos.html">Produtos Finais</a>
-        <a href="clientes.html">Clientes</a>
+    <!-- TOPBAR GLOBAL PADRONIZADA (SEM SIDEBAR) -->
+    <header class="topbar">
+      <div class="topbar-logo">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        <span>ERP Fabrica</span>
       </div>
-    </div>
-    
-    <div class="dropdown">
-      <button class="dropbtn">📦 ESTOQUE</button>
-      <div class="dropdown-content">
-        <a href="almoxarifado.html">Matéria-Prima</a>
-        <a href="estoque_produtos.html">Produto Acabado</a>
-      </div>
-    </div>
-    
-    <div class="dropdown">
-      <button class="dropbtn">🏭 PRODUÇÃO</button>
-      <div class="dropdown-content">
-        <a href="planejamento.html">Planejamento Maestro</a>
-        <a href="ordens_producao.html">Fila de OPs</a>
-        <a href="receitas.html">Receitas (Preparos)</a>
-        <a href="colaboradores.html">Colaboradores</a>
-      </div>
-    </div>
-    
-    <div class="dropdown">
-      <button class="dropbtn">💰 FINANCEIRO</button>
-      <div class="dropdown-content">
-        <a href="financeiro.html">Fluxo de Caixa</a>
-        <a href="contas_receber.html">Contas a Receber</a>
-        <a href="contas_pagar.html">Contas a Pagar</a>
-      </div>
-    </div>
-  </nav>
 
-  <div class="topbar-right">
-    <span class="badge-online">● Sistema Online</span>
-    <div class="user-chip">
-      <div class="user-avatar">AD</div>
-    </div>
-  </div>
-</header>
+      <nav class="topbar-nav">
+        <div class="dropdown">
+          <button class="dropbtn" style="color:var(--brand)">📊 COMERCIAL</button>
+          <div class="dropdown-content">
+            <a href="vendas.html">Vendas</a>
+            <a href="orcamentos.html" class="active">Orçamentos</a>
+            <a href="produtos.html">Produtos Finais</a>
+            <a href="clientes.html">Clientes</a>
+          </div>
+        </div>
+
+        <div class="dropdown">
+          <button class="dropbtn">📦 ESTOQUE</button>
+          <div class="dropdown-content">
+            <a href="almoxarifado.html">Matéria-Prima</a>
+            <a href="estoque_produtos.html">Produto Acabado</a>
+          </div>
+        </div>
+
+        <div class="dropdown">
+          <button class="dropbtn">🏭 PRODUÇÃO</button>
+          <div class="dropdown-content">
+            <a href="planejamento.html">Planejamento Maestro</a>
+            <a href="ordens_producao.html">Fila de OPs</a>
+            <a href="receitas.html">Receitas (Preparos)</a>
+            <a href="colaboradores.html">Colaboradores</a>
+          </div>
+        </div>
+
+        <div class="dropdown">
+          <button class="dropbtn">💰 FINANCEIRO</button>
+          <div class="dropdown-content">
+            <a href="financeiro.html">Fluxo de Caixa</a>
+            <a href="contas_receber.html">Contas a Receber</a>
+            <a href="contas_pagar.html">Contas a Pagar</a>
+          </div>
+        </div>
+      </nav>
+
+      <div class="topbar-right">
+        <span class="badge-online">● Sistema Online</span>
+        <div class="user-chip">
+          <div class="user-avatar">AD</div>
+        </div>
+      </div>
+    </header>
 
     <div class="page-content">
+
       <div class="page-header">
         <div class="page-header-left">
-          <h1>Orçamentos Comerciais</h1>
-          <p>Elabore cotações para clientes B2B sem gerar Ordens de Produção ou baixar o estoque.</p>
+          <h1>Orçamentos Comerciais (Cotações B2B)</h1>
+          <p>Envie propostas comerciais sem alterar estoque ou gerar OPs — converta em Pedido de Venda com 1 clique ao fechar negócio.</p>
         </div>
         <div class="page-header-actions">
+          <div class="search-bar" style="width:260px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input type="text" id="input-busca" placeholder="Buscar cliente ou #ORC..." oninput="renderizarOrcamentos()" />
+          </div>
           <button class="btn btn-primary" onclick="openOrcamentoModal()">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
               <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
@@ -133,202 +304,610 @@
         </div>
       </div>
 
-      <div class="orcamentos-card">
-        <table>
-          <thead>
-            <tr>
-              <th style="width:80px">Cotação</th>
-              <th>Cliente</th>
-              <th>Data Prevista</th>
-              <th style="text-align:right">Valor Total</th>
-              <th style="text-align:center">Status</th>
-            </tr>
-          </thead>
-          <tbody id="orcamentos-tbody">
-            <tr>
-              <td colspan="5" style="text-align:center;padding:40px;color:var(--text-muted)">Carregando orçamentos...</td>
-            </tr>
-          </tbody>
-        </table>
+      <!-- FILTROS DE STATUS -->
+      <div class="filter-pills">
+        <button type="button" class="pill active" onclick="filtrarStatus('', this)" id="pill-todos">Todos</button>
+        <button type="button" class="pill" onclick="filtrarStatus('PENDENTE', this)" id="pill-pendente">🟡 Pendentes</button>
+        <button type="button" class="pill" onclick="filtrarStatus('APROVADO', this)" id="pill-aprovado">🟢 Aprovados</button>
+        <button type="button" class="pill" onclick="filtrarStatus('RECUSADO', this)" id="pill-recusado">🔴 Recusados</button>
       </div>
-    </div>
 
+      <!-- TABELA DE ORÇAMENTOS -->
+      <div class="orcamentos-card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:95px">#ID</th>
+                <th>Cliente</th>
+                <th>Validade da Proposta</th>
+                <th>Itens</th>
+                <th style="text-align:right">Valor Total</th>
+                <th style="text-align:center">Status</th>
+                <th style="text-align:right;width:300px">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="orcamentos-tbody">
+              <tr>
+                <td colspan="7" style="text-align:center;padding:50px;color:var(--text-muted)">
+                  <div class="spinner" style="margin:0 auto 12px"></div>
+                  Carregando orçamentos...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
   </div>
 </div>
 
-<!-- MODAL ORÇAMENTO -->
-<div class="modal-overlay" id="orc-modal-overlay" onclick="if(event.target===this)closeOrcamentoModal()">
+<!-- ==================== MODAL CENTRALIZADO: NOVO ORÇAMENTO (680px) ==================== -->
+<div class="modal-overlay" id="orc-modal-overlay">
   <div class="modal-box">
     <div class="modal-header">
-      <h3>📄 Criar Novo Orçamento Comercial</h3>
-      <button class="modal-close" onclick="closeOrcamentoModal()">✕</button>
+      <h3>📄 Novo Orçamento Comercial (B2B)</h3>
+      <button class="modal-close" type="button" onclick="closeOrcamentoModal()">✕</button>
     </div>
+
     <div class="modal-body">
       <form id="form-orcamento" onsubmit="salvarOrcamento(event)">
+
+        <div class="info-banner-cotacao">
+          🛡️ <strong>Modo Cotação Segura:</strong> Salvar este orçamento <strong>não reserva estoque</strong> da Câmara Fria nem gera Ordens de Produção até que o cliente aprove.
+        </div>
+
         <div class="form-row cols-2">
           <div class="form-group">
             <label>Cliente *</label>
-            <select id="orc-cliente" required></select>
+            <select id="orc-cliente" required>
+              <option value="">Selecione o cliente...</option>
+            </select>
           </div>
           <div class="form-group">
-            <label>Data Validade/Entrega *</label>
-            <input type="date" id="orc-data" required />
+            <label>Validade da Proposta *</label>
+            <input type="date" id="orc-validade" required />
           </div>
         </div>
 
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-muted);margin:16px 0 8px">
-          🛒 Itens Cotados
+        <div class="form-section-header">🛒 Itens Cotados</div>
+
+        <div style="display:grid;grid-template-columns:1fr 90px 125px auto;gap:8px;padding:0 4px;margin-bottom:4px">
+          <span style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase">Produto</span>
+          <span style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase">Qtd (un)</span>
+          <span style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase">Preço Unit.</span>
+          <span></span>
         </div>
 
-        <div id="item-rows"></div>
+        <div class="item-rows" id="item-rows"></div>
 
-        <button type="button" class="btn-add-row" onclick="adicionarLinhaItem()">+ Adicionar Produto</button>
+        <button type="button" class="btn-add-row" onclick="adicionarLinhaItem()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          Adicionar produto
+        </button>
+
+        <div class="form-group" style="margin-top:16px;margin-bottom:0">
+          <label>Observações / Condições Comerciais (Opcional)</label>
+          <input type="text" id="orc-observacao" maxlength="300" placeholder="Ex: Frete incluso, pagamento em 7 dias via boleto..." />
+        </div>
+
       </form>
     </div>
 
     <div class="modal-footer">
-      <div style="font-size:15px;font-weight:700">Total: <span id="orc-total">R$ 0,00</span></div>
-      <div style="display:flex;gap:8px">
-        <button class="btn btn-outline" onclick="closeOrcamentoModal()">Cancelar</button>
-        <button class="btn btn-primary" onclick="document.getElementById('form-orcamento').requestSubmit()">Salvar Orçamento</button>
+      <div class="modal-footer-total">
+        Total Cotado: <span id="orc-total" style="color:var(--brand)">R$ 0,00</span>
       </div>
+      <div class="modal-footer-actions">
+        <button class="btn btn-outline" type="button" onclick="closeOrcamentoModal()">Cancelar</button>
+        <button class="btn btn-primary" type="button" onclick="document.getElementById('form-orcamento').requestSubmit()">
+          Salvar Orçamento
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== MODAL RÁPIDO: APROVAR ORÇAMENTO -> PEDIDO ==================== -->
+<div class="modal-overlay" id="aprovar-modal-overlay">
+  <div class="modal-box" style="width:460px">
+    <div class="modal-header">
+      <h3>✅ Aprovar Orçamento &amp; Gerar Pedido</h3>
+      <button class="modal-close" type="button" onclick="closeAprovarModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <form id="form-aprovar-orcamento" onsubmit="confirmarAprovacaoOrcamento(event)">
+        <input type="hidden" id="aprovar-orc-id" />
+
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:16px">
+          <div id="aprovar-resumo-titulo" style="font-weight:700;font-size:14px;color:var(--text-primary)">#ORC-0</div>
+          <div id="aprovar-resumo-cliente" style="font-size:12.5px;color:var(--text-secondary);margin-top:2px">—</div>
+          <div id="aprovar-resumo-valor" style="font-size:16px;font-weight:800;color:var(--green);margin-top:6px">R$ 0,00</div>
+        </div>
+
+        <div class="form-group" style="margin-bottom:8px">
+          <label>Data de Entrega Esperada do Pedido *</label>
+          <input type="date" id="aprovar-data-entrega" required />
+          <div style="font-size:11.5px;color:var(--text-secondary);margin-top:6px;line-height:1.4">
+            ⚙️ Ao confirmar, o ERP baixará automaticamente o saldo disponível na Câmara Fria e criará as <strong>Ordens de Produção (OPs)</strong> para os itens faltantes.
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer" style="justify-content:flex-end">
+      <button class="btn btn-outline" type="button" onclick="closeAprovarModal()">Cancelar</button>
+      <button class="btn btn-aprovar" type="button" onclick="document.getElementById('form-aprovar-orcamento').requestSubmit()">
+        ✅ Confirmar &amp; Converter em Pedido
+      </button>
     </div>
   </div>
 </div>
 
 <script>
-  const API_PEDIDOS  = 'http://localhost:3001/api/comercial/pedidos';
-  const API_CLIENTES = 'http://localhost:3001/api/comercial/clientes';
-  const API_PRODUTOS = 'http://localhost:3001/api/produtos';
+  const API_ORCAMENTOS = 'http://localhost:3001/api/comercial/orcamentos';
+  const API_CLIENTES   = 'http://localhost:3001/api/comercial/clientes';
+  const API_PRODUTOS   = 'http://localhost:3001/api/produtos';
 
-  let todosClientes = [];
-  let todosProdutos = [];
+  let todosOrcamentos = [];
+  let todosClientes   = [];
+  let todosProdutos   = [];
+  let filtroStatus    = '';
 
-  function formatarDinheiro(val) { return Number(val||0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
-  function formatarData(dStr) { return dStr ? new Date(dStr).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : '—'; }
-
-  function showToast(msg, type='') {
-    const el = document.createElement('div'); el.className = 'toast ' + type; el.textContent = msg;
-    document.getElementById('toast-container').appendChild(el); setTimeout(() => el.remove(), 4000);
+  /* ======================== FORMATAÇÃO & MOEDA ======================== */
+  function formatarDinheiro(val) {
+    return Number(val || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   }
 
-  async function carregarDados() {
-    try {
-      const [rPed, rCli, rPro] = await Promise.all([fetch(API_PEDIDOS), fetch(API_CLIENTES), fetch(API_PRODUTOS)]);
-      const pedidos  = await rPed.json();
-      todosClientes = await rCli.json();
-      todosProdutos = await rPro.json();
+  function formatarData(dStr) {
+    if (!dStr) return '—';
+    const iso = String(dStr).slice(0, 10);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) {
+      const [y, m, d] = iso.split('-');
+      return `${d}/${m}/${y}`;
+    }
+    return new Date(dStr).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+  }
 
-      const orcamentos = pedidos.filter(p => p.status === 'ORCAMENTO');
-      const tbody = document.getElementById('orcamentos-tbody');
+  function parseMoeda(valor) {
+    if (typeof valor === 'number') return isNaN(valor) ? 0 : valor;
+    if (!valor) return 0;
+    let str = String(valor).replace(/[R$\s]/g, '');
+    if (str.includes(',') && str.includes('.')) {
+      str = str.replace(/\./g, '').replace(',', '.');
+    } else if (str.includes(',')) {
+      str = str.replace(',', '.');
+    }
+    const num = parseFloat(str);
+    return isNaN(num) ? 0 : num;
+  }
 
-      if (!orcamentos.length) {
-        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text-muted)">Nenhum orçamento cadastrado. Clique em + Novo Orçamento.</td></tr>`;
-        return;
-      }
-
-      tbody.innerHTML = orcamentos.map(o => `
-        <tr>
-          <td><span style="font-weight:700;color:var(--brand)">#ORC-${o.id}</span></td>
-          <td><strong>${o.razao_social}</strong></td>
-          <td>${formatarData(o.data_entrega)}</td>
-          <td style="text-align:right;font-weight:700">${formatarDinheiro(o.valor_total)}</td>
-          <td style="text-align:center"><span class="badge badge-amber">📄 Em Orçamento</span></td>
-        </tr>
-      `).join('');
-    } catch {
-      showToast('Erro ao carregar dados na porta 3001', 'error');
+  function formatarInputMoeda(el) {
+    const val = parseMoeda(el.value);
+    if (el.value && el.value.trim() !== '' && !isNaN(val) && val > 0) {
+      el.value = val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     }
   }
 
+  function limparInputMoeda(el) {
+    if (!el.value) return;
+    const val = parseMoeda(el.value);
+    if (!isNaN(val) && val > 0) {
+      el.value = val.toFixed(2).replace('.', ',');
+    } else if (el.value.trim() === 'R$ 0,00' || val === 0) {
+      el.value = '';
+    }
+  }
+
+  function showToast(msg, type = '') {
+    const el = document.createElement('div');
+    el.className = 'toast ' + type;
+    el.textContent = msg;
+    document.getElementById('toast-container').appendChild(el);
+    setTimeout(() => el.remove(), 4500);
+  }
+
+  /* ======================== CARREGAR DADOS ======================== */
+  async function carregarDados() {
+    try {
+      const [rOrc, rCli, rPro] = await Promise.all([
+        fetch(API_ORCAMENTOS),
+        fetch(API_CLIENTES),
+        fetch(API_PRODUTOS)
+      ]);
+      todosOrcamentos = await rOrc.json();
+      todosClientes   = await rCli.json();
+      todosProdutos   = await rPro.json();
+
+      atualizarContadoresPills();
+      renderizarOrcamentos();
+    } catch {
+      document.getElementById('orcamentos-tbody').innerHTML =
+        `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--red)">
+          ⚠️ Erro ao conectar com o servidor na porta 3001.
+        </td></tr>`;
+    }
+  }
+
+  function atualizarContadoresPills() {
+    const tot = todosOrcamentos.length;
+    const pend = todosOrcamentos.filter(o => o.status === 'PENDENTE').length;
+    const apro = todosOrcamentos.filter(o => o.status === 'APROVADO').length;
+    const recu = todosOrcamentos.filter(o => o.status === 'RECUSADO').length;
+
+    document.getElementById('pill-todos').textContent    = `Todos (${tot})`;
+    document.getElementById('pill-pendente').textContent = `🟡 Pendentes (${pend})`;
+    document.getElementById('pill-aprovado').textContent = `🟢 Aprovados (${apro})`;
+    document.getElementById('pill-recusado').textContent = `🔴 Recusados (${recu})`;
+  }
+
+  function filtrarStatus(status, el) {
+    filtroStatus = status;
+    document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    renderizarOrcamentos();
+  }
+
+  /* ======================== RENDERIZAR TABELA ======================== */
+  function renderizarOrcamentos() {
+    const busca = (document.getElementById('input-busca').value || '').toLowerCase().trim();
+    const tbody = document.getElementById('orcamentos-tbody');
+
+    const filtrados = todosOrcamentos.filter(o => {
+      const matchStatus = !filtroStatus || o.status === filtroStatus;
+      const codigoStr = `#orc-${o.id}`;
+      const matchBusca = !busca ||
+        (o.razao_social || '').toLowerCase().includes(busca) ||
+        String(o.id).includes(busca) ||
+        codigoStr.includes(busca);
+      return matchStatus && matchBusca;
+    });
+
+    if (!filtrados.length) {
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:50px;color:var(--text-muted)">
+        Nenhum orçamento encontrado para este filtro. Clique em <strong>+ Novo Orçamento</strong> para criar uma proposta.
+      </td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = filtrados.map(o => {
+      const st = (o.status || 'PENDENTE').toUpperCase();
+      let badgeHtml = '';
+      if (st === 'PENDENTE') {
+        badgeHtml = `<span class="badge-orc pendente">🟡 Pendente</span>`;
+      } else if (st === 'APROVADO') {
+        badgeHtml = `
+          <div><span class="badge-orc aprovado">🟢 Aprovado</span></div>
+          ${o.pedido_id ? `<a href="vendas.html" class="pedido-link-chip" title="Ver na tela de Pedidos">Pedido #${o.pedido_id}</a>` : ''}
+        `;
+      } else {
+        badgeHtml = `<span class="badge-orc recusado">🔴 Recusado</span>`;
+      }
+
+      const resumoItens = Array.isArray(o.itens) && o.itens.length
+        ? o.itens.map(i => `${i.quantidade}x ${i.produto_nome}`).join(', ')
+        : `${o.total_itens || 0} produto(s)`;
+
+      const validadeAviso = (st === 'PENDENTE' && o.vencido)
+        ? `<div style="font-size:11px;color:var(--red);font-weight:600;margin-top:2px">⚠️ Proposta expirada</div>`
+        : '';
+
+      const acoesPendentes = st === 'PENDENTE'
+        ? `
+          <button type="button" class="btn btn-sm btn-aprovar" onclick="openAprovarModal(${o.id})">✅ Aprovar Pedido</button>
+          <button type="button" class="btn btn-sm btn-recusar" onclick="recusarOrcamento(${o.id})">❌ Recusar</button>
+        `
+        : '';
+
+      return `
+        <tr>
+          <td><span class="orc-id">#ORC-${o.id}</span></td>
+          <td>
+            <div class="orc-cliente">${o.razao_social}</div>
+            ${o.observacao ? `<div class="orc-sub">💬 ${o.observacao}</div>` : (o.telefone ? `<div class="orc-sub">📞 ${o.telefone}</div>` : '')}
+          </td>
+          <td>
+            <div style="font-weight:600">${formatarData(o.data_validade)}</div>
+            ${validadeAviso}
+          </td>
+          <td>
+            <span class="badge badge-gray">${o.total_itens || 0} item(ns) • ${o.total_unidades || 0} un</span>
+            <div class="orc-sub" style="max-width:240px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${resumoItens.replace(/"/g, '&quot;')}">${resumoItens}</div>
+          </td>
+          <td style="text-align:right"><span class="orc-valor">${formatarDinheiro(o.valor_total)}</span></td>
+          <td style="text-align:center">${badgeHtml}</td>
+          <td style="text-align:right">
+            <div class="acoes-group">
+              ${acoesPendentes}
+              <button type="button" class="btn btn-sm btn-whats" onclick="enviarWhatsApp(${o.id})" title="Gerar proposta formatada para WhatsApp">📱 WhatsApp</button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  /* ======================== MODAL NOVO ORÇAMENTO ======================== */
   function openOrcamentoModal() {
+    if (!todosClientes.length) {
+      showToast('Cadastre pelo menos um cliente na aba Clientes antes de criar um orçamento.', 'error');
+      return;
+    }
+    if (!todosProdutos.length) {
+      showToast('Cadastre pelo menos um produto final antes de criar um orçamento.', 'error');
+      return;
+    }
+
     document.getElementById('form-orcamento').reset();
     document.getElementById('item-rows').innerHTML = '';
     document.getElementById('orc-total').textContent = 'R$ 0,00';
 
     const sel = document.getElementById('orc-cliente');
-    sel.innerHTML = '<option value="">Selecione o cliente...</option>' + todosClientes.map(c => `<option value="${c.id}">${c.razao_social}</option>`).join('');
+    sel.innerHTML = '<option value="">Selecione o cliente...</option>' +
+      todosClientes.map(c => `<option value="${c.id}">${c.razao_social}</option>`).join('');
 
-    const amanha = new Date(); amanha.setDate(amanha.getDate() + 7);
-    document.getElementById('orc-data').value = amanha.toISOString().split('T')[0];
+    const validadePadrao = new Date();
+    validadePadrao.setDate(validadePadrao.getDate() + 7);
+    document.getElementById('orc-validade').value = validadePadrao.toISOString().slice(0, 10);
 
     adicionarLinhaItem();
     document.getElementById('orc-modal-overlay').classList.add('open');
   }
 
-  function closeOrcamentoModal() { document.getElementById('orc-modal-overlay').classList.remove('open'); }
+  function closeOrcamentoModal() {
+    document.getElementById('orc-modal-overlay').classList.remove('open');
+  }
 
   function adicionarLinhaItem() {
     const container = document.getElementById('item-rows');
-    const rowId = 'row-' + Date.now() + '-' + Math.random().toString(36).slice(2, 5);
+    const rowId = 'row-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
     const div = document.createElement('div');
-    div.className = 'item-row'; div.id = rowId;
+    div.className = 'item-row';
+    div.id = rowId;
 
     let opts = '<option value="">Selecione o produto...</option>';
-    todosProdutos.forEach(p => opts += `<option value="${p.id}" data-preco="${p.preco_venda}">${p.nome}</option>`);
+    todosProdutos.forEach(p => {
+      opts += `<option value="${p.id}" data-preco="${p.preco_venda || 0}" data-estoque="${p.estoque_atual || 0}">${p.nome}</option>`;
+    });
 
     div.innerHTML = `
-      <select class="prod-sel" required onchange="onProdChange('${rowId}')">${opts}</select>
-      <input type="number" class="qtd-inp" min="1" value="1" required oninput="recalcTotal()" />
-      <input type="number" class="preco-inp" min="0" step="0.01" required oninput="recalcTotal()" />
-      <button type="button" class="row-remove" onclick="this.parentElement.remove();recalcTotal()">×</button>
+      <div>
+        <select class="prod-sel" required onchange="onProdChange('${rowId}')">${opts}</select>
+        <div class="item-stock-hint" id="hint-${rowId}"></div>
+      </div>
+      <input type="number" class="qtd-inp" min="1" step="1" value="10" required oninput="recalcTotal()" />
+      <input type="text" inputmode="decimal" class="preco-inp" placeholder="R$ 0,00" required
+             onfocus="limparInputMoeda(this)" onblur="formatarInputMoeda(this); recalcTotal();" oninput="recalcTotal()" />
+      <button type="button" class="row-remove" title="Remover item" onclick="removerLinhaItem('${rowId}')">×</button>
     `;
     container.appendChild(div);
   }
 
+  function removerLinhaItem(rowId) {
+    const rows = document.querySelectorAll('#item-rows .item-row');
+    if (rows.length <= 1) {
+      showToast('O orçamento precisa ter pelo menos 1 produto.', 'error');
+      return;
+    }
+    const el = document.getElementById(rowId);
+    if (el) el.remove();
+    recalcTotal();
+  }
+
   function onProdChange(rowId) {
     const row = document.getElementById(rowId);
+    if (!row) return;
     const sel = row.querySelector('.prod-sel');
+    const hint = document.getElementById(`hint-${rowId}`);
     const opt = sel.options[sel.selectedIndex];
-    const preco = opt ? parseFloat(opt.dataset.preco || 0) : 0;
-    row.querySelector('.preco-inp').value = preco ? preco.toFixed(2) : '';
+
+    if (!opt || !opt.value) {
+      row.querySelector('.preco-inp').value = '';
+      if (hint) hint.classList.remove('visible');
+      recalcTotal();
+      return;
+    }
+
+    const preco = parseFloat(opt.dataset.preco || 0);
+    const estoque = parseInt(opt.dataset.estoque || 0, 10);
+
+    row.querySelector('.preco-inp').value = preco > 0
+      ? preco.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+      : '';
+
+    if (hint) {
+      hint.textContent = `❄️ Câmara Fria atual: ${estoque} un (informativo)`;
+      hint.classList.add('visible');
+    }
     recalcTotal();
   }
 
   function recalcTotal() {
     let tot = 0;
-    document.querySelectorAll('.item-row').forEach(r => {
-      const q = parseFloat(r.querySelector('.qtd-inp').value || 0);
-      const p = parseFloat(r.querySelector('.preco-inp').value || 0);
-      tot += q * p;
+    document.querySelectorAll('#item-rows .item-row').forEach(r => {
+      const q = parseInt(r.querySelector('.qtd-inp').value || 0, 10);
+      const p = parseMoeda(r.querySelector('.preco-inp').value);
+      if (q > 0 && p > 0) {
+        tot += q * p;
+      }
     });
     document.getElementById('orc-total').textContent = formatarDinheiro(tot);
   }
 
   async function salvarOrcamento(e) {
     e.preventDefault();
-    const clienteId = document.getElementById('orc-cliente').value;
-    const data      = document.getElementById('orc-data').value;
-    const rows      = document.querySelectorAll('.item-row');
+    const clienteId = parseInt(document.getElementById('orc-cliente').value, 10);
+    const validade  = document.getElementById('orc-validade').value;
+    const obs       = document.getElementById('orc-observacao').value.trim();
+    const rows      = document.querySelectorAll('#item-rows .item-row');
+
+    if (!clienteId || !validade) {
+      showToast('Selecione o cliente e a validade da proposta.', 'error');
+      return;
+    }
 
     const itens = [];
-    rows.forEach(r => {
-      const pid = r.querySelector('.prod-sel').value;
-      const q   = parseFloat(r.querySelector('.qtd-inp').value);
-      const p   = parseFloat(r.querySelector('.preco-inp').value);
-      if (pid && q && p) itens.push({ produto_id: parseInt(pid, 10), quantidade: q, preco_unitario: p });
-    });
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i];
+      const pid = parseInt(r.querySelector('.prod-sel').value, 10);
+      const q   = parseInt(r.querySelector('.qtd-inp').value, 10);
+      const p   = parseMoeda(r.querySelector('.preco-inp').value);
 
-    if (!itens.length) { showToast('Preencha os itens do orçamento.', 'error'); return; }
+      if (!pid || isNaN(q) || q <= 0 || isNaN(p) || p <= 0) {
+        showToast(`Item #${i + 1}: preencha produto, quantidade e preço unitário.`, 'error');
+        return;
+      }
+      itens.push({ produto_id: pid, quantidade: q, preco_unitario: p });
+    }
 
     try {
-      const res = await fetch(API_PEDIDOS, {
+      const res = await fetch(API_ORCAMENTOS, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cliente_id: parseInt(clienteId, 10), data_entrega: data, itens, is_orcamento: true })
+        body: JSON.stringify({
+          cliente_id: clienteId,
+          data_validade: validade,
+          observacao: obs || null,
+          itens
+        })
       });
+      const data = await res.json();
+
       if (res.ok) {
-        showToast('✅ Orçamento salvo com sucesso!', 'success');
+        showToast(`✅ ${data.mensagem}`, 'success');
         closeOrcamentoModal();
-        carregarDados();
+        await carregarDados();
       } else {
-        showToast('Erro ao salvar orçamento.', 'error');
+        showToast(data.erro || 'Erro ao salvar orçamento.', 'error');
       }
     } catch {
-      showToast('Erro de conexão.', 'error');
+      showToast('Erro de conexão com o servidor.', 'error');
     }
   }
 
+  /* ======================== APROVAR ORÇAMENTO -> PEDIDO ======================== */
+  function openAprovarModal(orcId) {
+    const orc = todosOrcamentos.find(o => o.id === orcId);
+    if (!orc) return;
+
+    document.getElementById('aprovar-orc-id').value = orc.id;
+    document.getElementById('aprovar-resumo-titulo').textContent  = `Cotação #ORC-${orc.id}`;
+    document.getElementById('aprovar-resumo-cliente').textContent = `Cliente: ${orc.razao_social} (${orc.total_unidades || 0} un)`;
+    document.getElementById('aprovar-resumo-valor').textContent   = formatarDinheiro(orc.valor_total);
+
+    const entregaSugerida = new Date();
+    entregaSugerida.setDate(entregaSugerida.getDate() + 3);
+    document.getElementById('aprovar-data-entrega').value = entregaSugerida.toISOString().slice(0, 10);
+
+    document.getElementById('aprovar-modal-overlay').classList.add('open');
+  }
+
+  function closeAprovarModal() {
+    document.getElementById('aprovar-modal-overlay').classList.remove('open');
+  }
+
+  async function confirmarAprovacaoOrcamento(e) {
+    e.preventDefault();
+    const orcId = parseInt(document.getElementById('aprovar-orc-id').value, 10);
+    const dataEntrega = document.getElementById('aprovar-data-entrega').value;
+
+    if (!orcId || !dataEntrega) {
+      showToast('Informe a data de entrega esperada.', 'error');
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_ORCAMENTOS}/${orcId}/aprovar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data_entrega: dataEntrega })
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        showToast(`🎉 ${data.mensagem}`, 'success');
+        closeAprovarModal();
+        await carregarDados();
+      } else {
+        showToast(data.erro || 'Erro ao aprovar orçamento.', 'error');
+      }
+    } catch {
+      showToast('Erro de conexão com o servidor.', 'error');
+    }
+  }
+
+  /* ======================== RECUSAR ORÇAMENTO ======================== */
+  async function recusarOrcamento(orcId) {
+    if (!confirm(`Deseja realmente marcar o orçamento #ORC-${orcId} como RECUSADO?`)) return;
+
+    try {
+      const res = await fetch(`${API_ORCAMENTOS}/${orcId}/recusar`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        showToast(`❌ ${data.mensagem}`);
+        await carregarDados();
+      } else {
+        showToast(data.erro || 'Erro ao recusar orçamento.', 'error');
+      }
+    } catch {
+      showToast('Erro de conexão com o servidor.', 'error');
+    }
+  }
+
+  /* ======================== GERAR PROPOSTA WHATSAPP ======================== */
+  async function enviarWhatsApp(orcId) {
+    let orc = todosOrcamentos.find(o => o.id === orcId);
+    if (!orc || !Array.isArray(orc.itens) || !orc.itens.length) {
+      try {
+        const res = await fetch(`${API_ORCAMENTOS}/${orcId}`);
+        if (res.ok) orc = await res.json();
+      } catch { /* fallback local */ }
+    }
+    if (!orc) return;
+
+    const linhasItens = (orc.itens || []).map(item => {
+      const sub = Number(item.quantidade) * Number(item.preco_unitario);
+      return `• *${item.quantidade} un* — ${item.produto_nome} (${formatarDinheiro(item.preco_unitario)}/un) = *${formatarDinheiro(sub)}*`;
+    }).join('\n');
+
+    const msg = [
+      `📄 *PROPOSTA COMERCIAL #ORC-${orc.id}*`,
+      `🏢 *Cliente:* ${orc.razao_social}`,
+      `📅 *Validade da Proposta:* ${formatarData(orc.data_validade)}`,
+      ``,
+      `🛒 *Itens Cotados:*`,
+      linhasItens,
+      ``,
+      `💰 *VALOR TOTAL:* *${formatarDinheiro(orc.valor_total)}*`,
+      orc.observacao ? `\n📝 *Condições / Obs:* ${orc.observacao}` : '',
+      ``,
+      `Ficamos à disposição para confirmar seu pedido! 🤝`
+    ].filter(Boolean).join('\n');
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(msg).catch(() => {});
+    }
+
+    const foneLimpo = String(orc.telefone || '').replace(/\D/g, '');
+    const numeroWhats = foneLimpo.length >= 10
+      ? (foneLimpo.startsWith('55') ? foneLimpo : `55${foneLimpo}`)
+      : '';
+
+    const url = numeroWhats
+      ? `https://wa.me/${numeroWhats}?text=${encodeURIComponent(msg)}`
+      : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+
+    showToast('📱 Proposta comercial copiada e pronta para envio no WhatsApp!', 'success');
+    window.open(url, '_blank');
+  }
+
+  /* ======================== INIT ======================== */
   window.onload = carregarDados;
 </script>
 </body>

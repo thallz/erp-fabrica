@@ -291,7 +291,7 @@
 </div>
 
 <!-- ==================== MODAL CENTRALIZADO DE PRODUTO (650px) ==================== -->
-<div class="modal-overlay" id="produto-modal-overlay" onclick="closeProdutoModalOnBackdrop(event)">
+<div class="modal-overlay" id="produto-modal-overlay">
   <div class="modal-box modal-lg">
     <div class="modal-header">
       <h3 id="produto-modal-title">
@@ -317,7 +317,8 @@
           <div class="form-row cols-2">
             <div class="form-group">
               <label>Preço de Venda (R$) *</label>
-              <input type="number" id="produto-preco" step="0.01" min="0" required placeholder="8,50" oninput="recalcFinancialSummary()" />
+              <input type="text" inputmode="decimal" id="produto-preco" required placeholder="Ex: R$ 8,50"
+                onfocus="limparInputMoeda(this)" onblur="formatarInputMoeda(this); recalcFinancialSummary();" oninput="recalcFinancialSummary()" />
             </div>
             <div class="form-group">
               <label>Produtividade (Pts) *</label>
@@ -421,7 +422,7 @@
 </div>
 
 <!-- MODAL CATEGORIAS -->
-<div class="modal-overlay" id="cat-modal-overlay" onclick="closeCatModalOnBackdrop(event)">
+<div class="modal-overlay" id="cat-modal-overlay">
   <div class="modal-box">
     <div class="modal-header">
       <h3 id="cat-modal-title">⚙️ Categorias de Produto</h3>
@@ -508,10 +509,6 @@
     const selectId = 'produto-categoria';
     const atual = document.getElementById(selectId).value;
     carregarCategoriaSelect(catTipoAtivo, selectId, atual);
-  }
-
-  function closeCatModalOnBackdrop(event) {
-    if (event.target === document.getElementById('cat-modal-overlay')) closeCatModal();
   }
 
   async function renderCatList() {
@@ -663,7 +660,8 @@
         document.getElementById('produto-modal-title').innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Editar Produto`;
         document.getElementById('produto-id').value = p.id;
         document.getElementById('produto-nome').value = p.nome;
-        document.getElementById('produto-preco').value = parseFloat(p.preco_venda || 0);
+        const precoV = parseFloat(p.preco_venda || 0);
+        document.getElementById('produto-preco').value = precoV > 0 ? precoV.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '';
         document.getElementById('produto-peso-prod').value = parseFloat(p.peso_produtividade || 1.0);
         document.getElementById('produto-embalagem').value = p.embalagem_id || '';
         document.getElementById('produto-capacidade-emb').value = parseFloat(p.capacidade_embalagem || 1);
@@ -687,6 +685,7 @@
       }
     } else {
       document.getElementById('produto-modal-title').innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg> Novo Produto`;
+      document.getElementById('produto-preco').value = '';
       adicionarLinhaFicha();
     }
 
@@ -701,16 +700,71 @@
   }
   function closeDrawer() { closeProdutoModal(); }
 
-  function closeProdutoModalOnBackdrop(event) {
-    if (event.target === document.getElementById('produto-modal-overlay')) closeProdutoModal();
+  /* ======================== UTILITÁRIOS DE MOEDA E PESO ======================== */
+  function parseMoeda(valor) {
+    if (typeof valor === 'number') return isNaN(valor) ? 0 : valor;
+    if (!valor) return 0;
+    let str = String(valor).replace(/[R$\s]/g, '');
+    if (str.includes(',') && str.includes('.')) {
+      str = str.replace(/\./g, '').replace(',', '.');
+    } else if (str.includes(',')) {
+      str = str.replace(',', '.');
+    }
+    const num = parseFloat(str);
+    return isNaN(num) ? 0 : num;
   }
 
-  window.addEventListener('keydown', e => {
-    if (e.key === 'Escape') {
-      closeProdutoModal();
-      closeCatModal();
+  function formatarInputMoeda(el) {
+    const val = parseMoeda(el.value);
+    if (el.value && el.value.trim() !== '' && !isNaN(val) && val > 0) {
+      el.value = val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     }
-  });
+  }
+
+  function limparInputMoeda(el) {
+    if (!el.value) return;
+    const val = parseMoeda(el.value);
+    if (!isNaN(val) && val > 0) {
+      el.value = val.toFixed(2).replace('.', ',');
+    } else if (el.value.trim() === 'R$ 0,00' || val === 0) {
+      el.value = '';
+    }
+  }
+
+  function atualizarBadgePesoGramas(el, badgeId) {
+    const badge = document.getElementById(badgeId);
+    if (!badge) return;
+    const val = parseFloat(String(el.value).replace(',', '.'));
+    if (isNaN(val) || val <= 0) {
+      badge.style.display = 'none';
+      return;
+    }
+    if (val >= 1000) {
+      const kg = (val / 1000.0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      badge.innerHTML = `⚖️ <span>Equivale a <strong>${kg} kg</strong></span>`;
+    } else {
+      badge.innerHTML = `⚖️ <span><strong>${Math.round(val)} g</strong></span>`;
+    }
+    badge.style.display = 'inline-flex';
+  }
+
+  function atualizarHintGramasLinha(el) {
+    const parent = el.parentNode;
+    const badge = parent ? parent.querySelector('.row-peso-hint') : null;
+    if (!badge) return;
+    const val = parseFloat(String(el.value).replace(',', '.'));
+    if (isNaN(val) || val <= 0) {
+      badge.style.display = 'none';
+      return;
+    }
+    if (val >= 1000) {
+      const kg = (val / 1000.0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      badge.innerHTML = `⚖️ <span>Equivale a <strong>${kg} kg</strong></span>`;
+    } else {
+      badge.innerHTML = `⚖️ <span><strong>${Math.round(val)} g</strong></span>`;
+    }
+    badge.style.display = 'inline-flex';
+  }
 
   function popularEmbalagemSelect() {
     const sel = document.getElementById('produto-embalagem');
@@ -740,11 +794,21 @@
       <select class="receita-select" required onchange="updateFichaRowCost('${rowId}')">
         ${options}
       </select>
-      <input type="number" class="qtd-input" step="0.1" min="0.1" value="${gVal}" placeholder="Ex: 60" required oninput="updateFichaRowCost('${rowId}')" />
+      <div style="position:relative">
+        <input type="number" class="qtd-input" step="0.1" min="0.1" value="${gVal}" placeholder="Ex: 60" required
+               style="width:100%"
+               onblur="atualizarHintGramasLinha(this)"
+               oninput="atualizarHintGramasLinha(this); updateFichaRowCost('${rowId}')" />
+        <div class="row-peso-hint badge-peso-hint" style="display:none;position:absolute;top:100%;left:0;z-index:10;white-space:nowrap;font-size:10px;padding:2px 5px;margin-top:2px;box-shadow:0 2px 5px rgba(0,0,0,0.12)"></div>
+      </div>
       <span class="row-cost-cell" style="font-size:12px;font-weight:600;text-align:right">R$ 0,00</span>
       <button type="button" class="row-remove-btn" onclick="document.getElementById('${rowId}').remove(); recalcFinancialSummary()">×</button>`;
     
     container.appendChild(div);
+    if (gVal) {
+      const inputEl = div.querySelector('.qtd-input');
+      if (inputEl) atualizarHintGramasLinha(inputEl);
+    }
     updateFichaRowCost(rowId);
   }
 
@@ -787,7 +851,7 @@
     document.getElementById('label-rateio-emb').textContent = `${formatarDinheiro(rateioEmb)} / un`;
 
     const custoTotal   = custoIngredientes + rateioEmb;
-    const precoVenda   = parseFloat(document.getElementById('produto-preco').value || 0);
+    const precoVenda   = parseMoeda(document.getElementById('produto-preco').value);
     const precoSugerido = custoTotal * 2.5;
 
     const margemBruta = precoVenda - custoTotal;
@@ -839,7 +903,7 @@
 
     const body = {
       nome: document.getElementById('produto-nome').value.trim(),
-      preco_venda: parseFloat(document.getElementById('produto-preco').value),
+      preco_venda: parseMoeda(document.getElementById('produto-preco').value),
       peso_produtividade: parseFloat(document.getElementById('produto-peso-prod').value),
       categoria: catValue,
       categoria_producao: catValue,

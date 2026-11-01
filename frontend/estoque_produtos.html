@@ -3,11 +3,53 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Estoque de Produtos Acabados — ERP Fabrica</title>
+  <title>Câmara Fria — Estoque de Produtos Acabados — ERP Fabrica</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/global.css" />
   <style>
+    /* Abas Superiores de Navegação Interna */
+    .subtabs-bar {
+      display: flex;
+      gap: 6px;
+      border-bottom: 2px solid var(--border);
+      margin-bottom: 22px;
+    }
+    .subtab-btn {
+      background: none;
+      border: none;
+      padding: 11px 18px;
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      cursor: pointer;
+      border-bottom: 2.5px solid transparent;
+      margin-bottom: -2px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: color .15s, border-color .15s, background .15s;
+      border-radius: 8px 8px 0 0;
+    }
+    .subtab-btn:hover {
+      color: var(--brand);
+      background: rgba(91, 75, 227, 0.05);
+    }
+    .subtab-btn.active {
+      color: var(--brand);
+      border-bottom-color: var(--brand);
+      background: var(--surface);
+    }
+    .subtab-count {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 12px;
+      background: var(--brand-light);
+      color: var(--brand);
+    }
+
+    /* Grid de Cards da Câmara Fria */
     .camara-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -23,12 +65,122 @@
       transition: box-shadow .15s, transform .12s;
     }
     .camara-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
-    .camara-title { font-size: 16.5px; font-weight: 800; color: var(--text-primary); margin-top: 4px; }
+    .camara-title { font-size: 16.5px; font-weight: 800; color: var(--text-primary); margin-top: 6px; }
     .camara-val-box {
       background: var(--bg); border: 1px solid var(--border-light); border-radius: 8px;
-      padding: 10px 12px; margin: 12px 0; display: flex; justify-content: space-between; align-items: center;
+      padding: 11px 14px; margin: 12px 0; display: flex; justify-content: space-between; align-items: center;
     }
-    .camara-val-num { font-size: 18px; font-weight: 800; color: var(--brand); }
+    .camara-val-num { font-size: 19px; font-weight: 800; color: var(--brand); }
+
+    /* Barra de Filtros do Extrato */
+    .extrato-filters {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr 0.9fr 0.9fr auto;
+      gap: 12px;
+      align-items: end;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border-light);
+      background: #fafbff;
+      border-radius: 12px 12px 0 0;
+    }
+    @media (max-width: 960px) {
+      .extrato-filters { grid-template-columns: 1fr 1fr; }
+    }
+    .extrato-filters .form-group { margin-bottom: 0; }
+
+    .qty-pos { color: var(--green); font-weight: 700; }
+    .qty-neg { color: var(--red); font-weight: 700; }
+    .qty-adj { color: var(--blue); font-weight: 700; }
+
+    .doc-chip {
+      display: inline-block;
+      font-size: 11.5px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 6px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+    }
+
+    /* =========== MODAL CENTRALIZADO =========== */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.45);
+      z-index: 1100;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none;
+      transition: opacity .2s;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+
+    .modal-box {
+      background: var(--surface);
+      border-radius: 12px;
+      box-shadow: var(--shadow-md);
+      width: 500px;
+      max-width: calc(100vw - 32px);
+      max-height: 92vh;
+      display: flex; flex-direction: column;
+      transform: translateY(12px) scale(.97);
+      transition: transform .2s;
+    }
+    .modal-overlay.open .modal-box { transform: none; }
+
+    .modal-header {
+      padding: 20px 22px 14px;
+      border-bottom: 1px solid var(--border-light);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .modal-header h3 { font-size: 16px; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 6px; }
+    .modal-close {
+      background: none; border: none; cursor: pointer;
+      font-size: 20px; color: var(--text-muted);
+      line-height: 1; padding: 2px 6px; border-radius: 4px;
+      transition: background .12s;
+    }
+    .modal-close:hover { background: var(--bg); color: var(--text-primary); }
+
+    .modal-body { padding: 18px 22px; overflow-y: auto; flex: 1; }
+    .modal-footer {
+      padding: 14px 22px 18px;
+      border-top: 1px solid var(--border-light);
+      display: flex; justify-content: flex-end; gap: 8px;
+    }
+
+    .item-status-banner {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      background: var(--brand-light);
+      border: 1px solid #dcd7fa;
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-top: 8px;
+    }
+    .item-status-cell span {
+      display: block;
+      font-size: 10.5px;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+    }
+    .item-status-cell strong {
+      font-size: 13.5px;
+      font-weight: 800;
+      color: var(--brand);
+    }
+
+    .calc-preview-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin: 4px 0 16px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .calc-preview-box span { font-size: 12.5px; color: var(--text-secondary); }
+    .calc-preview-box strong { font-size: 15px; font-weight: 700; color: var(--brand); }
   </style>
 </head>
 <body>
@@ -96,80 +248,368 @@
 
       <div class="page-header">
         <div class="page-header-left">
-          <h1>Estoque de Produto Acabado — Câmara Fria</h1>
-          <p>Acompanhe o saldo real dos salgados prontos e faça ajustes manuais de inventário.</p>
+          <h1>Câmara Fria — Produtos Acabados</h1>
+          <p>Saldos disponíveis para pronta-entrega, balanço físico, descartes por avaria/degelo e extrato de OPs e vendas.</p>
         </div>
         <div class="page-header-actions">
-          <div class="search-bar" style="width:260px">
+          <div class="search-bar" id="search-bar-camara" style="width:250px">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
             </svg>
             <input type="text" id="input-busca" placeholder="Buscar salgado..." oninput="filtrar()" />
           </div>
+          <button class="btn btn-primary" onclick="openMovProdutoModal()">
+            📦 Registrar Movimentação
+          </button>
         </div>
       </div>
 
-      <div class="camara-grid" id="camara-grid">
-        <p style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted)">Carregando estoque da câmara fria...</p>
+      <!-- KPI RESUMO RÁPIDO DA CÂMARA FRIA -->
+      <div class="kpi-grid" style="margin-bottom:22px">
+        <div class="kpi-card accent-blue">
+          <div class="kpi-label">Total Pronta-Entrega</div>
+          <div class="kpi-value" id="kpi-total-unidades">0 un</div>
+          <div class="kpi-sub">Salgados congelados prontos hoje</div>
+        </div>
+        <div class="kpi-card accent-green">
+          <div class="kpi-label">Itens com Saldo Disponível</div>
+          <div class="kpi-value" id="kpi-itens-disponiveis">0</div>
+          <div class="kpi-sub">Produtos disponíveis para venda</div>
+        </div>
+        <div class="kpi-card accent-amber">
+          <div class="kpi-label">Itens Zerados / Baixo Estoque</div>
+          <div class="kpi-value" id="kpi-itens-alerta">0</div>
+          <div class="kpi-sub">Abaixo de 100 unidades na câmara</div>
+        </div>
+      </div>
+
+      <!-- ABAS: SALDOS DA CÂMARA FRIA vs EXTRATO DE MOVIMENTAÇÕES -->
+      <div class="subtabs-bar">
+        <button class="subtab-btn active" id="btn-aba-saldos" onclick="alternarAba('saldos')">
+          ❄️ Saldos da Câmara Fria
+          <span class="subtab-count" id="count-produtos">0</span>
+        </button>
+        <button class="subtab-btn" id="btn-aba-extrato" onclick="alternarAba('extrato')">
+          📜 Extrato / Histórico de Movimentações
+        </button>
+      </div>
+
+      <!-- ABA 1: SALDOS DA CÂMARA FRIA -->
+      <div id="secao-saldos">
+        <div class="camara-grid" id="camara-grid">
+          <p style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted)">
+            <span class="spinner" style="display:inline-block;margin-right:8px"></span>
+            Carregando estoque da câmara fria...
+          </p>
+        </div>
+      </div>
+
+      <!-- ABA 2: EXTRATO DE MOVIMENTAÇÕES DA CÂMARA FRIA -->
+      <div id="secao-extrato" class="hidden">
+        <div class="card">
+          <div class="extrato-filters">
+            <div class="form-group">
+              <label>Filtrar por Produto (Salgado)</label>
+              <select id="filtro-extrato-produto" onchange="carregarExtrato(1)">
+                <option value="">Todos os produtos</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Tipo de Movimento</label>
+              <select id="filtro-extrato-tipo" onchange="carregarExtrato(1)">
+                <option value="">Todos os tipos</option>
+                <option value="ENTRADA">🟢 Entrada (OPs / Devolução)</option>
+                <option value="SAIDA">🔴 Saída (Vendas / Pedidos)</option>
+                <option value="PERDA">🔴 Perda / Descarte (Avaria/Degelo)</option>
+                <option value="AJUSTE">🔵 Ajuste de Balanço</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Data Inicial</label>
+              <input type="date" id="filtro-extrato-inicio" onchange="carregarExtrato(1)" />
+            </div>
+            <div class="form-group">
+              <label>Data Final</label>
+              <input type="date" id="filtro-extrato-fim" onchange="carregarExtrato(1)" />
+            </div>
+            <div style="display:flex;gap:6px">
+              <button class="btn btn-primary" type="button" onclick="carregarExtrato(1)">Filtrar</button>
+              <button class="btn btn-outline" type="button" onclick="limparFiltrosExtrato()">Limpar</button>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Data / Hora</th>
+                  <th>Tipo</th>
+                  <th>Produto Acabado</th>
+                  <th style="text-align:right">Quantidade</th>
+                  <th style="text-align:right">Saldo Anterior</th>
+                  <th style="text-align:right">Saldo Posterior</th>
+                  <th>Documento (OP / Pedido)</th>
+                  <th>Motivo / Justificativa</th>
+                </tr>
+              </thead>
+              <tbody id="extrato-tbody">
+                <tr>
+                  <td colspan="8" style="text-align:center;padding:40px;color:var(--text-muted)">
+                    Carregando histórico da câmara fria...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div style="padding:14px 20px;border-top:1px solid var(--border-light);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+            <span id="extrato-resumo" style="font-size:12.5px;color:var(--text-secondary)">0 registros encontrados</span>
+            <div class="pagination" id="extrato-paginacao"></div>
+          </div>
+        </div>
       </div>
 
     </div>
   </div>
 </div>
 
+<!-- =========================================================================
+     MODAL CENTRALIZADO DE MOVIMENTAÇÃO DE PRODUTOS (CÂMARA FRIA)
+     ========================================================================= -->
+<div class="modal-overlay" id="mov-prod-modal-overlay">
+  <div class="modal-box" style="width:510px">
+    <div class="modal-header">
+      <h3>❄️ Movimentação — Câmara Fria</h3>
+      <button class="modal-close" type="button" onclick="closeMovProdutoModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <form id="form-mov-produto" onsubmit="salvarMovimentacaoProduto(event)">
+
+        <div class="form-group">
+          <label>Tipo de Movimentação *</label>
+          <select id="mov-prod-tipo" required onchange="aoMudarTipoMovProd()">
+            <option value="AJUSTE">⚖️ Ajuste de Inventário (Balanço Físico da Câmara Fria)</option>
+            <option value="PERDA">🗑️ Perda / Descarte (Avaria, Amassado ou Degelo)</option>
+            <option value="ENTRADA">📥 Entrada Avulsa / Devolução</option>
+            <option value="SAIDA">📤 Saída Avulsa / Amostra Comercial</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Produto Acabado (Salgado Congelado) *</label>
+          <select id="mov-prod-id" required onchange="aoSelecionarProdutoMov()">
+            <option value="">Selecione o salgado...</option>
+          </select>
+
+          <div id="mov-prod-info" class="item-status-banner hidden">
+            <div class="item-status-cell">
+              <span>Unidade</span>
+              <strong>un (Unidades)</strong>
+            </div>
+            <div class="item-status-cell">
+              <span>Saldo Atual</span>
+              <strong id="mov-prod-saldo">0 un</strong>
+            </div>
+            <div class="item-status-cell">
+              <span>Preço Venda</span>
+              <strong id="mov-prod-preco">R$ 0,00</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-row cols-2">
+          <div class="form-group">
+            <label id="label-mov-prod-qtd">Saldo Real Contado na Câmara *</label>
+            <div style="position:relative;display:flex;align-items:center">
+              <input type="number" id="mov-prod-quantidade" step="1" min="0" required placeholder="Ex: 280"
+                style="padding-right:48px;width:100%" oninput="atualizarPreviewMovProd()" />
+              <span style="position:absolute;right:10px;font-weight:700;font-size:12px;color:var(--brand);background:var(--brand-light);padding:3px 8px;border-radius:6px;border:1px solid #dcd7fa;pointer-events:none">un</span>
+            </div>
+            <div id="hint-mov-prod-qtd" style="font-size:11px;color:var(--text-secondary);margin-top:4px">
+              Substitui o saldo pelo valor real contado na mão.
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Nº Documento / Ref. (Opcional)</label>
+            <input type="text" id="mov-prod-doc" maxlength="100" placeholder="Ex: Balanço #04, Pedido #12..." />
+            <div style="font-size:11px;color:var(--text-secondary);margin-top:4px">
+              Identificador opcional de controle.
+            </div>
+          </div>
+        </div>
+
+        <div class="calc-preview-box">
+          <span id="mov-prod-prev-label">Resultado Previsto:</span>
+          <strong id="mov-prod-prev-valor">Selecione um produto</strong>
+        </div>
+
+        <div class="form-group" style="margin-bottom:4px">
+          <label id="label-mov-prod-obs">Motivo / Justificativa *</label>
+          <input type="text" id="mov-prod-obs" placeholder="Ex: Contagem física na câmara fria — diferença de 20 unidades..." />
+        </div>
+
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" type="button" onclick="closeMovProdutoModal()">Cancelar</button>
+      <button class="btn btn-primary" type="button" onclick="document.getElementById('form-mov-produto').requestSubmit()">
+        Confirmar Movimentação
+      </button>
+    </div>
+  </div>
+</div>
+
 <script>
   const API_PRODUTOS = 'http://localhost:3001/api/produtos';
+  const API_ESTOQUE  = 'http://localhost:3001/api/estoque';
 
   let todosProdutos = [];
+  let abaAtiva      = 'saldos';
+  let paginaExtrato = 1;
 
-  function formatarDinheiro(val) { return Number(val||0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
-
-  function showToast(msg, type='') {
-    const el = document.createElement('div'); el.className = 'toast ' + type; el.textContent = msg;
-    document.getElementById('toast-container').appendChild(el); setTimeout(() => el.remove(), 4000);
+  function formatarDinheiro(val) {
+    return Number(val || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   }
 
+  function formatarUn(val) {
+    return `${Math.round(Number(val || 0)).toLocaleString('pt-BR')} un`;
+  }
+
+  function formatarDataHora(iso) {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function traduzirMotivo(motivo) {
+    const mapa = {
+      PRODUCAO_CONCLUIDA: 'Entrada por OP Concluída',
+      VENDA_PEDIDO:       'Saída para Pedido de Venda',
+      INVENTARIO_BALANCO: 'Ajuste de Balanço Físico',
+      AVARIA_DESCARTE:    'Descarte por Avaria / Degelo',
+      ENTRADA_AVULSA:     'Entrada Manual / Devolução',
+      SAIDA_AVULSA:       'Saída Avulsa / Amostra'
+    };
+    return mapa[motivo] || motivo || '—';
+  }
+
+  function showToast(msg, type = '') {
+    const el = document.createElement('div');
+    el.className = 'toast ' + type;
+    el.textContent = msg;
+    document.getElementById('toast-container').appendChild(el);
+    setTimeout(() => el.remove(), 3800);
+  }
+
+  /* ======================== ABAS ======================== */
+  function alternarAba(aba) {
+    abaAtiva = aba;
+    const isSaldos = aba === 'saldos';
+
+    document.getElementById('btn-aba-saldos').classList.toggle('active', isSaldos);
+    document.getElementById('btn-aba-extrato').classList.toggle('active', !isSaldos);
+    document.getElementById('secao-saldos').classList.toggle('hidden', !isSaldos);
+    document.getElementById('secao-extrato').classList.toggle('hidden', isSaldos);
+    document.getElementById('search-bar-camara').classList.toggle('hidden', !isSaldos);
+
+    if (!isSaldos) {
+      carregarExtrato(paginaExtrato);
+    }
+  }
+
+  /* ======================== CARREGAR SALDOS DA CÂMARA FRIA ======================== */
   async function carregarProdutos() {
     try {
       const res = await fetch(API_PRODUTOS);
       todosProdutos = await res.json();
-      renderizar(todosProdutos);
+      document.getElementById('count-produtos').textContent = todosProdutos.length;
+      atualizarKPIs();
+      popularSelectsProdutos();
+      filtrar();
     } catch {
       document.getElementById('camara-grid').innerHTML =
-        `<p style="grid-column:1/-1;text-align:center;padding:40px;color:var(--red)">Erro ao conectar na porta 3001.</p>`;
+        `<p style="grid-column:1/-1;text-align:center;padding:40px;color:var(--red)">⚠️ Erro ao conectar na porta 3001.</p>`;
+    }
+  }
+
+  function atualizarKPIs() {
+    let totalUn = 0;
+    let comSaldo = 0;
+    let alerta = 0;
+
+    todosProdutos.forEach(p => {
+      const est = parseInt(p.estoque_atual || 0, 10);
+      totalUn += Math.max(0, est);
+      if (est > 0) comSaldo++;
+      if (est < 100) alerta++;
+    });
+
+    document.getElementById('kpi-total-unidades').textContent    = formatarUn(totalUn);
+    document.getElementById('kpi-itens-disponiveis').textContent = String(comSaldo);
+    document.getElementById('kpi-itens-alerta').textContent      = String(alerta);
+  }
+
+  function popularSelectsProdutos(selecionadoId = '') {
+    const selModal  = document.getElementById('mov-prod-id');
+    const selFiltro = document.getElementById('filtro-extrato-produto');
+    const filtroAtual = selFiltro ? selFiltro.value : '';
+
+    if (selModal) {
+      selModal.innerHTML = '<option value="">Selecione o salgado...</option>' +
+        todosProdutos.map(p => {
+          const est = parseInt(p.estoque_atual || 0, 10);
+          const sel = String(p.id) === String(selecionadoId) ? 'selected' : '';
+          return `<option value="${p.id}" ${sel}>${p.nome} (Saldo: ${formatarUn(est)})</option>`;
+        }).join('');
+    }
+
+    if (selFiltro) {
+      selFiltro.innerHTML = '<option value="">Todos os produtos</option>' +
+        todosProdutos.map(p => {
+          const sel = String(p.id) === String(filtroAtual) ? 'selected' : '';
+          return `<option value="${p.id}" ${sel}>${p.nome}</option>`;
+        }).join('');
     }
   }
 
   function renderizar(lista) {
     const grid = document.getElementById('camara-grid');
     if (!lista.length) {
-      grid.innerHTML = `<p style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted)">Nenhum produto cadastrado.</p>`;
+      grid.innerHTML = `<p style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted)">
+        Nenhum produto acabado cadastrado. Cadastre os salgados em <strong>Comercial &gt; Produtos Finais</strong>.</p>`;
       return;
     }
 
     grid.innerHTML = lista.map(p => {
       const est = parseInt(p.estoque_atual || 0, 10);
       const badgeEst = est <= 0 ? 'badge-red' : est < 100 ? 'badge-amber' : 'badge-green';
+      const labelEst = est <= 0 ? 'Zerado' : est < 100 ? 'Estoque Baixo' : 'Pronta-Entrega';
 
       return `
         <div class="camara-card">
           <div>
-            <div style="display:flex;justify-content:space-between">
+            <div style="display:flex;justify-content:space-between;align-items:center">
               <span class="badge badge-purple">${p.categoria || 'Salgados'}</span>
-              <span class="badge ${badgeEst}">● ${est <= 0 ? 'Zerado' : est < 100 ? 'Estoque Baixo' : 'Em Estoque'}</span>
+              <span class="badge ${badgeEst}">● ${labelEst}</span>
             </div>
             <div class="camara-title">${p.nome}</div>
-            <div style="font-size:12px;color:var(--text-secondary);margin-top:2px">Preço Venda: ${formatarDinheiro(p.preco_venda)}</div>
+            <div style="font-size:12px;color:var(--text-secondary);margin-top:3px">
+              Preço de Venda: <strong>${formatarDinheiro(p.preco_venda)}</strong> / un
+            </div>
 
             <div class="camara-val-box">
-              <span style="font-size:12px;color:var(--text-secondary)">Saldo na Câmara Fria:</span>
-              <span class="camara-val-num">${est} un</span>
+              <span style="font-size:12.5px;color:var(--text-secondary);font-weight:500">Disponível na Câmara Fria:</span>
+              <span class="camara-val-num">${formatarUn(est)}</span>
             </div>
           </div>
 
           <div style="display:flex;justify-content:flex-end;gap:8px;border-top:1px dashed var(--border-light);padding-top:12px">
-            <button class="btn btn-entrada btn-sm" onclick="ajustarInventario(${p.id}, '${p.nome.replace(/'/g, "\\'")}', ${est})">
-              ⚙️ Ajuste de Inventário
+            <button class="btn btn-dividir btn-sm" onclick="openMovProdutoModal(${p.id}, 'AJUSTE')">
+              ⚖️ Ajuste de Balanço
+            </button>
+            <button class="btn btn-outline btn-sm" style="color:var(--red);border-color:#fca5a5" onclick="openMovProdutoModal(${p.id}, 'PERDA')">
+              🗑️ Descarte
             </button>
           </div>
         </div>`;
@@ -177,38 +617,320 @@
   }
 
   function filtrar() {
-    const q = document.getElementById('input-busca').value.toLowerCase();
-    renderizar(todosProdutos.filter(p => p.nome.toLowerCase().includes(q)));
+    const q = (document.getElementById('input-busca').value || '').toLowerCase();
+    renderizar(todosProdutos.filter(p =>
+      p.nome.toLowerCase().includes(q) ||
+      (p.categoria || '').toLowerCase().includes(q)
+    ));
   }
 
-  async function ajustarInventario(id, nome, estAtual) {
-    const novoValor = prompt(`Informe o NOVO SALDO REAL na câmara fria para "${nome}":`, estAtual);
-    if (novoValor === null) return;
-    const qtd = parseInt(novoValor, 10);
-    if (isNaN(qtd) || qtd < 0) {
-      showToast('Digite uma quantidade válida (maior ou igual a zero).', 'error');
+  /* ======================== MODAL DE MOVIMENTAÇÃO DA CÂMARA FRIA ======================== */
+  function openMovProdutoModal(prodId = '', tipoPreset = 'AJUSTE') {
+    if (!todosProdutos.length) {
+      showToast('Cadastre produtos finais antes de registrar movimentações na Câmara Fria.', 'error');
       return;
     }
 
-    try {
-      const prod = todosProdutos.find(p => p.id === id);
-      const body = { ...prod, estoque_atual: qtd };
+    document.getElementById('form-mov-produto').reset();
+    document.getElementById('mov-prod-tipo').value = tipoPreset;
+    popularSelectsProdutos(prodId);
 
-      const res = await fetch(`${API_PRODUTOS}/${id}`, {
-        method: 'PUT',
+    aoMudarTipoMovProd();
+    aoSelecionarProdutoMov();
+    document.getElementById('mov-prod-modal-overlay').classList.add('open');
+  }
+
+  function closeMovProdutoModal() {
+    document.getElementById('mov-prod-modal-overlay').classList.remove('open');
+  }
+
+  function obterProdutoSelecionadoMov() {
+    const id = parseInt(document.getElementById('mov-prod-id').value, 10);
+    if (!id) return null;
+    return todosProdutos.find(p => p.id === id) || null;
+  }
+
+  function aoSelecionarProdutoMov() {
+    const prod = obterProdutoSelecionadoMov();
+    const banner = document.getElementById('mov-prod-info');
+    const inputQtd = document.getElementById('mov-prod-quantidade');
+
+    if (!prod) {
+      banner.classList.add('hidden');
+      atualizarPreviewMovProd();
+      return;
+    }
+
+    const est = parseInt(prod.estoque_atual || 0, 10);
+    document.getElementById('mov-prod-saldo').textContent = formatarUn(est);
+    document.getElementById('mov-prod-preco').textContent = formatarDinheiro(prod.preco_venda);
+    banner.classList.remove('hidden');
+
+    if (document.getElementById('mov-prod-tipo').value === 'AJUSTE') {
+      inputQtd.placeholder = `Contagem real (Atual: ${est})`;
+    } else {
+      inputQtd.placeholder = 'Ex: 20';
+    }
+
+    atualizarPreviewMovProd();
+  }
+
+  function aoMudarTipoMovProd() {
+    const tipo = document.getElementById('mov-prod-tipo').value;
+    const labelQtd = document.getElementById('label-mov-prod-qtd');
+    const hintQtd  = document.getElementById('hint-mov-prod-qtd');
+    const inputQtd = document.getElementById('mov-prod-quantidade');
+    const labelObs = document.getElementById('label-mov-prod-obs');
+    const inputObs = document.getElementById('mov-prod-obs');
+
+    if (tipo === 'AJUSTE') {
+      labelQtd.textContent = 'Saldo Real Contado na Câmara *';
+      hintQtd.textContent  = 'Substitui o saldo pelo valor real contado na mão.';
+      inputQtd.min         = '0';
+      labelObs.textContent = 'Justificativa do Ajuste de Balanço *';
+      inputObs.placeholder = 'Ex: Contagem física na câmara fria — diferença apurada';
+    } else if (tipo === 'PERDA') {
+      labelQtd.textContent = 'Unidades Descartadas / Perdidas *';
+      hintQtd.textContent  = 'Subtrai do saldo da Câmara Fria como perda.';
+      inputQtd.min         = '1';
+      labelObs.textContent = 'Motivo do Descarte (Avaria / Degelo) *';
+      inputObs.placeholder = 'Ex: Pacote amassado / Queda de temperatura no freezer';
+    } else if (tipo === 'ENTRADA') {
+      labelQtd.textContent = 'Unidades Recebidas *';
+      hintQtd.textContent  = 'Soma unidades diretamente na Câmara Fria.';
+      inputQtd.min         = '1';
+      labelObs.textContent = 'Motivo da Entrada Manual *';
+      inputObs.placeholder = 'Ex: Devolução íntegra de pedido / Estoque inicial';
+    } else if (tipo === 'SAIDA') {
+      labelQtd.textContent = 'Unidades Retiradas *';
+      hintQtd.textContent  = 'Subtrai unidades da Câmara Fria.';
+      inputQtd.min         = '1';
+      labelObs.textContent = 'Motivo da Saída Avulsa *';
+      inputObs.placeholder = 'Ex: Degustação comercial para cliente novo';
+    }
+
+    aoSelecionarProdutoMov();
+  }
+
+  function atualizarPreviewMovProd() {
+    const prod = obterProdutoSelecionadoMov();
+    const tipo = document.getElementById('mov-prod-tipo').value;
+    const qtdRaw = document.getElementById('mov-prod-quantidade').value;
+    const qtd = parseInt(qtdRaw, 10);
+    const lbl = document.getElementById('mov-prod-prev-label');
+    const val = document.getElementById('mov-prod-prev-valor');
+
+    if (!prod || qtdRaw === '' || isNaN(qtd)) {
+      lbl.textContent = 'Resultado Previsto:';
+      val.textContent = prod ? `Saldo atual: ${formatarUn(prod.estoque_atual)}` : 'Selecione um produto';
+      val.style.color = 'var(--brand)';
+      return;
+    }
+
+    const saldoAnt = parseInt(prod.estoque_atual || 0, 10);
+    let saldoNovo = saldoAnt;
+
+    if (tipo === 'ENTRADA') saldoNovo = saldoAnt + qtd;
+    else if (tipo === 'SAIDA' || tipo === 'PERDA') saldoNovo = saldoAnt - qtd;
+    else if (tipo === 'AJUSTE') saldoNovo = qtd;
+
+    if (tipo === 'AJUSTE') {
+      const diff = saldoNovo - saldoAnt;
+      const sinal = diff > 0 ? '+' : '';
+      lbl.textContent = `Diferença Apurada (${sinal}${diff} un):`;
+      val.textContent = `${formatarUn(saldoAnt)} ➔ ${formatarUn(saldoNovo)}`;
+      val.style.color = 'var(--blue)';
+    } else if (tipo === 'ENTRADA') {
+      lbl.textContent = 'Saldo Após Entrada:';
+      val.textContent = `${formatarUn(saldoAnt)} ➔ ${formatarUn(saldoNovo)}`;
+      val.style.color = 'var(--green)';
+    } else {
+      lbl.textContent = 'Saldo Após Baixa:';
+      val.textContent = `${formatarUn(saldoAnt)} ➔ ${formatarUn(saldoNovo)}`;
+      val.style.color = saldoNovo < 0 ? 'var(--red)' : 'var(--amber)';
+    }
+  }
+
+  async function salvarMovimentacaoProduto(e) {
+    e.preventDefault();
+    const prod = obterProdutoSelecionadoMov();
+    if (!prod) {
+      showToast('Selecione um salgado da Câmara Fria.', 'error');
+      return;
+    }
+
+    const tipo = document.getElementById('mov-prod-tipo').value;
+    const qtd  = parseInt(document.getElementById('mov-prod-quantidade').value, 10);
+    const doc  = document.getElementById('mov-prod-doc').value.trim();
+    const obs  = document.getElementById('mov-prod-obs').value.trim();
+
+    if (isNaN(qtd) || (tipo !== 'AJUSTE' && qtd <= 0) || (tipo === 'AJUSTE' && qtd < 0)) {
+      showToast('Informe uma quantidade inteira válida.', 'error');
+      return;
+    }
+
+    if (!obs) {
+      showToast('Informe o motivo/justificativa para registrar no histórico de auditoria.', 'error');
+      document.getElementById('mov-prod-obs').focus();
+      return;
+    }
+
+    const mapaMotivos = {
+      AJUSTE:  'INVENTARIO_BALANCO',
+      PERDA:   'AVARIA_DESCARTE',
+      ENTRADA: 'ENTRADA_AVULSA',
+      SAIDA:   'SAIDA_AVULSA'
+    };
+
+    try {
+      const res = await fetch(`${API_ESTOQUE}/movimentacoes`, {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
+        body: JSON.stringify({
+          tipo_estoque:   'PRODUTO_ACABADO',
+          produto_id:     prod.id,
+          tipo_movimento: tipo,
+          motivo:         mapaMotivos[tipo],
+          quantidade:     qtd,
+          documento_ref:  doc || null,
+          observacao:     obs
+        })
       });
 
+      const data = await res.json();
       if (res.ok) {
-        showToast(`✅ Estoque da câmara fria para "${nome}" ajustado para ${qtd} un!`, 'success');
-        carregarProdutos();
+        showToast(`✅ ${data.mensagem}`, 'success');
+        closeMovProdutoModal();
+        await carregarProdutos();
+        if (abaAtiva === 'extrato') {
+          await carregarExtrato(1);
+        }
       } else {
-        showToast('Erro ao atualizar estoque.', 'error');
+        showToast(data.erro || 'Erro ao registrar movimentação.', 'error');
       }
     } catch {
-      showToast('Erro de conexão.', 'error');
+      showToast('Erro de conexão com o servidor.', 'error');
     }
+  }
+
+  /* ======================== EXTRATO DA CÂMARA FRIA ======================== */
+  function limparFiltrosExtrato() {
+    document.getElementById('filtro-extrato-produto').value = '';
+    document.getElementById('filtro-extrato-tipo').value    = '';
+    document.getElementById('filtro-extrato-inicio').value  = '';
+    document.getElementById('filtro-extrato-fim').value     = '';
+    carregarExtrato(1);
+  }
+
+  async function carregarExtrato(page = 1) {
+    paginaExtrato = page;
+    const tbody = document.getElementById('extrato-tbody');
+    const prodId     = document.getElementById('filtro-extrato-produto').value;
+    const tipoMov    = document.getElementById('filtro-extrato-tipo').value;
+    const dataInicio = document.getElementById('filtro-extrato-inicio').value;
+    const dataFim    = document.getElementById('filtro-extrato-fim').value;
+
+    const params = new URLSearchParams({
+      tipo_estoque: 'PRODUTO_ACABADO',
+      page: String(page),
+      limit: '20'
+    });
+    if (prodId)     params.set('produto_id', prodId);
+    if (tipoMov)    params.set('tipo_movimento', tipoMov);
+    if (dataInicio) params.set('data_inicio', dataInicio);
+    if (dataFim)    params.set('data_fim', dataFim);
+
+    try {
+      const res = await fetch(`${API_ESTOQUE}/extrato?${params.toString()}`);
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.erro || 'Erro ao carregar extrato');
+
+      renderizarExtrato(json.dados || [], json.paginacao || {});
+    } catch (err) {
+      tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:36px;color:var(--red)">⚠️ ${err.message}</td></tr>`;
+    }
+  }
+
+  function renderizarExtrato(linhas, pag) {
+    const tbody  = document.getElementById('extrato-tbody');
+    const resumo = document.getElementById('extrato-resumo');
+    const pagDiv = document.getElementById('extrato-paginacao');
+
+    resumo.textContent = `${pag.total || 0} movimentação(ões) registrada(s)`;
+
+    if (!linhas.length) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="8" style="text-align:center;padding:42px;color:var(--text-muted)">
+            Nenhuma movimentação encontrada na Câmara Fria para os filtros informados.
+          </td>
+        </tr>`;
+      pagDiv.innerHTML = '';
+      return;
+    }
+
+    tbody.innerHTML = linhas.map(m => {
+      const saldoAnt  = Math.round(parseFloat(m.saldo_anterior || 0));
+      const saldoPost = Math.round(parseFloat(m.saldo_posterior || 0));
+      const qtd       = Math.round(parseFloat(m.quantidade || 0));
+
+      let badgeHtml = '';
+      let qtdHtml   = '';
+
+      if (m.tipo_movimento === 'ENTRADA') {
+        badgeHtml = '<span class="badge badge-green">▲ ENTRADA</span>';
+        qtdHtml   = `<span class="qty-pos">+${formatarUn(qtd)}</span>`;
+      } else if (m.tipo_movimento === 'SAIDA') {
+        badgeHtml = '<span class="badge badge-red">▼ SAÍDA</span>';
+        qtdHtml   = `<span class="qty-neg">-${formatarUn(qtd)}</span>`;
+      } else if (m.tipo_movimento === 'PERDA') {
+        badgeHtml = '<span class="badge badge-red">🗑️ PERDA</span>';
+        qtdHtml   = `<span class="qty-neg">-${formatarUn(qtd)}</span>`;
+      } else {
+        badgeHtml = '<span class="badge badge-blue">⚖️ AJUSTE</span>';
+        const diff = saldoPost - saldoAnt;
+        const sinal = diff > 0 ? '+' : diff < 0 ? '-' : '±';
+        qtdHtml = `<span class="qty-adj">${sinal}${formatarUn(Math.abs(diff))}</span>`;
+      }
+
+      const docHtml = m.documento_ref
+        ? `<span class="doc-chip">${m.documento_ref}</span>`
+        : '<span style="color:var(--text-muted)">—</span>';
+
+      return `
+        <tr>
+          <td style="white-space:nowrap;font-size:12.5px;color:var(--text-secondary)">${formatarDataHora(m.criado_em)}</td>
+          <td>${badgeHtml}</td>
+          <td>
+            <strong style="color:var(--text-primary)">${m.item_nome}</strong>
+            <div style="font-size:11px;color:var(--text-muted)">${m.item_categoria || ''}</div>
+          </td>
+          <td style="text-align:right;white-space:nowrap">${qtdHtml}</td>
+          <td style="text-align:right;white-space:nowrap;color:var(--text-secondary)">${formatarUn(saldoAnt)}</td>
+          <td style="text-align:right;white-space:nowrap"><strong>${formatarUn(saldoPost)}</strong></td>
+          <td>${docHtml}</td>
+          <td>
+            <div style="font-weight:600;font-size:12.5px">${traduzirMotivo(m.motivo)}</div>
+            ${m.observacao ? `<div style="font-size:12px;color:var(--text-secondary)">${m.observacao}</div>` : ''}
+          </td>
+        </tr>`;
+    }).join('');
+
+    const atual = pag.pagina_atual || 1;
+    const totalPags = pag.total_paginas || 1;
+    if (totalPags <= 1) {
+      pagDiv.innerHTML = '';
+      return;
+    }
+
+    let btns = `<button class="page-btn" ${atual <= 1 ? 'disabled' : ''} onclick="carregarExtrato(${atual - 1})">◀ Anterior</button>`;
+    for (let p = 1; p <= totalPags; p++) {
+      if (p === 1 || p === totalPags || Math.abs(p - atual) <= 2) {
+        btns += `<button class="page-btn ${p === atual ? 'active' : ''}" onclick="carregarExtrato(${p})">${p}</button>`;
+      }
+    }
+    btns += `<button class="page-btn" ${atual >= totalPags ? 'disabled' : ''} onclick="carregarExtrato(${atual + 1})">Próxima ▶</button>`;
+    pagDiv.innerHTML = btns;
   }
 
   window.onload = carregarProdutos;

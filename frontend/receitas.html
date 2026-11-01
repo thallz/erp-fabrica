@@ -321,7 +321,7 @@
 </div>
 
 <!-- ==================== MODAL CENTRALIZADO DE RECEITA (650px) ==================== -->
-<div class="modal-overlay" id="receita-modal-overlay" onclick="closeReceitaModalOnBackdrop(event)">
+<div class="modal-overlay" id="receita-modal-overlay">
   <div class="modal-box modal-lg">
     <div class="modal-header">
       <h3 id="receita-modal-title">
@@ -413,7 +413,7 @@
 </div>
 
 <!-- MODAL CATEGORIAS -->
-<div class="modal-overlay" id="cat-modal-overlay" onclick="closeCatModalOnBackdrop(event)">
+<div class="modal-overlay" id="cat-modal-overlay">
   <div class="modal-box">
     <div class="modal-header">
       <h3 id="cat-modal-title">⚙️ Categorias de Receita</h3>
@@ -500,10 +500,6 @@
     const selectId = 'receita-categoria';
     const atual = document.getElementById(selectId).value;
     carregarCategoriaSelect(catTipoAtivo, selectId, atual);
-  }
-
-  function closeCatModalOnBackdrop(event) {
-    if (event.target === document.getElementById('cat-modal-overlay')) closeCatModal();
   }
 
   async function renderCatList() {
@@ -683,16 +679,71 @@
   }
   function closeDrawer() { closeReceitaModal(); }
 
-  function closeReceitaModalOnBackdrop(event) {
-    if (event.target === document.getElementById('receita-modal-overlay')) closeReceitaModal();
+  /* ======================== UTILITÁRIOS DE MOEDA E PESO ======================== */
+  function parseMoeda(valor) {
+    if (typeof valor === 'number') return isNaN(valor) ? 0 : valor;
+    if (!valor) return 0;
+    let str = String(valor).replace(/[R$\s]/g, '');
+    if (str.includes(',') && str.includes('.')) {
+      str = str.replace(/\./g, '').replace(',', '.');
+    } else if (str.includes(',')) {
+      str = str.replace(',', '.');
+    }
+    const num = parseFloat(str);
+    return isNaN(num) ? 0 : num;
   }
 
-  window.addEventListener('keydown', e => {
-    if (e.key === 'Escape') {
-      closeReceitaModal();
-      closeCatModal();
+  function formatarInputMoeda(el) {
+    const val = parseMoeda(el.value);
+    if (el.value && el.value.trim() !== '' && !isNaN(val) && val > 0) {
+      el.value = val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     }
-  });
+  }
+
+  function limparInputMoeda(el) {
+    if (!el.value) return;
+    const val = parseMoeda(el.value);
+    if (!isNaN(val) && val > 0) {
+      el.value = val.toFixed(2).replace('.', ',');
+    } else if (el.value.trim() === 'R$ 0,00' || val === 0) {
+      el.value = '';
+    }
+  }
+
+  function atualizarBadgePesoGramas(el, badgeId) {
+    const badge = document.getElementById(badgeId);
+    if (!badge) return;
+    const val = parseFloat(String(el.value).replace(',', '.'));
+    if (isNaN(val) || val <= 0) {
+      badge.style.display = 'none';
+      return;
+    }
+    if (val >= 1000) {
+      const kg = (val / 1000.0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      badge.innerHTML = `⚖️ <span>Equivale a <strong>${kg} kg</strong></span>`;
+    } else {
+      badge.innerHTML = `⚖️ <span><strong>${Math.round(val)} g</strong></span>`;
+    }
+    badge.style.display = 'inline-flex';
+  }
+
+  function atualizarHintGramasLinha(el) {
+    const parent = el.parentNode;
+    const badge = parent ? parent.querySelector('.row-peso-hint') : null;
+    if (!badge) return;
+    const val = parseFloat(String(el.value).replace(',', '.'));
+    if (isNaN(val) || val <= 0) {
+      badge.style.display = 'none';
+      return;
+    }
+    if (val >= 1000) {
+      const kg = (val / 1000.0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      badge.innerHTML = `⚖️ <span>Equivale a <strong>${kg} kg</strong></span>`;
+    } else {
+      badge.innerHTML = `⚖️ <span><strong>${Math.round(val)} g</strong></span>`;
+    }
+    badge.style.display = 'inline-flex';
+  }
 
   /* ======================== INGREDIENT ROWS ======================== */
   function addIngredientRow(dados = null) {
@@ -714,9 +765,14 @@
       <select class="origem-select" required onchange="updateRowCost('${rowId}')">
         <option value="">Selecione...</option>
       </select>
-      <input type="number" class="qtd-input" step="0.1" min="0.1"
-             value="${gramsVal}" placeholder="g" required
-             oninput="updateRowCost('${rowId}')" />
+      <div style="position:relative">
+        <input type="number" class="qtd-input" step="0.1" min="0.1"
+               value="${gramsVal}" placeholder="g" required
+               style="width:100%"
+               onblur="atualizarHintGramasLinha(this)"
+               oninput="atualizarHintGramasLinha(this); updateRowCost('${rowId}')" />
+        <div class="row-peso-hint badge-peso-hint" style="display:none;position:absolute;top:100%;left:0;z-index:10;white-space:nowrap;font-size:10.5px;padding:2px 6px;margin-top:2px;box-shadow:0 2px 6px rgba(0,0,0,0.12)"></div>
+      </div>
       <span class="val-cell unit-cost-cell">-</span>
       <span class="val-cell total row-total-cell">R$ 0,00</span>
       <button type="button" class="row-remove" onclick="removeRow('${rowId}')">×</button>
@@ -724,6 +780,10 @@
 
     container.appendChild(div);
     populateOrigemSelect(rowId, dados ? dados.idOrigem : null);
+    if (gramsVal) {
+      const inputEl = div.querySelector('.qtd-input');
+      if (inputEl) atualizarHintGramasLinha(inputEl);
+    }
   }
 
   function removeRow(rowId) {

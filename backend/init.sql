@@ -153,3 +153,87 @@ CREATE TABLE item_pedido (
     preco_unitario DECIMAL(10, 2) NOT NULL,
     PRIMARY KEY (pedido_id, produto_id)
 );
+
+
+-- 11. AUDITORIA E MOVIMENTAÇÕES DE ESTOQUE (KARDEX / EXTRATO)
+CREATE TABLE IF NOT EXISTS movimentacao_estoque (
+    id SERIAL PRIMARY KEY,
+    tipo_estoque VARCHAR(20) NOT NULL CHECK (tipo_estoque IN ('MATERIA_PRIMA', 'PRODUTO_ACABADO')),
+    insumo_id INT REFERENCES insumo(id) ON DELETE SET NULL,
+    produto_id INT REFERENCES produto(id) ON DELETE SET NULL,
+    tipo_movimento VARCHAR(10) NOT NULL CHECK (tipo_movimento IN ('ENTRADA', 'SAIDA', 'AJUSTE', 'PERDA')),
+    motivo VARCHAR(50) NOT NULL, -- Ex: 'COMPRA_FORNECEDOR', 'CONSUMO_PRODUCAO', 'PRODUCAO_CONCLUIDA', 'VENDA_PEDIDO', 'INVENTARIO_BALANCO', 'AVARIA_DESCARTE'
+    quantidade DECIMAL(12, 4) NOT NULL,
+    unidade_medida VARCHAR(10) NOT NULL,
+    custo_unitario_momento DECIMAL(12, 4) DEFAULT 0,
+    saldo_anterior DECIMAL(12, 4) NOT NULL,
+    saldo_posterior DECIMAL(12, 4) NOT NULL,
+    documento_ref VARCHAR(100), -- Nº NF, Nº Pedido ou Nº OP
+    observacao TEXT,
+    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_mov_estoque_tipo_data ON movimentacao_estoque (tipo_estoque, criado_em DESC);
+CREATE INDEX IF NOT EXISTS idx_mov_estoque_insumo ON movimentacao_estoque (insumo_id);
+CREATE INDEX IF NOT EXISTS idx_mov_estoque_produto ON movimentacao_estoque (produto_id);
+
+-- 12. CONTAS A PAGAR (INTEGRAÇÃO COMPRAS / NOTAS FISCAIS & DESPESAS)
+CREATE TABLE IF NOT EXISTS conta_pagar (
+    id SERIAL PRIMARY KEY,
+    fornecedor VARCHAR(150) NOT NULL,
+    descricao VARCHAR(200) NOT NULL,
+    valor DECIMAL(12, 2) NOT NULL,
+    data_emissao DATE NOT NULL DEFAULT CURRENT_DATE,
+    data_vencimento DATE NOT NULL,
+    data_pagamento DATE NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'PENDENTE' CHECK (status IN ('PENDENTE', 'PAGO', 'CANCELADO')),
+    forma_pagamento VARCHAR(50) NOT NULL DEFAULT 'BOLETO', -- 'BOLETO', 'PIX', 'DINHEIRO', 'CARTAO'
+    documento_ref VARCHAR(100), -- Ex: "NF 1024"
+    movimentacao_estoque_id INT REFERENCES movimentacao_estoque(id) ON DELETE SET NULL,
+    observacao TEXT,
+    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_conta_pagar_status_venc ON conta_pagar (status, data_vencimento);
+
+-- 13. ORÇAMENTOS COMERCIAIS (COTAÇÕES B2B)
+CREATE TABLE IF NOT EXISTS orcamento (
+    id SERIAL PRIMARY KEY,
+    cliente_id INT REFERENCES cliente(id) ON DELETE RESTRICT,
+    data_orcamento TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    data_validade DATE NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'PENDENTE' CHECK (status IN ('PENDENTE', 'APROVADO', 'RECUSADO')),
+    valor_total DECIMAL(10, 2) DEFAULT 0.00,
+    observacao TEXT,
+    pedido_id INT REFERENCES pedido(id) ON DELETE SET NULL,
+    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS item_orcamento (
+    orcamento_id INT REFERENCES orcamento(id) ON DELETE CASCADE,
+    produto_id INT REFERENCES produto(id) ON DELETE RESTRICT,
+    quantidade INT NOT NULL,
+    preco_unitario DECIMAL(10, 2) NOT NULL,
+    PRIMARY KEY (orcamento_id, produto_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_orcamento_status_validade ON orcamento (status, data_validade);
+
+-- 14. CONTAS A RECEBER (INTEGRAÇÃO AUTOMÁTICA COM VENDAS / PEDIDOS B2B)
+CREATE TABLE IF NOT EXISTS conta_receber (
+    id SERIAL PRIMARY KEY,
+    cliente_id INT REFERENCES cliente(id) ON DELETE RESTRICT,
+    pedido_id INT REFERENCES pedido(id) ON DELETE CASCADE,
+    descricao VARCHAR(200) NOT NULL, -- Ex: "Pedido #1 - Padaria Bella Vista"
+    valor DECIMAL(10, 2) NOT NULL,
+    data_emissao DATE NOT NULL DEFAULT CURRENT_DATE,
+    data_vencimento DATE NOT NULL,
+    data_recebimento DATE NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'PENDENTE' CHECK (status IN ('PENDENTE', 'RECEBIDO', 'CANCELADO')),
+    forma_pagamento VARCHAR(50) NOT NULL DEFAULT 'BOLETO', -- 'BOLETO', 'PIX', 'DINHEIRO', 'CARTAO'
+    documento_ref VARCHAR(100), -- Ex: "Boleto Pedido #1"
+    observacao TEXT,
+    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_conta_receber_status_venc ON conta_receber (status, data_vencimento);

@@ -793,7 +793,8 @@ const producaoController = {
 
             // 1. LÓGICA SE FOR OP DE PREPARO (EX: RECHEIO OU MASSA)
             if (op.tipo_op === 'PREPARO' && op.receita_id) {
-                const recRes = await client.query('SELECT peso_total FROM receita WHERE id = $1', [op.receita_id]);
+                const recRes = await client.query('SELECT nome, peso_total FROM receita WHERE id = $1', [op.receita_id]);
+                const nomeReceita = recRes.rows[0]?.nome || `Receita #${op.receita_id}`;
                 const pesoTotalReceita = parseFloat(recRes.rows[0]?.peso_total || 10.0);
                 const scaleFactor = pesoTotalReceita > 0 ? (qtdPlanejada / pesoTotalReceita) : 1.0;
 
@@ -803,10 +804,41 @@ const producaoController = {
                     if (item.tipo_origem === 'materia') {
                         // Subtrai quantidade em kg (gramas / 1000 * fator de escala)
                         const qtdKg = (parseFloat(item.quantidade_gramas || 0) / 1000.0) * scaleFactor;
-                        await client.query(
-                            `UPDATE insumo SET estoque_atual = COALESCE(estoque_atual, 0) - $1 WHERE id = $2`,
-                            [qtdKg, item.origem_id]
-                        );
+                        if (qtdKg > 0) {
+                            const insRes = await client.query(
+                                'SELECT COALESCE(estoque_atual, 0) AS estoque_atual, unidade_medida, COALESCE(custo_unitario, 0) AS custo_unitario FROM insumo WHERE id = $1 FOR UPDATE',
+                                [item.origem_id]
+                            );
+                            if (insRes.rows.length > 0) {
+                                const saldoAnt = parseFloat(insRes.rows[0].estoque_atual || 0);
+                                const saldoPost = saldoAnt - qtdKg;
+                                const unidade = insRes.rows[0].unidade_medida || 'kg';
+                                const custoMom = parseFloat(insRes.rows[0].custo_unitario || 0);
+
+                                await client.query(
+                                    `UPDATE insumo SET estoque_atual = $1 WHERE id = $2`,
+                                    [saldoPost, item.origem_id]
+                                );
+
+                                await client.query(
+                                    `INSERT INTO movimentacao_estoque (
+                                        tipo_estoque, insumo_id, produto_id, tipo_movimento, motivo,
+                                        quantidade, unidade_medida, custo_unitario_momento,
+                                        saldo_anterior, saldo_posterior, documento_ref, observacao
+                                    ) VALUES ('MATERIA_PRIMA', $1, NULL, 'SAIDA', 'CONSUMO_PRODUCAO', $2, $3, $4, $5, $6, $7, $8)`,
+                                    [
+                                        item.origem_id,
+                                        qtdKg,
+                                        unidade,
+                                        custoMom,
+                                        saldoAnt,
+                                        saldoPost,
+                                        `OP #${op.id}`,
+                                        `Consumo na OP de Preparo: ${nomeReceita}`
+                                    ]
+                                );
+                            }
+                        }
                     } else if (item.tipo_origem === 'receita') {
                         const qtdSubKg = (parseFloat(item.quantidade_gramas || 0) / 1000.0) * scaleFactor;
                         await client.query(
@@ -816,7 +848,7 @@ const producaoController = {
                     }
                 }
 
-                // Credita o estoque produzido na tabela RECEITA
+                // Credita o estoque produzido na tabela RECEITA (NÃO aumenta Câmara Fria)
                 await client.query(
                     `UPDATE receita SET estoque_atual = COALESCE(estoque_atual, 0) + $1 WHERE id = $2`,
                     [qtdPlanejada, op.receita_id]
@@ -838,7 +870,7 @@ const producaoController = {
                     );
                 }
 
-                // Subtrai insumos diretos da ficha técnica (se houver)
+                // Subtrai insumos diretos da ficha técnica (se houver) + Kardex
                 try {
                     const insumosFt = await client.query(
                         `SELECT insumo_id, quantidade FROM ficha_tecnica_insumo WHERE produto_id = $1`,
@@ -846,35 +878,114 @@ const producaoController = {
                     );
                     for (const ins of insumosFt.rows) {
                         const qtdUsada = parseFloat(ins.quantidade || 0) * qtdPlanejada;
-                        await client.query(
-                            `UPDATE insumo SET estoque_atual = COALESCE(estoque_atual, 0) - $1 WHERE id = $2`,
-                            [qtdUsada, ins.insumo_id]
-                        );
+                        if (qtdUsada > 0) {
+                            const insRes = await client.query(
+                                'SELECT COALESCE(estoque_atual, 0) AS estoque_atual, unidade_medida, COALESCE(custo_unitario, 0) AS custo_unitario FROM insumo WHERE id = $1 FOR UPDATE',
+                                [ins.insumo_id]
+                            );
+                            if (insRes.rows.length > 0) {
+                                const saldoAnt = parseFloat(insRes.rows[0].estoque_atual || 0);
+                                const saldoPost = saldoAnt - qtdUsada;
+                                await client.query(
+                                    `UPDATE insumo SET estoque_atual = $1 WHERE id = $2`,
+                                    [saldoPost, ins.insumo_id]
+                                );
+                                await client.query(
+                                    `INSERT INTO movimentacao_estoque (
+                                        tipo_estoque, insumo_id, produto_id, tipo_movimento, motivo,
+                                        quantidade, unidade_medida, custo_unitario_momento,
+                                        saldo_anterior, saldo_posterior, documento_ref, observacao
+                                    ) VALUES ('MATERIA_PRIMA', $1, NULL, 'SAIDA', 'CONSUMO_PRODUCAO', $2, $3, $4, $5, $6, $7, $8)`,
+                                    [
+                                        ins.insumo_id,
+                                        qtdUsada,
+                                        insRes.rows[0].unidade_medida || 'kg',
+                                        parseFloat(insRes.rows[0].custo_unitario || 0),
+                                        saldoAnt,
+                                        saldoPost,
+                                        `OP #${op.id}`,
+                                        `Consumo direto na OP de Montagem #${op.id}`
+                                    ]
+                                );
+                            }
+                        }
                     }
                 } catch {
                     // tabela ficha_tecnica_insumo pode não existir em alguns ambientes
                 }
 
-                // Subtrai embalagem se configurada no produto
+                // Subtrai embalagem se configurada no produto + Kardex
                 const prodInfo = await client.query(
-                    `SELECT embalagem_id, capacidade_embalagem FROM produto WHERE id = $1`,
+                    `SELECT id, nome, COALESCE(estoque_atual, 0) AS estoque_atual, COALESCE(cmv_estimado, 0) AS cmv_estimado, embalagem_id, capacidade_embalagem
+                     FROM produto WHERE id = $1 FOR UPDATE`,
                     [op.produto_id]
                 );
                 if (prodInfo.rows.length > 0 && prodInfo.rows[0].embalagem_id) {
                     const embId = prodInfo.rows[0].embalagem_id;
                     const cap   = parseFloat(prodInfo.rows[0].capacidade_embalagem || 1);
                     const qtdCaixas = Math.ceil(qtdPlanejada / cap);
-                    await client.query(
-                        `UPDATE insumo SET estoque_atual = COALESCE(estoque_atual, 0) - $1 WHERE id = $2`,
-                        [qtdCaixas, embId]
-                    );
+                    if (qtdCaixas > 0) {
+                        const embRes = await client.query(
+                            'SELECT COALESCE(estoque_atual, 0) AS estoque_atual, unidade_medida, COALESCE(custo_unitario, 0) AS custo_unitario FROM insumo WHERE id = $1 FOR UPDATE',
+                            [embId]
+                        );
+                        if (embRes.rows.length > 0) {
+                            const saldoAntEmb = parseFloat(embRes.rows[0].estoque_atual || 0);
+                            const saldoPostEmb = saldoAntEmb - qtdCaixas;
+                            await client.query(
+                                `UPDATE insumo SET estoque_atual = $1 WHERE id = $2`,
+                                [saldoPostEmb, embId]
+                            );
+                            await client.query(
+                                `INSERT INTO movimentacao_estoque (
+                                    tipo_estoque, insumo_id, produto_id, tipo_movimento, motivo,
+                                    quantidade, unidade_medida, custo_unitario_momento,
+                                    saldo_anterior, saldo_posterior, documento_ref, observacao
+                                ) VALUES ('MATERIA_PRIMA', $1, NULL, 'SAIDA', 'CONSUMO_PRODUCAO', $2, $3, $4, $5, $6, $7, $8)`,
+                                [
+                                    embId,
+                                    qtdCaixas,
+                                    embRes.rows[0].unidade_medida || 'un',
+                                    parseFloat(embRes.rows[0].custo_unitario || 0),
+                                    saldoAntEmb,
+                                    saldoPostEmb,
+                                    `OP #${op.id}`,
+                                    `Consumo de embalagem na OP #${op.id}`
+                                ]
+                            );
+                        }
+                    }
                 }
 
-                // Credita o estoque do PRODUTO final
-                await client.query(
-                    `UPDATE produto SET estoque_atual = COALESCE(estoque_atual, 0) + $1 WHERE id = $2`,
-                    [qtdPlanejada, op.produto_id]
-                );
+                // Credita o estoque do PRODUTO final na Câmara Fria + Kardex
+                if (prodInfo.rows.length > 0) {
+                    const prodRow = prodInfo.rows[0];
+                    const saldoAntProd = parseInt(prodRow.estoque_atual || 0, 10);
+                    const qtdCreditada = Math.round(qtdPlanejada);
+                    const saldoPostProd = saldoAntProd + qtdCreditada;
+
+                    await client.query(
+                        `UPDATE produto SET estoque_atual = $1 WHERE id = $2`,
+                        [saldoPostProd, op.produto_id]
+                    );
+
+                    await client.query(
+                        `INSERT INTO movimentacao_estoque (
+                            tipo_estoque, insumo_id, produto_id, tipo_movimento, motivo,
+                            quantidade, unidade_medida, custo_unitario_momento,
+                            saldo_anterior, saldo_posterior, documento_ref, observacao
+                        ) VALUES ('PRODUTO_ACABADO', NULL, $1, 'ENTRADA', 'PRODUCAO_CONCLUIDA', $2, 'un', $3, $4, $5, $6, $7)`,
+                        [
+                            op.produto_id,
+                            qtdCreditada,
+                            parseFloat(prodRow.cmv_estimado || 0),
+                            saldoAntProd,
+                            saldoPostProd,
+                            `OP #${op.id}`,
+                            `Entrada na Câmara Fria por conclusão da OP #${op.id}`
+                        ]
+                    );
+                }
             }
 
             // Atualizar status da OP para CONCLUIDA

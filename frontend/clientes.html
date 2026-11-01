@@ -244,7 +244,7 @@
 </div>
 
 <!-- ==================== MODAL CENTRALIZADO DE CLIENTE (520px) ==================== -->
-<div class="modal-overlay" id="cliente-modal-overlay" onclick="closeClienteModalOnBackdrop(event)">
+<div class="modal-overlay" id="cliente-modal-overlay">
   <div class="modal-box">
     <div class="modal-header">
       <h3 id="cliente-modal-title">
@@ -384,14 +384,6 @@
   function closeClienteModal() {
     document.getElementById('cliente-modal-overlay').classList.remove('open');
   }
-
-  function closeClienteModalOnBackdrop(event) {
-    if (event.target === document.getElementById('cliente-modal-overlay')) closeClienteModal();
-  }
-
-  window.addEventListener('keydown', e => {
-    if (e.key === 'Escape') closeClienteModal();
-  });
 
   /* ======================== LOAD / RENDER ======================== */
   async function carregarClientes() {

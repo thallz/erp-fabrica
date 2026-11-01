@@ -71,57 +71,7 @@ async function runMigrations() {
         ) WHERE categoria_producao IS NULL;
     `);
 
-    // Sementes (Seeding) de Exemplo para duas camadas
-    try {
-        const massas = await pool.query("SELECT id FROM receita WHERE nome = 'Massa Tortinha'");
-        let massaId, recheioId;
-        if (massas.rows.length === 0) {
-            const r1 = await pool.query(
-                "INSERT INTO receita (nome, categoria, peso_total) VALUES ('Massa Tortinha', 'Massa', 10.0) RETURNING id"
-            );
-            massaId = r1.rows[0].id;
-            const r2 = await pool.query(
-                "INSERT INTO receita (nome, categoria, peso_total) VALUES ('Recheio de Frango', 'Recheio', 10.0) RETURNING id"
-            );
-            recheioId = r2.rows[0].id;
-
-            const insFarinha = await pool.query("SELECT id FROM insumo WHERE nome ILIKE '%farinha%' LIMIT 1");
-            const insFrango = await pool.query("SELECT id FROM insumo WHERE nome ILIKE '%sassami%' OR nome ILIKE '%frango%' LIMIT 1");
-            
-            if (insFarinha.rows.length > 0) {
-                await pool.query(
-                    "INSERT INTO receita_item (receita_id, tipo_origem, origem_id, nome, quantidade_gramas) VALUES ($1, 'materia', $2, 'Farinha', 5000.0)",
-                    [massaId, insFarinha.rows[0].id]
-                );
-            }
-            if (insFrango.rows.length > 0) {
-                await pool.query(
-                    "INSERT INTO receita_item (receita_id, tipo_origem, origem_id, nome, quantidade_gramas) VALUES ($1, 'materia', $2, 'Frango', 6000.0)",
-                    [recheioId, insFrango.rows[0].id]
-                );
-            }
-        } else {
-            massaId = massas.rows[0].id;
-            const recheios = await pool.query("SELECT id FROM receita WHERE nome = 'Recheio de Frango'");
-            recheioId = recheios.rows[0].id;
-        }
-
-        // Vincular ao produto Tortinha (ID 31) se ele existir
-        const prodCheck = await pool.query("SELECT id FROM produto WHERE id = 31");
-        if (prodCheck.rows.length > 0) {
-            const link = await pool.query("SELECT * FROM ficha_tecnica_receita WHERE produto_id = 31");
-            if (link.rows.length === 0) {
-                await pool.query(
-                    "INSERT INTO ficha_tecnica_receita (produto_id, receita_id, quantidade_necessaria) VALUES (31, $1, 0.05), (31, $2, 0.03)",
-                    [massaId, recheioId]
-                );
-            }
-        }
-    } catch (e) {
-        console.log("Aviso nas sementes de receitas de exemplo:", e.message);
-    }
-
-    console.log('✅ Migrações verificadas (receitas, estoque produto, metas, eh_novato, categoria_producao e duas camadas)');
+    console.log('✅ Migrações estruturais verificadas com sucesso');
 
     // Migration: tabela de categorias dinâmicas
     await pool.query(`
@@ -133,7 +83,7 @@ async function runMigrations() {
         );
     `);
 
-    // Seeds padrão — inseridos apenas se ainda não existirem
+    // Seeds padrão de categorias — inseridos apenas se ainda não existirem
     await pool.query(`
         INSERT INTO categoria (nome, tipo) VALUES
             ('Farináceo',    'INSUMO'),
@@ -161,7 +111,98 @@ async function runMigrations() {
         ALTER TABLE cliente ADD COLUMN IF NOT EXISTS tipo VARCHAR(20) DEFAULT 'B2B';
     `);
 
-    console.log('✅ Tabela de categorias dinâmicas verificada');
+    // Migration: tabela de auditoria e movimentações de estoque (Kardex / Extrato)
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS movimentacao_estoque (
+            id SERIAL PRIMARY KEY,
+            tipo_estoque VARCHAR(20) NOT NULL CHECK (tipo_estoque IN ('MATERIA_PRIMA', 'PRODUTO_ACABADO')),
+            insumo_id INT REFERENCES insumo(id) ON DELETE SET NULL,
+            produto_id INT REFERENCES produto(id) ON DELETE SET NULL,
+            tipo_movimento VARCHAR(10) NOT NULL CHECK (tipo_movimento IN ('ENTRADA', 'SAIDA', 'AJUSTE', 'PERDA')),
+            motivo VARCHAR(50) NOT NULL,
+            quantidade DECIMAL(12, 4) NOT NULL,
+            unidade_medida VARCHAR(10) NOT NULL,
+            custo_unitario_momento DECIMAL(12, 4) DEFAULT 0,
+            saldo_anterior DECIMAL(12, 4) NOT NULL,
+            saldo_posterior DECIMAL(12, 4) NOT NULL,
+            documento_ref VARCHAR(100),
+            observacao TEXT,
+            criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_mov_estoque_tipo_data ON movimentacao_estoque (tipo_estoque, criado_em DESC);
+        CREATE INDEX IF NOT EXISTS idx_mov_estoque_insumo ON movimentacao_estoque (insumo_id);
+        CREATE INDEX IF NOT EXISTS idx_mov_estoque_produto ON movimentacao_estoque (produto_id);
+    `);
+
+    // Migration: tabela de Contas a Pagar integrada ao Almoxarifado (NF)
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS conta_pagar (
+            id SERIAL PRIMARY KEY,
+            fornecedor VARCHAR(150) NOT NULL,
+            descricao VARCHAR(200) NOT NULL,
+            valor DECIMAL(12, 2) NOT NULL,
+            data_emissao DATE NOT NULL DEFAULT CURRENT_DATE,
+            data_vencimento DATE NOT NULL,
+            data_pagamento DATE NULL,
+            status VARCHAR(20) NOT NULL DEFAULT 'PENDENTE' CHECK (status IN ('PENDENTE', 'PAGO', 'CANCELADO')),
+            forma_pagamento VARCHAR(50) NOT NULL DEFAULT 'BOLETO',
+            documento_ref VARCHAR(100),
+            movimentacao_estoque_id INT REFERENCES movimentacao_estoque(id) ON DELETE SET NULL,
+            observacao TEXT,
+            criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_conta_pagar_status_venc ON conta_pagar (status, data_vencimento);
+    `);
+
+    // Migration: tabelas de Orçamentos Comerciais (Cotações B2B)
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS orcamento (
+            id SERIAL PRIMARY KEY,
+            cliente_id INT REFERENCES cliente(id) ON DELETE RESTRICT,
+            data_orcamento TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            data_validade DATE NOT NULL,
+            status VARCHAR(20) NOT NULL DEFAULT 'PENDENTE' CHECK (status IN ('PENDENTE', 'APROVADO', 'RECUSADO')),
+            valor_total DECIMAL(10, 2) DEFAULT 0.00,
+            observacao TEXT,
+            pedido_id INT REFERENCES pedido(id) ON DELETE SET NULL,
+            criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE TABLE IF NOT EXISTS item_orcamento (
+            orcamento_id INT REFERENCES orcamento(id) ON DELETE CASCADE,
+            produto_id INT REFERENCES produto(id) ON DELETE RESTRICT,
+            quantidade INT NOT NULL,
+            preco_unitario DECIMAL(10, 2) NOT NULL,
+            PRIMARY KEY (orcamento_id, produto_id)
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_orcamento_status_validade ON orcamento (status, data_validade);
+    `);
+
+    // Migration: tabela de Contas a Receber integrada aos Pedidos B2B
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS conta_receber (
+            id SERIAL PRIMARY KEY,
+            cliente_id INT REFERENCES cliente(id) ON DELETE RESTRICT,
+            pedido_id INT REFERENCES pedido(id) ON DELETE CASCADE,
+            descricao VARCHAR(200) NOT NULL,
+            valor DECIMAL(10, 2) NOT NULL,
+            data_emissao DATE NOT NULL DEFAULT CURRENT_DATE,
+            data_vencimento DATE NOT NULL,
+            data_recebimento DATE NULL,
+            status VARCHAR(20) NOT NULL DEFAULT 'PENDENTE' CHECK (status IN ('PENDENTE', 'RECEBIDO', 'CANCELADO')),
+            forma_pagamento VARCHAR(50) NOT NULL DEFAULT 'BOLETO',
+            documento_ref VARCHAR(100),
+            observacao TEXT,
+            criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_conta_receber_status_venc ON conta_receber (status, data_vencimento);
+    `);
+
+    console.log('✅ Tabela de categorias dinâmicas, Kardex, Contas a Pagar/Receber e Orçamentos verificados');
 }
 
 module.exports = { runMigrations };

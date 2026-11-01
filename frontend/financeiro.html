@@ -70,9 +70,9 @@
     </div>
     
     <div class="dropdown">
-      <button class="dropbtn">💰 FINANCEIRO</button>
+      <button class="dropbtn" style="color:var(--brand)">💰 FINANCEIRO</button>
       <div class="dropdown-content">
-        <a href="financeiro.html">Fluxo de Caixa</a>
+        <a href="financeiro.html" class="active">Fluxo de Caixa</a>
         <a href="contas_receber.html">Contas a Receber</a>
         <a href="contas_pagar.html">Contas a Pagar</a>
       </div>
@@ -127,29 +127,25 @@
 </div>
 
 <script>
-  const API_PEDIDOS = 'http://localhost:3001/api/comercial/pedidos';
-  const API_INSUMOS = 'http://localhost:3001/api/insumos';
+  const API_RESUMO = 'http://localhost:3001/api/financeiro/resumo';
 
   function formatarDinheiro(val) { return Number(val||0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
 
   async function carregarFinanceiro() {
     try {
-      const [rPed, rIns] = await Promise.all([fetch(API_PEDIDOS), fetch(API_INSUMOS)]);
-      const peds    = await rPed.json();
-      const insumos = await rIns.json();
+      const res = await fetch(API_RESUMO);
+      const dados = await res.json();
+      if (!res.ok) return;
 
-      let totalReceber = peds.filter(p => p.status !== 'CANCELADO' && p.status !== 'ORCAMENTO')
-                             .reduce((acc, c) => acc + parseFloat(c.valor_total || 0), 0);
-
-      let totalPagar = insumos.reduce((acc, i) => {
-        const preco = parseFloat(i.preco_pago || i.custo_unitario || 0);
-        const est   = parseFloat(i.estoque_atual || 0);
-        return acc + (preco * est);
-      }, 0);
+      const totalReceber = parseFloat(dados.contas_a_receber_pendente || 0);
+      const totalPagar   = parseFloat(dados.contas_a_pagar_pendente || 0);
+      const recebidos    = parseFloat(dados.contas_recebidas_total || 0);
+      const pagos        = parseFloat(dados.contas_pagas_total || 0);
+      const saldoPrevisto = (recebidos + totalReceber) - (pagos + totalPagar);
 
       document.getElementById('kpi-receber').textContent = formatarDinheiro(totalReceber);
       document.getElementById('kpi-pagar').textContent   = formatarDinheiro(totalPagar);
-      document.getElementById('kpi-saldo').textContent   = formatarDinheiro(totalReceber - totalPagar);
+      document.getElementById('kpi-saldo').textContent   = formatarDinheiro(saldoPrevisto);
     } catch {
       // fallback
     }

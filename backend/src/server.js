@@ -11,6 +11,7 @@ const receitaRoutes = require('./routes/receitaRoutes');
 const planejamentoRoutes = require('./routes/planejamentoRoutes');
 const colaboradorRoutes = require('./routes/colaboradorRoutes');
 const categoriaRoutes  = require('./routes/categoriaRoutes');
+const estoqueRoutes    = require('./routes/estoqueRoutes');
 
 const path = require('path');
 
@@ -35,6 +36,7 @@ app.use('/api/receitas', receitaRoutes);
 app.use('/api/planejamento', planejamentoRoutes);
 app.use('/api/colaboradores', colaboradorRoutes);
 app.use('/api/categorias',   categoriaRoutes);
+app.use('/api/estoque',      estoqueRoutes);
 
 // ==========================================
 // ROTA DE TESTE (Para rodar no Bruno)

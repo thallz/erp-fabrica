@@ -8,27 +8,135 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/global.css" />
   <style>
+    .filter-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .filter-pills {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .pill {
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-secondary);
+      transition: all .15s;
+    }
+    .pill:hover { border-color: var(--brand); color: var(--brand); }
+    .pill.active {
+      background: var(--brand);
+      color: #fff;
+      border-color: var(--brand);
+    }
+
     .receber-card {
-      background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
-      box-shadow: var(--shadow); overflow: hidden;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
     }
     .receber-card table { width: 100%; border-collapse: collapse; }
     .receber-card thead th {
-      background: var(--bg); font-size: 11px; font-weight: 700; text-transform: uppercase;
-      letter-spacing: .05em; color: var(--text-muted); padding: 12px 16px; border-bottom: 1px solid var(--border-light); text-align: left;
+      background: #fafbff;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: var(--text-muted);
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-light);
+      text-align: left;
     }
-    .receber-card tbody tr { border-bottom: 1px solid var(--border-light); }
-    .receber-card tbody td { padding: 13px 16px; font-size: 13.5px; }
+    .receber-card tbody tr { border-bottom: 1px solid var(--border-light); transition: background .12s; }
+    .receber-card tbody tr:hover { background: #fafbff; }
+    .receber-card tbody td { padding: 14px 16px; font-size: 13.5px; vertical-align: middle; }
 
+    .ped-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11.5px;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 6px;
+      background: var(--brand-light);
+      color: var(--brand);
+      text-decoration: none;
+    }
+    .ped-chip:hover { opacity: .85; }
+
+    .forma-chip {
+      display: inline-block;
+      font-size: 11.5px;
+      font-weight: 600;
+      padding: 3px 9px;
+      border-radius: 6px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+    }
+
+    .btn-wpp {
+      background: #ecfdf5;
+      color: #15803d;
+      border: 1px solid #bbf7d0;
+      font-weight: 600;
+    }
+    .btn-wpp:hover {
+      background: #dcfce7;
+      border-color: #86efac;
+    }
+
+    /* Modal Centralizado Padrão (Sem fechamento acidental no backdrop ou Escape) */
     .modal-overlay {
-      position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 1100;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.45);
+      z-index: 1100;
       display: flex; align-items: center; justify-content: center;
-      opacity: 0; pointer-events: none; transition: opacity .2s;
+      opacity: 0; pointer-events: none;
+      transition: opacity .2s;
     }
     .modal-overlay.open { opacity: 1; pointer-events: all; }
     .modal-box {
-      background: var(--surface); border-radius: 16px; box-shadow: var(--shadow-lg);
-      width: 480px; max-width: calc(100vw - 32px); padding: 24px; display: flex; flex-direction: column;
+      background: var(--surface);
+      border-radius: 12px;
+      box-shadow: var(--shadow-md);
+      width: 500px;
+      max-width: calc(100vw - 32px);
+      max-height: 92vh;
+      display: flex;
+      flex-direction: column;
+      transform: translateY(12px) scale(.97);
+      transition: transform .2s;
+    }
+    .modal-overlay.open .modal-box { transform: none; }
+    .modal-header {
+      padding: 20px 22px 14px;
+      border-bottom: 1px solid var(--border-light);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .modal-header h3 { font-size: 16px; font-weight: 700; margin: 0; }
+    .modal-close {
+      background: none; border: none; cursor: pointer;
+      font-size: 20px; color: var(--text-muted); padding: 2px 6px; border-radius: 4px;
+    }
+    .modal-close:hover { background: var(--bg); color: var(--text-primary); }
+    .modal-body { padding: 18px 22px; overflow-y: auto; flex: 1; }
+    .modal-footer {
+      padding: 14px 22px 18px;
+      border-top: 1px solid var(--border-light);
+      display: flex; justify-content: flex-end; gap: 8px;
     }
   </style>
 </head>
@@ -39,249 +147,565 @@
 <div class="erp-shell">
   <div class="main-wrap">
 
-    <!-- TOPBAR GLOBAL DROPDOWN -->
-<header class="topbar">
-  <div class="topbar-logo">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-    <span>ERP Fabrica</span>
-  </div>
-  
-  <nav class="topbar-nav">
-    <div class="dropdown">
-      <button class="dropbtn">📊 COMERCIAL</button>
-      <div class="dropdown-content">
-        <a href="vendas.html">Vendas</a>
-        <a href="orcamentos.html">Orçamentos</a>
-        <a href="produtos.html">Produtos Finais</a>
-        <a href="clientes.html">Clientes</a>
+    <!-- TOPBAR GLOBAL PADRONIZADA -->
+    <header class="topbar">
+      <div class="topbar-logo">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        <span>ERP Fabrica</span>
       </div>
-    </div>
-    
-    <div class="dropdown">
-      <button class="dropbtn">📦 ESTOQUE</button>
-      <div class="dropdown-content">
-        <a href="almoxarifado.html">Matéria-Prima</a>
-        <a href="estoque_produtos.html">Produto Acabado</a>
-      </div>
-    </div>
-    
-    <div class="dropdown">
-      <button class="dropbtn">🏭 PRODUÇÃO</button>
-      <div class="dropdown-content">
-        <a href="planejamento.html">Planejamento Maestro</a>
-        <a href="ordens_producao.html">Fila de OPs</a>
-        <a href="receitas.html">Receitas (Preparos)</a>
-        <a href="colaboradores.html">Colaboradores</a>
-      </div>
-    </div>
-    
-    <div class="dropdown">
-      <button class="dropbtn">💰 FINANCEIRO</button>
-      <div class="dropdown-content">
-        <a href="financeiro.html">Fluxo de Caixa</a>
-        <a href="contas_receber.html">Contas a Receber</a>
-        <a href="contas_pagar.html">Contas a Pagar</a>
-      </div>
-    </div>
-  </nav>
 
-  <div class="topbar-right">
-    <span class="badge-online">● Sistema Online</span>
-    <div class="user-chip">
-      <div class="user-avatar">AD</div>
-    </div>
-  </div>
-</header>
+      <nav class="topbar-nav">
+        <div class="dropdown">
+          <button class="dropbtn">📊 COMERCIAL</button>
+          <div class="dropdown-content">
+            <a href="vendas.html">Vendas</a>
+            <a href="orcamentos.html">Orçamentos</a>
+            <a href="produtos.html">Produtos Finais</a>
+            <a href="clientes.html">Clientes</a>
+          </div>
+        </div>
+
+        <div class="dropdown">
+          <button class="dropbtn">📦 ESTOQUE</button>
+          <div class="dropdown-content">
+            <a href="almoxarifado.html">Matéria-Prima</a>
+            <a href="estoque_produtos.html">Produto Acabado</a>
+          </div>
+        </div>
+
+        <div class="dropdown">
+          <button class="dropbtn">🏭 PRODUÇÃO</button>
+          <div class="dropdown-content">
+            <a href="planejamento.html">Planejamento Maestro</a>
+            <a href="ordens_producao.html">Fila de OPs</a>
+            <a href="receitas.html">Receitas (Preparos)</a>
+            <a href="colaboradores.html">Colaboradores</a>
+          </div>
+        </div>
+
+        <div class="dropdown">
+          <button class="dropbtn" style="color:var(--brand)">💰 FINANCEIRO</button>
+          <div class="dropdown-content">
+            <a href="financeiro.html">Fluxo de Caixa</a>
+            <a href="contas_receber.html" class="active">Contas a Receber</a>
+            <a href="contas_pagar.html">Contas a Pagar</a>
+          </div>
+        </div>
+      </nav>
+
+      <div class="topbar-right">
+        <span class="badge-online">● Sistema Online</span>
+        <div class="user-chip">
+          <div class="user-avatar">AD</div>
+        </div>
+      </div>
+    </header>
 
     <div class="page-content">
 
       <div class="page-header">
         <div class="page-header-left">
-          <h1>Contas a Receber (Vendas Faturadas)</h1>
-          <p>Acompanhe os faturamentos de vendas B2B e baixe os recebimentos dos clientes.</p>
+          <h1>Contas a Receber — Faturamento B2B</h1>
+          <p>Títulos gerados automaticamente pelos Pedidos de Venda, controle de boletos e cobrança rápida via WhatsApp.</p>
         </div>
         <div class="page-header-actions">
-          <button class="btn btn-primary" onclick="openReceberModal()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-            </svg>
-            + Lançar
+          <a href="vendas.html" class="btn btn-outline">
+            🛒 Ir para Pedidos B2B
+          </a>
+          <button class="btn btn-primary" onclick="openNovoTituloModal()">
+            + Lançamento Avulso
           </button>
         </div>
       </div>
 
+      <!-- CARDS DE KPI NO TOPO -->
+      <div class="kpi-grid">
+        <div class="kpi-card accent-amber">
+          <div class="kpi-label">🟡 Total a Receber (Pendente)</div>
+          <div class="kpi-value" id="kpi-a-receber">R$ 0,00</div>
+          <div class="kpi-sub">Títulos aguardando liquidação</div>
+        </div>
+        <div class="kpi-card accent-red">
+          <div class="kpi-label">🔴 Títulos Vencidos</div>
+          <div class="kpi-value" id="kpi-vencidos" style="color:var(--red)">R$ 0,00</div>
+          <div class="kpi-sub">Cobranças pendentes em atraso</div>
+        </div>
+        <div class="kpi-card accent-green">
+          <div class="kpi-label">🟢 Recebidos no Mês</div>
+          <div class="kpi-value" id="kpi-recebidos-mes" style="color:var(--green)">R$ 0,00</div>
+          <div class="kpi-sub" id="kpi-sub-mes">Entradas confirmadas no mês</div>
+        </div>
+      </div>
+
+      <!-- BARRA DE FILTROS E BUSCA -->
+      <div class="filter-bar">
+        <div class="filter-pills">
+          <span class="pill active" onclick="selecionarStatus('', this)">Todos</span>
+          <span class="pill" onclick="selecionarStatus('PENDENTE', this)">🟡 Pendentes</span>
+          <span class="pill" onclick="selecionarStatus('RECEBIDO', this)">🟢 Recebidos</span>
+          <span class="pill" onclick="selecionarStatus('VENCIDO', this)">🔴 Vencidos</span>
+        </div>
+
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <div class="search-bar" style="width:270px;padding:6px 12px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input type="text" id="input-busca" placeholder="Buscar cliente, #pedido ou título..." oninput="filtrarLocal()" />
+          </div>
+        </div>
+      </div>
+
+      <!-- TABELA DE CONTAS A RECEBER -->
       <div class="receber-card">
-        <table>
-          <thead>
-            <tr>
-              <th>Pedido / Título</th>
-              <th>Cliente</th>
-              <th>Vencimento / Entrega</th>
-              <th style="text-align:right">Valor Total</th>
-              <th style="text-align:center">Status</th>
-              <th style="text-align:center">Ações</th>
-            </tr>
-          </thead>
-          <tbody id="receber-tbody">
-            <tr>
-              <td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted)">Carregando contas a receber...</td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:70px">#ID</th>
+                <th>Cliente</th>
+                <th>Pedido</th>
+                <th>Vencimento</th>
+                <th style="text-align:right">Valor (R$)</th>
+                <th>Forma Pgto</th>
+                <th style="text-align:center">Status</th>
+                <th style="text-align:center;width:255px">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="receber-tbody">
+              <tr>
+                <td colspan="8" style="text-align:center;padding:42px;color:var(--text-muted)">
+                  <span class="spinner" style="margin-right:8px"></span> Carregando contas a receber...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
     </div>
   </div>
 </div>
 
-<!-- MODAL LANÇAR RECEBIMENTO -->
-<div class="modal-overlay" id="receber-modal-overlay" onclick="if(event.target===this)closeReceberModal()">
-  <div class="modal-box">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <h3 style="margin:0;font-size:17px;font-weight:700">📥 Lançar Conta a Receber</h3>
-      <button onclick="closeReceberModal()" style="background:none;border:none;cursor:pointer;font-size:20px">✕</button>
+<!-- ==================== MODAL: CONFIRMAR RECEBIMENTO ==================== -->
+<div class="modal-overlay" id="baixa-modal-overlay">
+  <div class="modal-box" style="width:440px">
+    <div class="modal-header">
+      <h3>💰 Confirmar Recebimento</h3>
+      <button class="modal-close" type="button" onclick="closeBaixaModal()">✕</button>
     </div>
-    <form id="form-receber" onsubmit="salvarRecebimentoManual(event)">
-      <div class="form-group" style="margin-bottom:12px">
-        <label>Descrição / Cliente *</label>
-        <input type="text" id="rec-cliente" placeholder="Ex: Padaria Estrela / Evento Empresa" required />
+    <div class="modal-body">
+      <input type="hidden" id="baixa-conta-id" />
+      <div id="baixa-resumo" style="background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:13px"></div>
+      <div class="form-group">
+        <label>Meio de Recebimento Utilizado *</label>
+        <select id="baixa-forma">
+          <option value="BOLETO">Boleto Bancário</option>
+          <option value="PIX">PIX / Transferência</option>
+          <option value="DINHEIRO">Dinheiro</option>
+          <option value="CARTAO">Cartão</option>
+        </select>
       </div>
-      <div class="form-row cols-2" style="margin-bottom:16px">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" type="button" onclick="closeBaixaModal()">Cancelar</button>
+      <button class="btn btn-entrada" type="button" id="btn-confirmar-baixa" onclick="confirmarRecebimento()">
+        ✓ Confirmar Entrada no Caixa
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== MODAL: LANÇAMENTO AVULSO ==================== -->
+<div class="modal-overlay" id="novo-modal-overlay">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>📥 Novo Lançamento a Receber</h3>
+      <button class="modal-close" type="button" onclick="closeNovoTituloModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <form id="form-novo-receber" onsubmit="salvarTituloAvulso(event)">
         <div class="form-group">
-          <label>Data Vencimento *</label>
-          <input type="date" id="rec-data" required />
+          <label>Cliente (Opcional)</label>
+          <select id="novo-cliente">
+            <option value="">Cliente Avulso / Sem vínculo</option>
+          </select>
         </div>
+
         <div class="form-group">
-          <label>Valor a Receber (R$) *</label>
-          <input type="number" step="0.01" id="rec-valor" placeholder="0,00" required />
+          <label>Descrição do Recebível *</label>
+          <input type="text" id="novo-descricao" required placeholder="Ex: Evento Corporativo / Venda Balcão..." />
         </div>
-      </div>
-      <div style="display:flex;justify-content:flex-end;gap:8px">
-        <button type="button" class="btn btn-outline" onclick="closeReceberModal()">Cancelar</button>
-        <button type="submit" class="btn btn-primary">Salvar Lançamento</button>
-      </div>
-    </form>
+
+        <div class="form-row cols-2">
+          <div class="form-group">
+            <label>Valor (R$) *</label>
+            <input type="text" inputmode="decimal" id="novo-valor" required placeholder="R$ 0,00"
+              onfocus="limparInputMoeda(this)" onblur="formatarInputMoeda(this)" />
+          </div>
+          <div class="form-group">
+            <label>Vencimento *</label>
+            <input type="date" id="novo-vencimento" required />
+          </div>
+        </div>
+
+        <div class="form-row cols-2">
+          <div class="form-group">
+            <label>Condição *</label>
+            <select id="novo-condicao">
+              <option value="A_PRAZO">A Prazo (Pendente)</option>
+              <option value="A_VISTA">À Vista (Já Recebido)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Forma de Pagamento *</label>
+            <select id="novo-forma">
+              <option value="BOLETO">Boleto</option>
+              <option value="PIX">PIX</option>
+              <option value="DINHEIRO">Dinheiro</option>
+              <option value="CARTAO">Cartão</option>
+            </select>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" type="button" onclick="closeNovoTituloModal()">Cancelar</button>
+      <button class="btn btn-primary" type="button" id="btn-salvar-novo" onclick="document.getElementById('form-novo-receber').requestSubmit()">
+        Salvar Título
+      </button>
+    </div>
   </div>
 </div>
 
 <script>
-  const API_PEDIDOS = 'http://localhost:3001/api/comercial/pedidos';
+  const API_CONTAS_RECEBER = 'http://localhost:3001/api/financeiro/contas-receber';
+  const API_CLIENTES       = 'http://localhost:3001/api/comercial/clientes';
 
-  function formatarDinheiro(val) { return Number(val||0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
-  function formatarData(dStr) { return dStr ? new Date(dStr).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : '—'; }
+  let listaTitulos = [];
+  let listaClientes = [];
+  let statusSelecionado = '';
 
-  function showToast(msg, type='') {
-    const el = document.createElement('div'); el.className = 'toast ' + type; el.textContent = msg;
-    document.getElementById('toast-container').appendChild(el); setTimeout(() => el.remove(), 4000);
+  /* ======================== FORMATAÇÃO & MOEDA ======================== */
+  function formatarDinheiro(val) {
+    return Number(val || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   }
 
-  let lancamentosManuais = [];
+  function formatarData(dStr) {
+    if (!dStr) return '—';
+    const iso = String(dStr).split('T')[0];
+    const partes = iso.split('-');
+    if (partes.length === 3) return `${partes[2]}/${partes[1]}/${partes[0]}`;
+    return new Date(dStr).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+  }
 
-  async function carregarContas() {
+  function parseMoeda(valor) {
+    if (typeof valor === 'number') return isNaN(valor) ? 0 : valor;
+    if (!valor) return 0;
+    let str = String(valor).replace(/[R$\s]/g, '');
+    if (str.includes(',') && str.includes('.')) {
+      str = str.replace(/\./g, '').replace(',', '.');
+    } else if (str.includes(',')) {
+      str = str.replace(',', '.');
+    }
+    const num = parseFloat(str);
+    return isNaN(num) ? 0 : num;
+  }
+
+  function formatarInputMoeda(el) {
+    const val = parseMoeda(el.value);
+    if (el.value && el.value.trim() !== '' && !isNaN(val) && val > 0) {
+      el.value = val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    }
+  }
+
+  function limparInputMoeda(el) {
+    if (!el.value) return;
+    const val = parseMoeda(el.value);
+    if (!isNaN(val) && val > 0) {
+      el.value = val.toFixed(2).replace('.', ',');
+    } else if (el.value.trim() === 'R$ 0,00' || val === 0) {
+      el.value = '';
+    }
+  }
+
+  function showToast(msg, type = '') {
+    const el = document.createElement('div');
+    el.className = 'toast ' + type;
+    el.textContent = msg;
+    document.getElementById('toast-container').appendChild(el);
+    setTimeout(() => el.remove(), 4200);
+  }
+
+  /* ======================== CARREGAMENTO ======================== */
+  async function carregarClientes() {
     try {
-      const res = await fetch(API_PEDIDOS);
-      const peds = await res.json();
-      renderizarTabela(peds);
-    } catch {
-      renderizarTabela([]);
-    }
-  }
-
-  function renderizarTabela(peds) {
-    const tbody = document.getElementById('receber-tbody');
-    const faturados = peds.filter(p => p.status !== 'CANCELADO' && p.status !== 'ORCAMENTO').map(c => ({
-      id: c.id,
-      titulo: `#PED-${c.id}`,
-      cliente: c.razao_social,
-      data: c.data_entrega,
-      valor: parseFloat(c.valor_total || 0),
-      status: c.status
-    }));
-
-    const todos = [...faturados, ...lancamentosManuais];
-
-    if (!todos.length) {
-      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted)">Nenhuma conta a receber pendente. Clique em + Lançar.</td></tr>`;
-      return;
-    }
-
-    tbody.innerHTML = todos.map(c => `
-      <tr>
-        <td><strong style="color:var(--brand)">${c.titulo}</strong></td>
-        <td><strong>${c.cliente}</strong></td>
-        <td>${formatarData(c.data)}</td>
-        <td style="text-align:right;font-weight:700">${formatarDinheiro(c.valor)}</td>
-        <td style="text-align:center">
-          <span class="badge ${c.status === 'ENTREGUE' || c.status === 'PAGO' ? 'badge-green' : 'badge-amber'}">${c.status}</span>
-        </td>
-        <td style="text-align:center">
-          ${(c.status !== 'ENTREGUE' && c.status !== 'PAGO')
-            ? `<button class="btn btn-entrada btn-sm" onclick="baixarRecebimento(${c.id})">✓ Dar Baixa</button>`
-            : `<span style="font-size:12px;color:var(--green);font-weight:600">✓ Recebido</span>`}
-        </td>
-      </tr>
-    `).join('');
-  }
-
-  function openReceberModal() {
-    document.getElementById('form-receber').reset();
-    const amanha = new Date(); amanha.setDate(amanha.getDate() + 7);
-    document.getElementById('rec-data').value = amanha.toISOString().split('T')[0];
-    document.getElementById('receber-modal-overlay').classList.add('open');
-  }
-
-  function closeReceberModal() {
-    document.getElementById('receber-modal-overlay').classList.remove('open');
-  }
-
-  function salvarRecebimentoManual(e) {
-    e.preventDefault();
-    const cli   = document.getElementById('rec-cliente').value.trim();
-    const dt    = document.getElementById('rec-data').value;
-    const valor = parseFloat(document.getElementById('rec-valor').value || 0);
-
-    if (!cli || !valor) return;
-
-    const newId = Date.now();
-    lancamentosManuais.push({
-      id: newId,
-      titulo: `#REC-${newId.toString().slice(-4)}`,
-      cliente: cli,
-      data: dt,
-      valor,
-      status: 'PENDENTE'
-    });
-
-    showToast('✅ Lançamento a receber salvo!', 'success');
-    closeReceberModal();
-    carregarContas();
-  }
-
-  async function baixarRecebimento(id) {
-    const itemManual = lancamentosManuais.find(m => m.id === id);
-    if (itemManual) {
-      itemManual.status = 'PAGO';
-      showToast('✅ Recebimento baixado com sucesso!', 'success');
-      carregarContas();
-      return;
-    }
-
-    try {
-      const res = await fetch(`${API_PEDIDOS}/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'ENTREGUE' })
-      });
-      if (res.ok) {
-        showToast('✅ Recebimento baixado com sucesso!', 'success');
-        carregarContas();
+      const r = await fetch(API_CLIENTES);
+      if (r.ok) {
+        listaClientes = await r.json();
+        const sel = document.getElementById('novo-cliente');
+        sel.innerHTML = '<option value="">Cliente Avulso / Sem vínculo</option>';
+        listaClientes.forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = c.id;
+          opt.textContent = c.razao_social;
+          sel.appendChild(opt);
+        });
       }
     } catch {
-      showToast('Erro de conexão.', 'error');
+      // silencioso
     }
   }
 
-  window.onload = carregarContas;
+  async function carregarContasReceber() {
+    try {
+      const params = new URLSearchParams();
+      if (statusSelecionado) params.set('status', statusSelecionado);
+      const url = params.toString() ? `${API_CONTAS_RECEBER}?${params.toString()}` : API_CONTAS_RECEBER;
+
+      const res = await fetch(url);
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.erro || 'Falha ao buscar títulos a receber.');
+
+      listaTitulos = json.dados || [];
+      const kpis = json.kpis || {};
+
+      document.getElementById('kpi-a-receber').textContent     = formatarDinheiro(kpis.total_a_receber || 0);
+      document.getElementById('kpi-vencidos').textContent      = formatarDinheiro(kpis.total_vencidos || 0);
+      document.getElementById('kpi-recebidos-mes').textContent = formatarDinheiro(kpis.total_recebidos_mes || 0);
+
+      if (json.mes_referencia) {
+        const [ano, m] = json.mes_referencia.split('-');
+        document.getElementById('kpi-sub-mes').textContent = `Entradas confirmadas em ${m}/${ano}`;
+      }
+
+      filtrarLocal();
+    } catch (err) {
+      document.getElementById('receber-tbody').innerHTML = `
+        <tr><td colspan="8" style="text-align:center;padding:40px;color:var(--red)">
+          ⚠️ ${err.message || 'Erro de conexão com o servidor na porta 3001.'}
+        </td></tr>`;
+    }
+  }
+
+  function selecionarStatus(st, el) {
+    statusSelecionado = st;
+    document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    carregarContasReceber();
+  }
+
+  function filtrarLocal() {
+    const termo = (document.getElementById('input-busca').value || '').toLowerCase().trim();
+    const filtrados = listaTitulos.filter(t => {
+      if (!termo) return true;
+      return (
+        String(t.id).includes(termo) ||
+        String(t.pedido_id || '').includes(termo) ||
+        (t.razao_social || '').toLowerCase().includes(termo) ||
+        (t.descricao || '').toLowerCase().includes(termo) ||
+        (t.documento_ref || '').toLowerCase().includes(termo)
+      );
+    });
+    renderizarTabela(filtrados);
+  }
+
+  /* ======================== RENDER TABELA ======================== */
+  function renderizarTabela(titulos) {
+    const tbody = document.getElementById('receber-tbody');
+    if (!titulos.length) {
+      tbody.innerHTML = `
+        <tr><td colspan="8" style="text-align:center;padding:44px;color:var(--text-muted)">
+          Nenhum título encontrado para o filtro selecionado.
+        </td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = titulos.map(t => {
+      let badgeHtml = '';
+      if (t.status === 'RECEBIDO') {
+        badgeHtml = `<span class="badge badge-green">🟢 RECEBIDO</span>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:3px">Em ${formatarData(t.data_recebimento)}</div>`;
+      } else if (t.status === 'CANCELADO') {
+        badgeHtml = `<span class="badge badge-gray">CANCELADO</span>`;
+      } else if (t.vencido) {
+        badgeHtml = `<span class="badge badge-red">🔴 VENCIDO</span>`;
+      } else {
+        badgeHtml = `<span class="badge badge-amber">🟡 PENDENTE</span>`;
+      }
+
+      const pedidoHtml = t.pedido_id
+        ? `<a href="vendas.html" class="ped-chip" title="Ver Pedidos de Venda">#PED-${t.pedido_id}</a>`
+        : `<span style="color:var(--text-muted);font-size:12px">Avulso</span>`;
+
+      const acoesHtml = t.status === 'PENDENTE'
+        ? `<div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap">
+             <button class="btn btn-entrada btn-sm" onclick="abrirModalBaixa(${t.id})">💰 Confirmar Recebimento</button>
+             <button class="btn btn-wpp btn-sm" onclick="cobrarWhatsApp(${t.id})" title="Enviar lembrete amigável no WhatsApp">📱 WhatsApp</button>
+           </div>`
+        : `<span style="color:var(--green);font-weight:700;font-size:12px">✓ Liquidado</span>`;
+
+      return `
+        <tr>
+          <td><strong style="color:var(--brand)">#${t.id}</strong></td>
+          <td>
+            <div style="font-weight:700;color:var(--text-primary)">${t.razao_social || 'Cliente Avulso'}</div>
+            <div style="font-size:11.5px;color:var(--text-secondary)">${t.descricao || ''}</div>
+          </td>
+          <td>${pedidoHtml}</td>
+          <td style="${t.vencido ? 'color:var(--red);font-weight:700' : 'font-weight:500'}">
+            ${formatarData(t.data_vencimento)}
+          </td>
+          <td style="text-align:right;font-weight:800;font-size:14px">${formatarDinheiro(t.valor)}</td>
+          <td><span class="forma-chip">${t.forma_pagamento || 'BOLETO'}</span></td>
+          <td style="text-align:center">${badgeHtml}</td>
+          <td style="text-align:center">${acoesHtml}</td>
+        </tr>`;
+    }).join('');
+  }
+
+  /* ======================== COBRANÇA AMIGÁVEL WHATSAPP ======================== */
+  async function cobrarWhatsApp(id) {
+    const t = listaTitulos.find(x => x.id === id);
+    if (!t) return;
+
+    const clienteNome = t.razao_social || 'Parceiro(a)';
+    const refPedido   = t.pedido_id ? `referente ao *Pedido #${t.pedido_id}*` : `referente a *${t.descricao}*`;
+    const valorFmt    = formatarDinheiro(t.valor);
+    const vencFmt     = formatarData(t.data_vencimento);
+
+    const texto = t.vencido
+      ? `Olá, *${clienteNome}*! Tudo bem? 😊\n\nPassando com um lembrete amigável sobre o título em aberto ${refPedido}, no valor de *${valorFmt}* (${t.forma_pagamento || 'BOLETO'}), com vencimento em *${vencFmt}*.\n\nCaso já tenha realizado o pagamento, por gentileza desconsidere ou nos envie o comprovante por aqui. Qualquer dúvida estamos à disposição!`
+      : `Olá, *${clienteNome}*! Tudo bem? 😊\n\nPassando para lembrar do faturamento ${refPedido}, no valor de *${valorFmt}* (${t.forma_pagamento || 'BOLETO'}), com vencimento programado para *${vencFmt}*.\n\nQualquer dúvida ou se precisar da 2ª via / chave PIX, estamos à disposição!`;
+
+    try {
+      await navigator.clipboard.writeText(texto);
+      showToast('📋 Mensagem de cobrança copiada! Abrindo WhatsApp...', 'success');
+    } catch {
+      showToast('Abrindo WhatsApp com lembrete de cobrança...', 'success');
+    }
+
+    const foneLimpo = String(t.telefone || '').replace(/\D/g, '');
+    const foneComDdi = foneLimpo
+      ? (foneLimpo.startsWith('55') ? foneLimpo : `55${foneLimpo}`)
+      : '';
+    const urlWpp = foneComDdi
+      ? `https://wa.me/${foneComDdi}?text=${encodeURIComponent(texto)}`
+      : `https://wa.me/?text=${encodeURIComponent(texto)}`;
+
+    window.open(urlWpp, '_blank', 'noopener');
+  }
+
+  /* ======================== MODAL BAIXA / RECEBIMENTO ======================== */
+  function abrirModalBaixa(id) {
+    const t = listaTitulos.find(x => x.id === id);
+    if (!t) return;
+
+    document.getElementById('baixa-conta-id').value = t.id;
+    document.getElementById('baixa-forma').value = t.forma_pagamento || 'BOLETO';
+    document.getElementById('baixa-resumo').innerHTML = `
+      <div style="font-weight:700;font-size:14px;margin-bottom:4px">${t.razao_social || 'Cliente'}</div>
+      <div style="color:var(--text-secondary);margin-bottom:6px">${t.descricao}</div>
+      <div style="display:flex;justify-content:space-between;border-top:1px solid var(--border-light);padding-top:6px">
+        <span>Vencimento: <strong>${formatarData(t.data_vencimento)}</strong></span>
+        <span style="font-weight:800;color:var(--green)">${formatarDinheiro(t.valor)}</span>
+      </div>`;
+    document.getElementById('baixa-modal-overlay').classList.add('open');
+  }
+
+  function closeBaixaModal() {
+    document.getElementById('baixa-modal-overlay').classList.remove('open');
+  }
+
+  async function confirmarRecebimento() {
+    const id    = document.getElementById('baixa-conta-id').value;
+    const forma = document.getElementById('baixa-forma').value;
+    const btn   = document.getElementById('btn-confirmar-baixa');
+
+    btn.disabled = true;
+    btn.textContent = 'Processando...';
+    try {
+      const res = await fetch(`${API_CONTAS_RECEBER}/${id}/receber`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ forma_pagamento: forma })
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.erro || 'Erro ao confirmar recebimento.');
+
+      showToast(json.mensagem || '✅ Recebimento confirmado com sucesso!', 'success');
+      closeBaixaModal();
+      carregarContasReceber();
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '✓ Confirmar Entrada no Caixa';
+    }
+  }
+
+  /* ======================== MODAL NOVO TÍTULO AVULSO ======================== */
+  function openNovoTituloModal() {
+    document.getElementById('form-novo-receber').reset();
+    const d = new Date();
+    d.setDate(d.getDate() + 15);
+    document.getElementById('novo-vencimento').value = d.toISOString().split('T')[0];
+    document.getElementById('novo-modal-overlay').classList.add('open');
+  }
+
+  function closeNovoTituloModal() {
+    document.getElementById('novo-modal-overlay').classList.remove('open');
+  }
+
+  async function salvarTituloAvulso(e) {
+    e.preventDefault();
+    const cliente_id      = document.getElementById('novo-cliente').value || null;
+    const descricao       = document.getElementById('novo-descricao').value.trim();
+    const valor           = parseMoeda(document.getElementById('novo-valor').value);
+    const data_vencimento = document.getElementById('novo-vencimento').value;
+    const pagamento_tipo  = document.getElementById('novo-condicao').value;
+    const forma_pagamento = document.getElementById('novo-forma').value;
+
+    if (!descricao || valor <= 0) {
+      showToast('Preencha a descrição e um valor maior que zero.', 'error');
+      return;
+    }
+
+    const btn = document.getElementById('btn-salvar-novo');
+    btn.disabled = true;
+    btn.textContent = 'Salvando...';
+
+    try {
+      const res = await fetch(API_CONTAS_RECEBER, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cliente_id,
+          descricao,
+          valor,
+          data_vencimento,
+          pagamento_tipo,
+          forma_pagamento
+        })
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.erro || 'Erro ao cadastrar título.');
+
+      showToast('✅ Título a receber lançado com sucesso!', 'success');
+      closeNovoTituloModal();
+      carregarContasReceber();
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Salvar Título';
+    }
+  }
+
+  window.onload = () => {
+    carregarClientes();
+    carregarContasReceber();
+  };
 </script>
 </body>
 </html>

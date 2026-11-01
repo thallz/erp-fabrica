@@ -3,12 +3,53 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Almoxarifado — ERP Fabrica</title>
+  <title>Almoxarifado & Kardex — ERP Fabrica</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/global.css" />
   <style>
-    /* Grid de Cards de Insumos (Página Inteira - 320px minmax) */
+    /* Abas Superiores de Navegação Interna */
+    .subtabs-bar {
+      display: flex;
+      gap: 6px;
+      border-bottom: 2px solid var(--border);
+      margin-bottom: 22px;
+    }
+    .subtab-btn {
+      background: none;
+      border: none;
+      padding: 11px 18px;
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      cursor: pointer;
+      border-bottom: 2.5px solid transparent;
+      margin-bottom: -2px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: color .15s, border-color .15s, background .15s;
+      border-radius: 8px 8px 0 0;
+    }
+    .subtab-btn:hover {
+      color: var(--brand);
+      background: rgba(91, 75, 227, 0.05);
+    }
+    .subtab-btn.active {
+      color: var(--brand);
+      border-bottom-color: var(--brand);
+      background: var(--surface);
+    }
+    .subtab-count {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 12px;
+      background: var(--brand-light);
+      color: var(--brand);
+    }
+
+    /* Grid de Cards de Insumos */
     .insumo-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -58,6 +99,37 @@
       padding-top: 12px; margin-top: 4px;
     }
 
+    /* Barra de Filtros do Extrato */
+    .extrato-filters {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr 0.9fr 0.9fr auto;
+      gap: 12px;
+      align-items: end;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border-light);
+      background: #fafbff;
+      border-radius: 12px 12px 0 0;
+    }
+    @media (max-width: 960px) {
+      .extrato-filters { grid-template-columns: 1fr 1fr; }
+    }
+    .extrato-filters .form-group { margin-bottom: 0; }
+
+    .qty-pos { color: var(--green); font-weight: 700; }
+    .qty-neg { color: var(--red); font-weight: 700; }
+    .qty-adj { color: var(--blue); font-weight: 700; }
+
+    .doc-chip {
+      display: inline-block;
+      font-size: 11.5px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 6px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+    }
+
     /* =========== MODAL CENTRALIZADO =========== */
     .modal-overlay {
       position: fixed; inset: 0;
@@ -72,10 +144,10 @@
     .modal-box {
       background: var(--surface);
       border-radius: 12px;
-      box-shadow: var(--shadow-lg);
-      width: 460px;
+      box-shadow: var(--shadow-md);
+      width: 500px;
       max-width: calc(100vw - 32px);
-      max-height: 90vh;
+      max-height: 92vh;
       display: flex; flex-direction: column;
       transform: translateY(12px) scale(.97);
       transition: transform .2s;
@@ -105,7 +177,7 @@
 
     .alert-box-orange {
       background: var(--amber-bg);
-      border: 1px solid var(--amber-border);
+      border: 1px solid #fcd34d;
       color: var(--amber);
       border-radius: 8px;
       padding: 10px 12px;
@@ -124,7 +196,38 @@
       display: flex; justify-content: space-between; align-items: center;
     }
     .calc-preview-box span { font-size: 12.5px; color: var(--text-secondary); }
-    .calc-preview-box strong { font-size: 16px; font-weight: 700; color: var(--brand); }
+    .calc-preview-box strong { font-size: 15px; font-weight: 700; color: var(--brand); }
+
+    /* Banner informativo do insumo selecionado no Modal de Movimentação */
+    .item-status-banner {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      background: var(--brand-light);
+      border: 1px solid #dcd7fa;
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-top: 8px;
+    }
+    .item-status-cell span {
+      display: block;
+      font-size: 10.5px;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+    }
+    .item-status-cell strong {
+      font-size: 13.5px;
+      font-weight: 800;
+      color: var(--brand);
+    }
+
+    input:disabled, select:disabled {
+      background: #f3f4f6 !important;
+      color: var(--text-muted) !important;
+      cursor: not-allowed;
+      opacity: 0.75;
+    }
 
     .cat-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
     .cat-item {
@@ -156,6 +259,138 @@
       color: var(--text-secondary);
     }
     .btn-gear:hover { border-color: var(--brand); color: var(--brand); background: var(--brand-light); }
+
+    /* ======================== MODAL MULTI-ITENS DE NOTA FISCAL ======================== */
+    .nf-header-box {
+      background: #fafbff;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 16px;
+    }
+    .nf-section-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--brand);
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .nf-items-wrap {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 10px;
+      background: var(--surface);
+    }
+    .nf-items-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .nf-items-table thead th {
+      background: var(--bg);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      color: var(--text-secondary);
+      padding: 10px 10px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+    }
+    .nf-items-table tbody tr {
+      border-bottom: 1px solid var(--border-light);
+    }
+    .nf-items-table tbody tr:last-child {
+      border-bottom: none;
+    }
+    .nf-items-table tbody td {
+      padding: 8px 10px;
+      vertical-align: middle;
+    }
+    .nf-items-table select,
+    .nf-items-table input {
+      height: 36px;
+      font-size: 13px;
+      padding: 6px 10px;
+    }
+    .nf-custo-pill {
+      display: inline-block;
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--brand);
+      background: var(--brand-light);
+      border: 1px solid #dcd7fa;
+      border-radius: 6px;
+      padding: 5px 10px;
+      white-space: nowrap;
+    }
+    .nf-btn-remove {
+      width: 30px;
+      height: 30px;
+      border-radius: 7px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all .15s;
+    }
+    .nf-btn-remove:hover {
+      background: var(--red-bg);
+      border-color: #fca5a5;
+      color: var(--red);
+    }
+    .nf-total-footer {
+      background: linear-gradient(90deg, #f8f7ff 0%, #eefaf4 100%);
+      border: 1px solid #d4d0f8;
+      border-radius: 10px;
+      padding: 14px 18px;
+      margin-top: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .nf-total-footer .nf-total-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .nf-total-footer .nf-total-meta span {
+      font-size: 12px;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+    .nf-total-footer .nf-total-meta small {
+      font-size: 11.5px;
+      color: var(--brand);
+      font-weight: 600;
+    }
+    .nf-total-footer .nf-total-val {
+      text-align: right;
+    }
+    .nf-total-footer .nf-total-val span {
+      display: block;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: var(--text-secondary);
+      font-weight: 700;
+    }
+    .nf-total-footer .nf-total-val strong {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--green);
+    }
   </style>
 </head>
 <body>
@@ -225,17 +460,23 @@
 
       <div class="page-header">
         <div class="page-header-left">
-          <h1>Matérias-Primas</h1>
-          <p>Cadastre insumos calculando o custo por kg/unidade a partir do preço pago na embalagem.</p>
+          <h1>Almoxarifado — Matérias-Primas</h1>
+          <p>Gestão de saldos de insumos, entradas por compra, controle de perdas e auditoria completa (Kardex).</p>
         </div>
         <div class="page-header-actions">
-          <div class="search-bar" style="width:280px">
+          <div class="search-bar" id="search-bar-saldos" style="width:250px">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
             </svg>
             <input type="text" id="input-busca" placeholder="Buscar insumo..." oninput="filtrar()" />
           </div>
-          <button class="btn btn-primary" onclick="openInsumoModal()">
+          <button class="btn btn-primary" onclick="openNFModal()">
+            🧾 Lançar Compra / NF
+          </button>
+          <button class="btn btn-dividir" onclick="openMovModal('', 'AJUSTE')">
+            📦 Movimentar / Balanço
+          </button>
+          <button class="btn btn-outline" onclick="openInsumoModal()">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
               <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
             </svg>
@@ -244,24 +485,294 @@
         </div>
       </div>
 
-      <!-- CARDS GRID (320px MINMAX) -->
-      <div class="insumo-grid" id="insumos-grid">
-        <p style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted)">
-          <span class="spinner" style="display:inline-block;margin-right:8px"></span>
-          Carregando insumos...
-        </p>
+      <!-- ABAS: SALDOS ATUAIS vs EXTRATO KARDEX -->
+      <div class="subtabs-bar">
+        <button class="subtab-btn active" id="btn-aba-saldos" onclick="alternarAba('saldos')">
+          📦 Saldos Atuais
+          <span class="subtab-count" id="count-insumos">0</span>
+        </button>
+        <button class="subtab-btn" id="btn-aba-extrato" onclick="alternarAba('extrato')">
+          📜 Extrato / Histórico de Movimentações
+        </button>
+      </div>
+
+      <!-- ABA 1: SALDOS ATUAIS (CARDS) -->
+      <div id="secao-saldos">
+        <div class="insumo-grid" id="insumos-grid">
+          <p style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted)">
+            <span class="spinner" style="display:inline-block;margin-right:8px"></span>
+            Carregando insumos...
+          </p>
+        </div>
+      </div>
+
+      <!-- ABA 2: EXTRATO / HISTÓRICO DE MOVIMENTAÇÕES (KARDEX) -->
+      <div id="secao-extrato" class="hidden">
+        <div class="card">
+          <div class="extrato-filters">
+            <div class="form-group">
+              <label>Filtrar por Insumo</label>
+              <select id="filtro-extrato-insumo" onchange="carregarExtrato(1)">
+                <option value="">Todos os insumos</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Tipo de Movimento</label>
+              <select id="filtro-extrato-tipo" onchange="carregarExtrato(1)">
+                <option value="">Todos os tipos</option>
+                <option value="ENTRADA">🟢 Entrada</option>
+                <option value="SAIDA">🔴 Saída</option>
+                <option value="PERDA">🔴 Perda / Descarte</option>
+                <option value="AJUSTE">🔵 Ajuste de Inventário</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Data Inicial</label>
+              <input type="date" id="filtro-extrato-inicio" onchange="carregarExtrato(1)" />
+            </div>
+            <div class="form-group">
+              <label>Data Final</label>
+              <input type="date" id="filtro-extrato-fim" onchange="carregarExtrato(1)" />
+            </div>
+            <div style="display:flex;gap:6px">
+              <button class="btn btn-primary" type="button" onclick="carregarExtrato(1)">Filtrar</button>
+              <button class="btn btn-outline" type="button" onclick="limparFiltrosExtrato()">Limpar</button>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Data / Hora</th>
+                  <th>Tipo</th>
+                  <th>Item (Insumo)</th>
+                  <th style="text-align:right">Quantidade</th>
+                  <th style="text-align:right">Saldo Anterior</th>
+                  <th style="text-align:right">Saldo Posterior</th>
+                  <th>Documento</th>
+                  <th>Motivo / Justificativa</th>
+                </tr>
+              </thead>
+              <tbody id="extrato-tbody">
+                <tr>
+                  <td colspan="8" style="text-align:center;padding:40px;color:var(--text-muted)">
+                    Carregando histórico de movimentações...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div style="padding:14px 20px;border-top:1px solid var(--border-light);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+            <span id="extrato-resumo" style="font-size:12.5px;color:var(--text-secondary)">0 registros encontrados</span>
+            <div class="pagination" id="extrato-paginacao"></div>
+          </div>
+        </div>
       </div>
 
     </div>
   </div>
 </div>
 
-<!-- MODAL CENTRALIZADO DE INSUMO -->
-<div class="modal-overlay" id="insumo-modal-overlay" onclick="closeInsumoModalOnBackdrop(event)">
+<!-- =========================================================================
+     MODAL DE ENTRADA POR COMPRA / NOTA FISCAL COM MÚLTIPLOS INSUMOS
+     ========================================================================= -->
+<div class="modal-overlay" id="nf-modal-overlay">
+  <div class="modal-box" style="width:860px;max-width:calc(100vw - 32px)">
+    <div class="modal-header">
+      <h3>🧾 Lançar Compra / NF — Múltiplos Insumos</h3>
+      <button class="modal-close" type="button" onclick="closeNFModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <form id="form-entrada-nf" onsubmit="salvarEntradaNF(event)">
+
+        <!-- CABEÇALHO DA NOTA FISCAL -->
+        <div class="nf-header-box">
+          <div class="nf-section-title">
+            <span>📄 Cabeçalho da Nota Fiscal &amp; Financeiro</span>
+            <span style="font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:none">Gera 1 título único consolidado no Contas a Pagar</span>
+          </div>
+
+          <div class="form-row cols-2">
+            <div class="form-group" style="margin-bottom:12px">
+              <label>Fornecedor *</label>
+              <input type="text" id="nf-fornecedor" required maxlength="150" placeholder="Ex: Distribuidora Alvorada Ltda" />
+            </div>
+            <div class="form-group" style="margin-bottom:12px">
+              <label>Nº Nota Fiscal / Documento *</label>
+              <input type="text" id="nf-documento" required maxlength="100" placeholder="Ex: NF-10500" />
+            </div>
+          </div>
+
+          <div class="form-row" style="grid-template-columns:repeat(3,1fr);gap:12px">
+            <div class="form-group" style="margin-bottom:0">
+              <label>Data de Emissão</label>
+              <input type="date" id="nf-data-emissao" />
+            </div>
+
+            <div class="form-group" style="margin-bottom:0">
+              <label>Forma de Pagamento *</label>
+              <select id="nf-forma-pagamento" required onchange="aoMudarFormaPgtoNF()">
+                <option value="BOLETO_PRAZO">Boleto a Prazo</option>
+                <option value="PIX">PIX (À Vista)</option>
+                <option value="DINHEIRO">Dinheiro (À Vista)</option>
+              </select>
+            </div>
+
+            <div class="form-group" id="nf-grupo-vencimento" style="margin-bottom:0">
+              <label>Data de Vencimento *</label>
+              <input type="date" id="nf-data-vencimento" required />
+            </div>
+          </div>
+        </div>
+
+        <!-- SEÇÃO DINÂMICA: ITENS DA NOTA FISCAL -->
+        <div class="nf-section-title" style="margin-top:4px">
+          <span>📦 Itens da Nota Fiscal</span>
+          <span id="nf-contador-itens" style="font-size:11.5px;color:var(--text-secondary);text-transform:none;font-weight:600">1 item na nota</span>
+        </div>
+
+        <div class="nf-items-wrap">
+          <table class="nf-items-table">
+            <thead>
+              <tr>
+                <th style="width:36%">Insumo *</th>
+                <th style="width:20%">Quantidade *</th>
+                <th style="width:22%">Valor Total do Item (R$) *</th>
+                <th style="width:17%">Custo Unit. Calculado</th>
+                <th style="width:5%;text-align:center"></th>
+              </tr>
+            </thead>
+            <tbody id="nf-itens-tbody">
+              <!-- Linhas inseridas dinamicamente via JS -->
+            </tbody>
+          </table>
+        </div>
+
+        <div style="display:flex;justify-content:flex-start;margin-bottom:14px">
+          <button type="button" class="btn btn-outline btn-sm" onclick="adicionarLinhaNF()" style="border-style:dashed;color:var(--brand);border-color:var(--brand);font-weight:700">
+            + Adicionar Insumo à Nota
+          </button>
+        </div>
+
+        <div class="form-group" style="margin-bottom:4px">
+          <label>Observação da Nota / Entrega (Opcional)</label>
+          <input type="text" id="nf-observacao" placeholder="Ex: Carga de secos e gorduras conferida no recebimento" />
+        </div>
+
+        <!-- RODAPÉ DE SOMA AUTOMÁTICA DA NOTA FISCAL -->
+        <div class="nf-total-footer">
+          <div class="nf-total-meta">
+            <span id="nf-resumo-itens-txt">Soma automática dos valores totais dos itens</span>
+            <small id="nf-resumo-pgto-txt">💰 Gerará 1 boleto PENDENTE em Contas a Pagar</small>
+          </div>
+          <div class="nf-total-val">
+            <span>Valor Total da Nota Fiscal</span>
+            <strong id="nf-valor-total-display">R$ 0,00</strong>
+          </div>
+        </div>
+
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" type="button" onclick="closeNFModal()">Cancelar</button>
+      <button class="btn btn-primary" type="button" onclick="document.getElementById('form-entrada-nf').requestSubmit()">
+        Lançar Compra / NF &amp; Gerar Financeiro
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- =========================================================================
+     MODAL DE MOVIMENTAÇÃO AVULSA / BALANÇO (SAÍDA, PERDA, AJUSTE)
+     ========================================================================= -->
+<div class="modal-overlay" id="mov-modal-overlay">
+  <div class="modal-box" style="width:520px">
+    <div class="modal-header">
+      <h3 id="mov-modal-title">📦 Registrar Movimentação — Almoxarifado</h3>
+      <button class="modal-close" type="button" onclick="closeMovModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <form id="form-movimentacao" onsubmit="salvarMovimentacao(event)">
+
+        <div class="form-group">
+          <label>Tipo de Movimentação *</label>
+          <select id="mov-tipo-preset" required onchange="aoMudarTipoMovimentacao()">
+            <option value="AJUSTE">⚖️ Ajuste de Inventário (Balanço na Prateleira)</option>
+            <option value="SAIDA">📤 Saída Avulsa / Uso</option>
+            <option value="PERDA">🗑️ Perda / Descarte (Avaria ou Validade)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Insumo / Matéria-Prima *</label>
+          <select id="mov-insumo-id" required onchange="aoSelecionarInsumoMov()">
+            <option value="">Selecione o insumo...</option>
+          </select>
+
+          <div id="mov-insumo-info" class="item-status-banner hidden">
+            <div class="item-status-cell">
+              <span>Unidade</span>
+              <strong id="mov-info-unidade">—</strong>
+            </div>
+            <div class="item-status-cell">
+              <span>Saldo Atual</span>
+              <strong id="mov-info-saldo">—</strong>
+            </div>
+            <div class="item-status-cell">
+              <span>Custo Atual</span>
+              <strong id="mov-info-custo">—</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label id="label-mov-qtd">Saldo Real Contado na Prateleira *</label>
+          <div style="position:relative;display:flex;align-items:center">
+            <input type="number" id="mov-quantidade" step="0.001" min="0" required placeholder="Ex: 45"
+              style="padding-right:48px;width:100%" oninput="atualizarPreviewMov()" />
+            <span id="mov-badge-unidade" style="position:absolute;right:10px;font-weight:700;font-size:12px;color:var(--brand);background:var(--brand-light);padding:3px 8px;border-radius:6px;border:1px solid #dcd7fa;pointer-events:none">kg</span>
+          </div>
+          <div id="hint-mov-qtd" style="font-size:11px;color:var(--text-secondary);margin-top:4px">
+            Substitui o saldo atual pelo valor contado.
+          </div>
+        </div>
+
+        <div class="calc-preview-box" id="mov-preview-box" style="margin-top:2px;margin-bottom:16px">
+          <span id="mov-preview-label">Saldo Resultante Previsto:</span>
+          <strong id="mov-preview-valor">—</strong>
+        </div>
+
+        <div class="form-group" id="grupo-doc-avulso">
+          <label>Nº Documento / Referência (Opcional)</label>
+          <input type="text" id="mov-documento" maxlength="100" placeholder="Ex: Lote #12, Balanço Mensal..." />
+        </div>
+
+        <div class="form-group" style="margin-bottom:4px">
+          <label id="label-mov-obs">Justificativa do Balanço *</label>
+          <input type="text" id="mov-observacao" required placeholder="Ex: Conferência física mensal de estoque" />
+        </div>
+
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" type="button" onclick="closeMovModal()">Cancelar</button>
+      <button class="btn btn-primary" id="btn-submit-mov" type="button" onclick="document.getElementById('form-movimentacao').requestSubmit()">
+        Confirmar Movimentação
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- =========================================================================
+     MODAL CENTRALIZADO DE CADASTRO / EDIÇÃO DE INSUMO
+     ========================================================================= -->
+<div class="modal-overlay" id="insumo-modal-overlay">
   <div class="modal-box">
     <div class="modal-header">
       <h3 id="insumo-modal-title">📦 Novo Insumo</h3>
-      <button class="modal-close" onclick="closeInsumoModal()">✕</button>
+      <button class="modal-close" type="button" onclick="closeInsumoModal()">✕</button>
     </div>
     <div class="modal-body">
       <form id="form-insumo" onsubmit="salvarInsumo(event)">
@@ -300,26 +811,33 @@
         <div class="form-row cols-2">
           <div class="form-group">
             <label>Preço Pago (R$) *</label>
-            <input type="number" id="insumo-preco-pago" step="0.01" min="0.01" required placeholder="Ex: 25,00" oninput="calcularCustoReal()" />
+            <input type="text" inputmode="decimal" id="insumo-preco-pago" required placeholder="Ex: R$ 25,00"
+              onfocus="limparInputMoeda(this)" onblur="formatarInputMoeda(this); calcularCustoReal();" oninput="calcularCustoReal()" />
           </div>
           <div class="form-group">
             <label id="label-peso-emb">Peso da Embalagem (g) *</label>
-            <input type="number" id="insumo-peso-embalagem" step="1" min="1" required placeholder="Ex: 5000" oninput="calcularCustoReal()" />
+            <input type="number" id="insumo-peso-embalagem" step="1" min="1" required placeholder="Ex: 5000"
+              onblur="atualizarBadgePesoGramas(this, 'badge-peso-emb')" oninput="atualizarBadgePesoGramas(this, 'badge-peso-emb'); calcularCustoReal();" />
+            <div id="badge-peso-emb" class="badge-peso-hint" style="display:none"></div>
           </div>
         </div>
 
         <div class="form-group">
-          <label>Estoque Atual</label>
-          <input type="number" id="insumo-estoque" min="0" step="0.001" value="0" placeholder="0" />
+          <label id="label-estoque">Estoque Atual (em Quilos - kg)</label>
+          <div style="position:relative;display:flex;align-items:center">
+            <input type="number" id="insumo-estoque" min="0" step="0.001" value="0" placeholder="Ex: 25.5 (para 25kg e meio)" style="padding-right:48px;width:100%" />
+            <span id="badge-unidade-estoque" style="position:absolute;right:10px;font-weight:700;font-size:12px;color:var(--brand);background:var(--brand-light);padding:3px 8px;border-radius:6px;border:1px solid #dcd7fa;pointer-events:none">kg</span>
+          </div>
+          <div id="hint-estoque" style="font-size:11.5px;color:var(--text-secondary);margin-top:5px;line-height:1.4">
+            💡 Digite em quilos. Exemplo: 1 saco de 25kg = digite 25. Se tiver 500g = digite 0.5
+          </div>
         </div>
 
-        <!-- Custo calculado em tempo real -->
         <div class="calc-preview-box">
           <span>Custo Unitário Calculado:</span>
           <strong id="label-custo-calculado">R$ 0,00 / kg</strong>
         </div>
 
-        <!-- Aviso Laranja -->
         <div class="alert-box-orange" id="aviso-embalagem">
           🍊 <strong>Importante:</strong> Se comprou 1kg, digite <strong>1000g</strong>. Se comprou 500g, digite <strong>500g</strong>. O sistema calcula o custo exato por quilo automaticamente.
         </div>
@@ -336,11 +854,11 @@
 </div>
 
 <!-- MODAL CATEGORIAS -->
-<div class="modal-overlay" id="cat-modal-overlay" onclick="closeCatModalOnBackdrop(event)">
+<div class="modal-overlay" id="cat-modal-overlay">
   <div class="modal-box">
     <div class="modal-header">
       <h3 id="cat-modal-title">⚙️ Categorias de Insumo</h3>
-      <button class="modal-close" onclick="closeCatModal()">✕</button>
+      <button class="modal-close" type="button" onclick="closeCatModal()">✕</button>
     </div>
     <div class="modal-body">
       <ul class="cat-list" id="cat-list">
@@ -358,17 +876,25 @@
 <script>
   const API_INSUMOS    = 'http://localhost:3001/api/insumos';
   const API_CATEGORIAS = 'http://localhost:3001/api/categorias';
+  const API_ESTOQUE    = 'http://localhost:3001/api/estoque';
 
   let todosInsumos   = [];
   let catTipoAtivo   = 'INSUMO';
+  let abaAtiva       = 'saldos';
+  let paginaExtrato  = 1;
 
   /* ======================== FUNÇÕES PADRÃO DE FORMATAÇÃO ======================== */
   function formatarDinheiro(valor) {
     const num = Number(valor || 0);
-    return num.toLocaleString('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    });
+    return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  }
+
+  function formatarQtd(valor, unidade) {
+    const num = parseFloat(valor || 0);
+    if (unidade === 'un') {
+      return `${Math.round(num).toLocaleString('pt-BR')} un`;
+    }
+    return `${num.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 3 })} ${unidade || 'kg'}`;
   }
 
   function formatarPeso(gramas) {
@@ -380,12 +906,718 @@
     return Math.round(g).toLocaleString('pt-BR') + 'g';
   }
 
+  function formatarDataHora(iso) {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function traduzirMotivo(motivo) {
+    const mapa = {
+      COMPRA_FORNECEDOR:  'Compra de Fornecedor',
+      CONSUMO_PRODUCAO:   'Consumo em Produção',
+      SAIDA_AVULSA:       'Saída Avulsa / Uso',
+      AVARIA_DESCARTE:    'Perda / Descarte',
+      INVENTARIO_BALANCO: 'Ajuste de Balanço',
+      SALDO_INICIAL:      'Saldo Inicial',
+      EDICAO_CADASTRO:    'Ajuste no Cadastro'
+    };
+    return mapa[motivo] || motivo || '—';
+  }
+
   function showToast(msg, type = '') {
     const el = document.createElement('div');
     el.className = 'toast ' + type;
     el.textContent = msg;
     document.getElementById('toast-container').appendChild(el);
-    setTimeout(() => el.remove(), 3200);
+    setTimeout(() => el.remove(), 3500);
+  }
+
+  /* ======================== NAVEGAÇÃO ENTRE ABAS ======================== */
+  function alternarAba(aba) {
+    abaAtiva = aba;
+    const isSaldos = aba === 'saldos';
+
+    document.getElementById('btn-aba-saldos').classList.toggle('active', isSaldos);
+    document.getElementById('btn-aba-extrato').classList.toggle('active', !isSaldos);
+    document.getElementById('secao-saldos').classList.toggle('hidden', !isSaldos);
+    document.getElementById('secao-extrato').classList.toggle('hidden', isSaldos);
+    document.getElementById('search-bar-saldos').classList.toggle('hidden', !isSaldos);
+
+    if (!isSaldos) {
+      carregarExtrato(paginaExtrato);
+    }
+  }
+
+  /* ======================== UTILITÁRIOS DE MOEDA E PESO ======================== */
+  function parseMoeda(valor) {
+    if (typeof valor === 'number') return isNaN(valor) ? 0 : valor;
+    if (!valor) return 0;
+    let str = String(valor).replace(/[R$\s]/g, '');
+    if (str.includes(',') && str.includes('.')) {
+      str = str.replace(/\./g, '').replace(',', '.');
+    } else if (str.includes(',')) {
+      str = str.replace(',', '.');
+    }
+    const num = parseFloat(str);
+    return isNaN(num) ? 0 : num;
+  }
+
+  function formatarInputMoeda(el) {
+    const val = parseMoeda(el.value);
+    if (el.value && el.value.trim() !== '' && !isNaN(val) && val > 0) {
+      el.value = val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    }
+  }
+
+  function limparInputMoeda(el) {
+    if (!el.value || el.disabled) return;
+    const val = parseMoeda(el.value);
+    if (!isNaN(val) && val > 0) {
+      el.value = val.toFixed(2).replace('.', ',');
+    } else if (el.value.trim() === 'R$ 0,00' || val === 0) {
+      el.value = '';
+    }
+  }
+
+  function atualizarBadgePesoGramas(el, badgeId) {
+    const tipo = document.getElementById('insumo-tipo-medida') ? document.getElementById('insumo-tipo-medida').value : 'Peso';
+    const badge = document.getElementById(badgeId);
+    if (!badge) return;
+
+    if (tipo !== 'Peso') {
+      badge.style.display = 'none';
+      return;
+    }
+
+    const val = parseFloat(String(el.value).replace(',', '.'));
+    if (isNaN(val) || val <= 0) {
+      badge.style.display = 'none';
+      return;
+    }
+
+    if (val >= 1000) {
+      const kg = (val / 1000.0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      badge.innerHTML = `⚖️ <span>Equivale a <strong>${kg} kg</strong></span>`;
+    } else {
+      badge.innerHTML = `⚖️ <span><strong>${Math.round(val)} g</strong></span>`;
+    }
+    badge.style.display = 'inline-flex';
+  }
+
+  /* ======================== MODAL MULTI-ITENS DE COMPRA / NF ======================== */
+  let nfSeqLinha = 0;
+
+  function gerarOptionsInsumoNF(selecionadoId = '') {
+    return '<option value="">Selecione o insumo...</option>' +
+      todosInsumos.map(i => {
+        const un = i.unidade_medida || (i.tipo_medida === 'Unidade' ? 'un' : 'kg');
+        const saldo = parseFloat(i.estoque_atual || 0);
+        const sel = String(i.id) === String(selecionadoId) ? 'selected' : '';
+        return `<option value="${i.id}" ${sel}>${i.nome} (${formatarQtd(saldo, un)})</option>`;
+      }).join('');
+  }
+
+  function openNFModal(insumoPreselecionadoId = '') {
+    if (!todosInsumos.length) {
+      showToast('Cadastre pelo menos um insumo antes de lançar uma Nota Fiscal.', 'error');
+      return;
+    }
+
+    document.getElementById('form-entrada-nf').reset();
+
+    const hoje = new Date();
+    document.getElementById('nf-data-emissao').value = hoje.toISOString().slice(0, 10);
+
+    const vencPadrao = new Date();
+    vencPadrao.setDate(vencPadrao.getDate() + 15);
+    document.getElementById('nf-data-vencimento').value = vencPadrao.toISOString().slice(0, 10);
+
+    document.getElementById('nf-forma-pagamento').value = 'BOLETO_PRAZO';
+
+    const tbody = document.getElementById('nf-itens-tbody');
+    tbody.innerHTML = '';
+    nfSeqLinha = 0;
+
+    adicionarLinhaNF(insumoPreselecionadoId);
+    aoMudarFormaPgtoNF();
+    recalcularTotaisNF();
+
+    document.getElementById('nf-modal-overlay').classList.add('open');
+  }
+
+  function closeNFModal() {
+    document.getElementById('nf-modal-overlay').classList.remove('open');
+  }
+
+  function aoMudarFormaPgtoNF() {
+    const forma = document.getElementById('nf-forma-pagamento').value;
+    const isPrazo = forma === 'BOLETO_PRAZO';
+
+    document.getElementById('nf-grupo-vencimento').classList.toggle('hidden', !isPrazo);
+    document.getElementById('nf-data-vencimento').required = isPrazo;
+
+    const resumoPgto = document.getElementById('nf-resumo-pgto-txt');
+    if (isPrazo) {
+      resumoPgto.textContent = '💰 Gerará 1 boleto único PENDENTE em Contas a Pagar';
+    } else {
+      resumoPgto.textContent = `✅ Gerará 1 lançamento único PAGO (${forma}) em Contas a Pagar`;
+    }
+  }
+
+  function adicionarLinhaNF(insumoSelecionadoId = '') {
+    nfSeqLinha++;
+    const rowId = nfSeqLinha;
+    const tbody = document.getElementById('nf-itens-tbody');
+
+    const tr = document.createElement('tr');
+    tr.id = `nf-row-${rowId}`;
+    tr.dataset.rowId = String(rowId);
+
+    tr.innerHTML = `
+      <td>
+        <select id="nf-insumo-${rowId}" required onchange="aoMudarInsumoLinhaNF(${rowId})">
+          ${gerarOptionsInsumoNF(insumoSelecionadoId)}
+        </select>
+      </td>
+      <td>
+        <div style="position:relative;display:flex;align-items:center">
+          <input type="number" id="nf-qtd-${rowId}" step="0.001" min="0.001" required placeholder="Ex: 100"
+            style="padding-right:42px;width:100%" oninput="recalcularTotaisNF()" />
+          <span id="nf-un-${rowId}" style="position:absolute;right:8px;font-weight:700;font-size:11px;color:var(--brand);background:var(--brand-light);padding:2px 6px;border-radius:5px;border:1px solid #dcd7fa;pointer-events:none">kg</span>
+        </div>
+      </td>
+      <td>
+        <input type="text" inputmode="decimal" id="nf-valor-${rowId}" required placeholder="Ex: R$ 450,00"
+          onfocus="limparInputMoeda(this)" onblur="formatarInputMoeda(this); recalcularTotaisNF();" oninput="recalcularTotaisNF()" />
+      </td>
+      <td>
+        <span class="nf-custo-pill" id="nf-custo-${rowId}">R$ 0,00 / kg</span>
+      </td>
+      <td style="text-align:center">
+        <button type="button" class="nf-btn-remove" title="Remover item da nota" onclick="removerLinhaNF(${rowId})">✕</button>
+      </td>
+    `;
+
+    tbody.appendChild(tr);
+    aoMudarInsumoLinhaNF(rowId);
+    recalcularTotaisNF();
+  }
+
+  function removerLinhaNF(rowId) {
+    const tbody = document.getElementById('nf-itens-tbody');
+    const linhas = tbody.querySelectorAll('tr');
+    if (linhas.length <= 1) {
+      showToast('A Nota Fiscal deve ter pelo menos 1 insumo.', 'error');
+      return;
+    }
+    const tr = document.getElementById(`nf-row-${rowId}`);
+    if (tr) tr.remove();
+    recalcularTotaisNF();
+  }
+
+  function aoMudarInsumoLinhaNF(rowId) {
+    const sel = document.getElementById(`nf-insumo-${rowId}`);
+    const inpQtd = document.getElementById(`nf-qtd-${rowId}`);
+    const badgeUn = document.getElementById(`nf-un-${rowId}`);
+    if (!sel || !inpQtd || !badgeUn) return;
+
+    const id = parseInt(sel.value, 10);
+    const insumo = todosInsumos.find(i => i.id === id);
+    const un = insumo ? (insumo.unidade_medida || (insumo.tipo_medida === 'Unidade' ? 'un' : 'kg')) : 'kg';
+
+    badgeUn.textContent = un;
+    inpQtd.step = un === 'un' ? '1' : '0.001';
+    inpQtd.min  = un === 'un' ? '1' : '0.001';
+    recalcularTotaisNF();
+  }
+
+  function recalcularTotaisNF() {
+    const tbody = document.getElementById('nf-itens-tbody');
+    if (!tbody) return;
+
+    const linhas = Array.from(tbody.querySelectorAll('tr'));
+    let somaTotalNF = 0;
+
+    linhas.forEach(tr => {
+      const rowId = tr.dataset.rowId;
+      const selInsumo = document.getElementById(`nf-insumo-${rowId}`);
+      const inpQtd    = document.getElementById(`nf-qtd-${rowId}`);
+      const inpValor  = document.getElementById(`nf-valor-${rowId}`);
+      const pillCusto = document.getElementById(`nf-custo-${rowId}`);
+
+      const id = parseInt(selInsumo?.value || '', 10);
+      const insumo = todosInsumos.find(i => i.id === id);
+      const un = insumo ? (insumo.unidade_medida || (insumo.tipo_medida === 'Unidade' ? 'un' : 'kg')) : 'kg';
+
+      const qtd = parseFloat(inpQtd?.value || '');
+      const valorTotalItem = parseMoeda(inpValor?.value || '');
+
+      if (valorTotalItem > 0) {
+        somaTotalNF += valorTotalItem;
+      }
+
+      if (!isNaN(qtd) && qtd > 0 && valorTotalItem > 0) {
+        const custoUnit = valorTotalItem / qtd;
+        pillCusto.textContent = `${formatarDinheiro(custoUnit)} / ${un}`;
+      } else {
+        pillCusto.textContent = `R$ 0,00 / ${un}`;
+      }
+    });
+
+    const qtdLinhas = linhas.length;
+    document.getElementById('nf-contador-itens').textContent =
+      qtdLinhas === 1 ? '1 item na nota' : `${qtdLinhas} itens na nota`;
+    document.getElementById('nf-resumo-itens-txt').textContent =
+      `Soma automática de ${qtdLinhas} ${qtdLinhas === 1 ? 'insumo' : 'insumos'} na Nota Fiscal`;
+    document.getElementById('nf-valor-total-display').textContent = formatarDinheiro(somaTotalNF);
+  }
+
+  async function salvarEntradaNF(e) {
+    e.preventDefault();
+
+    const fornecedor  = document.getElementById('nf-fornecedor').value.trim();
+    const documento   = document.getElementById('nf-documento').value.trim();
+    const dataEmissao = document.getElementById('nf-data-emissao').value;
+    const formaSel    = document.getElementById('nf-forma-pagamento').value;
+    const dataVenc    = document.getElementById('nf-data-vencimento').value;
+    const observacao  = document.getElementById('nf-observacao').value.trim();
+
+    if (!fornecedor) {
+      showToast('Informe o nome do fornecedor.', 'error');
+      document.getElementById('nf-fornecedor').focus();
+      return;
+    }
+    if (!documento) {
+      showToast('Informe o número da Nota Fiscal / Documento.', 'error');
+      document.getElementById('nf-documento').focus();
+      return;
+    }
+
+    const isPrazo = formaSel === 'BOLETO_PRAZO';
+    if (isPrazo && !dataVenc) {
+      showToast('Informe a data de vencimento do boleto.', 'error');
+      document.getElementById('nf-data-vencimento').focus();
+      return;
+    }
+
+    const linhas = Array.from(document.querySelectorAll('#nf-itens-tbody tr'));
+    if (!linhas.length) {
+      showToast('Adicione pelo menos um insumo à Nota Fiscal.', 'error');
+      return;
+    }
+
+    const itensPayload = [];
+    let somaTotalNF = 0;
+
+    for (let i = 0; i < linhas.length; i++) {
+      const rowId = linhas[i].dataset.rowId;
+      const insumoId = parseInt(document.getElementById(`nf-insumo-${rowId}`).value, 10);
+      const qtd = parseFloat(document.getElementById(`nf-qtd-${rowId}`).value);
+      const valorItem = parseMoeda(document.getElementById(`nf-valor-${rowId}`).value);
+
+      if (!insumoId || isNaN(insumoId)) {
+        showToast(`Item #${i + 1}: selecione o insumo.`, 'error');
+        document.getElementById(`nf-insumo-${rowId}`).focus();
+        return;
+      }
+      if (isNaN(qtd) || qtd <= 0) {
+        showToast(`Item #${i + 1}: informe uma quantidade maior que zero.`, 'error');
+        document.getElementById(`nf-qtd-${rowId}`).focus();
+        return;
+      }
+      if (!valorItem || valorItem <= 0) {
+        showToast(`Item #${i + 1}: informe o valor total pago no item.`, 'error');
+        document.getElementById(`nf-valor-${rowId}`).focus();
+        return;
+      }
+
+      somaTotalNF += valorItem;
+      itensPayload.push({
+        insumo_id: insumoId,
+        quantidade: qtd,
+        preco_pago_total: Number(valorItem.toFixed(2))
+      });
+    }
+
+    const payload = {
+      fornecedor,
+      documento_ref: documento,
+      data_emissao: dataEmissao || null,
+      valor_total_nf: Number(somaTotalNF.toFixed(2)),
+      pagamento_tipo: isPrazo ? 'A_PRAZO' : 'A_VISTA',
+      forma_pagamento: isPrazo ? 'BOLETO' : formaSel,
+      data_vencimento: isPrazo ? dataVenc : null,
+      observacao: observacao || null,
+      itens: itensPayload
+    };
+
+    try {
+      const res = await fetch(`${API_ESTOQUE}/entrada-nf`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        showToast(`✅ ${data.mensagem}`, 'success');
+        closeNFModal();
+        await carregarInsumos();
+        if (abaAtiva === 'extrato') await carregarExtrato(1);
+      } else {
+        showToast(data.erro || 'Erro ao lançar Nota Fiscal.', 'error');
+      }
+    } catch {
+      showToast('Erro de conexão com o servidor.', 'error');
+    }
+  }
+
+  /* ======================== MODAL DE MOVIMENTAÇÃO AVULSA (KARDEX) ======================== */
+  function popularSelectsInsumos(selecionadoId = '') {
+    const selMov = document.getElementById('mov-insumo-id');
+    const selFiltro = document.getElementById('filtro-extrato-insumo');
+    const filtroAtual = selFiltro ? selFiltro.value : '';
+
+    if (selMov) {
+      selMov.innerHTML = '<option value="">Selecione o insumo...</option>' +
+        todosInsumos.map(i => {
+          const un = i.unidade_medida || (i.tipo_medida === 'Unidade' ? 'un' : 'kg');
+          const saldo = parseFloat(i.estoque_atual || 0);
+          const sel = String(i.id) === String(selecionadoId) ? 'selected' : '';
+          return `<option value="${i.id}" ${sel}>${i.nome} (Saldo: ${formatarQtd(saldo, un)})</option>`;
+        }).join('');
+    }
+
+    if (selFiltro) {
+      selFiltro.innerHTML = '<option value="">Todos os insumos</option>' +
+        todosInsumos.map(i => {
+          const sel = String(i.id) === String(filtroAtual) ? 'selected' : '';
+          return `<option value="${i.id}" ${sel}>${i.nome}</option>`;
+        }).join('');
+    }
+  }
+
+  function openMovModal(insumoIdPreselecionado = '', presetTipo = 'AJUSTE') {
+    if (presetTipo === 'COMPRA') {
+      openNFModal(insumoIdPreselecionado);
+      return;
+    }
+
+    if (!todosInsumos.length) {
+      showToast('Cadastre pelo menos um insumo antes de registrar movimentações.', 'error');
+      return;
+    }
+
+    document.getElementById('form-movimentacao').reset();
+    document.getElementById('mov-tipo-preset').value = presetTipo;
+
+    popularSelectsInsumos(insumoIdPreselecionado);
+
+    aoMudarTipoMovimentacao();
+    aoSelecionarInsumoMov();
+    document.getElementById('mov-modal-overlay').classList.add('open');
+  }
+
+  function closeMovModal() {
+    document.getElementById('mov-modal-overlay').classList.remove('open');
+  }
+
+  function obterInsumoSelecionadoMov() {
+    const id = parseInt(document.getElementById('mov-insumo-id').value, 10);
+    if (!id) return null;
+    return todosInsumos.find(i => i.id === id) || null;
+  }
+
+  function aoSelecionarInsumoMov() {
+    const item = obterInsumoSelecionadoMov();
+    const banner = document.getElementById('mov-insumo-info');
+    const badgeUn = document.getElementById('mov-badge-unidade');
+    const inputQtd = document.getElementById('mov-quantidade');
+
+    if (!item) {
+      banner.classList.add('hidden');
+      badgeUn.textContent = 'kg';
+      atualizarPreviewMov();
+      return;
+    }
+
+    const un = item.unidade_medida || (item.tipo_medida === 'Unidade' ? 'un' : 'kg');
+    const saldo = parseFloat(item.estoque_atual || 0);
+    const custo = parseFloat(item.custo_unitario || 0);
+
+    document.getElementById('mov-info-unidade').textContent = un === 'un' ? 'un (Unidades)' : 'kg (Quilos)';
+    document.getElementById('mov-info-saldo').textContent   = formatarQtd(saldo, un);
+    document.getElementById('mov-info-custo').textContent   = `${formatarDinheiro(custo)} / ${un}`;
+    banner.classList.remove('hidden');
+
+    badgeUn.textContent = un;
+    inputQtd.step = un === 'un' ? '1' : '0.001';
+
+    if (document.getElementById('mov-tipo-preset').value === 'AJUSTE') {
+      inputQtd.placeholder = `Atual: ${saldo}`;
+    } else {
+      inputQtd.placeholder = un === 'un' ? 'Ex: 10' : 'Ex: 5';
+    }
+
+    atualizarPreviewMov();
+  }
+
+  function aoMudarTipoMovimentacao() {
+    const preset   = document.getElementById('mov-tipo-preset').value;
+    const labelQtd = document.getElementById('label-mov-qtd');
+    const hintQtd  = document.getElementById('hint-mov-qtd');
+    const inputQtd = document.getElementById('mov-quantidade');
+    const labelObs = document.getElementById('label-mov-obs');
+    const inputObs = document.getElementById('mov-observacao');
+
+    if (preset === 'SAIDA') {
+      labelQtd.textContent = 'Quantidade Utilizada *';
+      hintQtd.textContent  = 'Subtrai do saldo atual do insumo.';
+      inputQtd.min = '0.001';
+      labelObs.textContent = 'Motivo / Destino do Uso *';
+      inputObs.placeholder = 'Ex: Teste de nova receita na cozinha';
+    } else if (preset === 'PERDA') {
+      labelQtd.textContent = 'Quantidade Perdida / Descartada *';
+      hintQtd.textContent  = 'Baixa como perda auditável no estoque.';
+      inputQtd.min = '0.001';
+      labelObs.textContent = 'Motivo da Perda / Descarte *';
+      inputObs.placeholder = 'Ex: Saco rasgou no transporte / Produto vencido';
+    } else {
+      labelQtd.textContent = 'Saldo Real Contado na Prateleira *';
+      hintQtd.textContent  = 'Substitui o saldo atual pelo valor contado.';
+      inputQtd.min = '0';
+      labelObs.textContent = 'Justificativa do Balanço *';
+      inputObs.placeholder = 'Ex: Conferência física mensal de estoque';
+    }
+
+    atualizarPreviewMov();
+  }
+
+  function atualizarPreviewMov() {
+    const item = obterInsumoSelecionadoMov();
+    const preset = document.getElementById('mov-tipo-preset').value;
+    const qtdRaw = document.getElementById('mov-quantidade').value;
+    const qtd = parseFloat(qtdRaw);
+    const labelPrev = document.getElementById('mov-preview-label');
+    const valPrev   = document.getElementById('mov-preview-valor');
+
+    if (!item || qtdRaw === '' || isNaN(qtd)) {
+      labelPrev.textContent = 'Saldo Resultante Previsto:';
+      valPrev.textContent = item
+        ? formatarQtd(item.estoque_atual, item.unidade_medida || 'kg')
+        : 'Selecione um insumo';
+      valPrev.style.color = 'var(--brand)';
+      return;
+    }
+
+    const un = item.unidade_medida || (item.tipo_medida === 'Unidade' ? 'un' : 'kg');
+    const saldoAnt = parseFloat(item.estoque_atual || 0);
+    const saldoNovo = preset === 'AJUSTE' ? qtd : (saldoAnt - qtd);
+
+    if (preset === 'AJUSTE') {
+      const diff = saldoNovo - saldoAnt;
+      const sinal = diff > 0 ? '+' : '';
+      labelPrev.textContent = `Diferença de Balanço (${sinal}${formatarQtd(diff, un)}):`;
+      valPrev.textContent   = `${formatarQtd(saldoAnt, un)} ➔ ${formatarQtd(saldoNovo, un)}`;
+      valPrev.style.color   = 'var(--blue)';
+    } else {
+      labelPrev.textContent = 'Saldo Resultante Previsto:';
+      valPrev.textContent   = `${formatarQtd(saldoAnt, un)} ➔ ${formatarQtd(saldoNovo, un)}`;
+      valPrev.style.color   = saldoNovo < 0 ? 'var(--red)' : 'var(--amber)';
+    }
+  }
+
+  async function salvarMovimentacao(e) {
+    e.preventDefault();
+    const item = obterInsumoSelecionadoMov();
+    if (!item) {
+      showToast('Selecione um insumo.', 'error');
+      return;
+    }
+
+    const preset = document.getElementById('mov-tipo-preset').value;
+    const qtd = parseFloat(document.getElementById('mov-quantidade').value);
+    const obs = document.getElementById('mov-observacao').value.trim();
+    const doc = document.getElementById('mov-documento').value.trim();
+
+    if (isNaN(qtd) || (preset !== 'AJUSTE' && qtd <= 0) || (preset === 'AJUSTE' && qtd < 0)) {
+      showToast('Informe uma quantidade válida.', 'error');
+      return;
+    }
+
+    if (!obs) {
+      showToast('Informe o motivo/justificativa para fins de auditoria.', 'error');
+      document.getElementById('mov-observacao').focus();
+      return;
+    }
+
+    const mapaTipo = {
+      SAIDA:  { tipo_movimento: 'SAIDA',  motivo: 'SAIDA_AVULSA' },
+      PERDA:  { tipo_movimento: 'PERDA',  motivo: 'AVARIA_DESCARTE' },
+      AJUSTE: { tipo_movimento: 'AJUSTE', motivo: 'INVENTARIO_BALANCO' }
+    };
+
+    const payload = {
+      tipo_estoque:   'MATERIA_PRIMA',
+      insumo_id:      item.id,
+      tipo_movimento: mapaTipo[preset].tipo_movimento,
+      motivo:         mapaTipo[preset].motivo,
+      quantidade:     qtd,
+      documento_ref:  doc || null,
+      observacao:     obs
+    };
+
+    try {
+      const res = await fetch(`${API_ESTOQUE}/movimentacoes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        showToast(`✅ ${data.mensagem}`, 'success');
+        closeMovModal();
+        await carregarInsumos();
+        if (abaAtiva === 'extrato') {
+          await carregarExtrato(1);
+        }
+      } else {
+        showToast(data.erro || 'Erro ao registrar movimentação.', 'error');
+      }
+    } catch {
+      showToast('Erro de conexão com o servidor.', 'error');
+    }
+  }
+
+  /* ======================== EXTRATO / KARDEX ======================== */
+  function limparFiltrosExtrato() {
+    document.getElementById('filtro-extrato-insumo').value = '';
+    document.getElementById('filtro-extrato-tipo').value   = '';
+    document.getElementById('filtro-extrato-inicio').value = '';
+    document.getElementById('filtro-extrato-fim').value    = '';
+    carregarExtrato(1);
+  }
+
+  async function carregarExtrato(page = 1) {
+    paginaExtrato = page;
+    const tbody = document.getElementById('extrato-tbody');
+    const insumoId   = document.getElementById('filtro-extrato-insumo').value;
+    const tipoMov    = document.getElementById('filtro-extrato-tipo').value;
+    const dataInicio = document.getElementById('filtro-extrato-inicio').value;
+    const dataFim    = document.getElementById('filtro-extrato-fim').value;
+
+    const params = new URLSearchParams({
+      tipo_estoque: 'MATERIA_PRIMA',
+      page: String(page),
+      limit: '20'
+    });
+    if (insumoId)   params.set('insumo_id', insumoId);
+    if (tipoMov)    params.set('tipo_movimento', tipoMov);
+    if (dataInicio) params.set('data_inicio', dataInicio);
+    if (dataFim)    params.set('data_fim', dataFim);
+
+    try {
+      const res = await fetch(`${API_ESTOQUE}/extrato?${params.toString()}`);
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.erro || 'Falha ao carregar extrato');
+
+      renderizarExtrato(json.dados || [], json.paginacao || {});
+    } catch (err) {
+      tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:36px;color:var(--red)">⚠️ ${err.message}</td></tr>`;
+    }
+  }
+
+  function renderizarExtrato(linhas, pag) {
+    const tbody = document.getElementById('extrato-tbody');
+    const resumo = document.getElementById('extrato-resumo');
+    const pagDiv = document.getElementById('extrato-paginacao');
+
+    resumo.textContent = `${pag.total || 0} movimentação(ões) registrada(s)`;
+
+    if (!linhas.length) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="8" style="text-align:center;padding:42px;color:var(--text-muted)">
+            Nenhuma movimentação encontrada para os filtros selecionados.
+          </td>
+        </tr>`;
+      pagDiv.innerHTML = '';
+      return;
+    }
+
+    tbody.innerHTML = linhas.map(m => {
+      const un = m.unidade_medida || 'kg';
+      const saldoAnt  = parseFloat(m.saldo_anterior || 0);
+      const saldoPost = parseFloat(m.saldo_posterior || 0);
+      const qtd       = parseFloat(m.quantidade || 0);
+      const custoMom  = parseFloat(m.custo_unitario_momento || 0);
+
+      let badgeHtml = '';
+      let qtdHtml   = '';
+
+      if (m.tipo_movimento === 'ENTRADA') {
+        badgeHtml = '<span class="badge badge-green">▲ ENTRADA</span>';
+        qtdHtml   = `<span class="qty-pos">+${formatarQtd(qtd, un)}</span>`;
+      } else if (m.tipo_movimento === 'SAIDA') {
+        badgeHtml = '<span class="badge badge-red">▼ SAÍDA</span>';
+        qtdHtml   = `<span class="qty-neg">-${formatarQtd(qtd, un)}</span>`;
+      } else if (m.tipo_movimento === 'PERDA') {
+        badgeHtml = '<span class="badge badge-red">🗑️ PERDA</span>';
+        qtdHtml   = `<span class="qty-neg">-${formatarQtd(qtd, un)}</span>`;
+      } else {
+        badgeHtml = '<span class="badge badge-blue">⚖️ AJUSTE</span>';
+        const diff = saldoPost - saldoAnt;
+        const sinal = diff > 0 ? '+' : diff < 0 ? '-' : '±';
+        qtdHtml = `<span class="qty-adj">${sinal}${formatarQtd(Math.abs(diff), un)}</span>`;
+      }
+
+      const docHtml = m.documento_ref
+        ? `<span class="doc-chip">${m.documento_ref}</span>`
+        : '<span style="color:var(--text-muted)">—</span>';
+
+      const motivoLegivel = traduzirMotivo(m.motivo);
+      const custoInfo = (m.tipo_movimento === 'ENTRADA' && custoMom > 0)
+        ? `<div style="font-size:11px;color:var(--brand);margin-top:2px">Custo: ${formatarDinheiro(custoMom)}/${un}</div>`
+        : '';
+
+      return `
+        <tr>
+          <td style="white-space:nowrap;font-size:12.5px;color:var(--text-secondary)">${formatarDataHora(m.criado_em)}</td>
+          <td>${badgeHtml}</td>
+          <td>
+            <strong style="color:var(--text-primary)">${m.item_nome}</strong>
+            <div style="font-size:11px;color:var(--text-muted)">${m.item_categoria || ''}</div>
+          </td>
+          <td style="text-align:right;white-space:nowrap">${qtdHtml}</td>
+          <td style="text-align:right;white-space:nowrap;color:var(--text-secondary)">${formatarQtd(saldoAnt, un)}</td>
+          <td style="text-align:right;white-space:nowrap"><strong>${formatarQtd(saldoPost, un)}</strong></td>
+          <td>${docHtml}</td>
+          <td>
+            <div style="font-weight:600;font-size:12.5px">${motivoLegivel}</div>
+            ${m.observacao ? `<div style="font-size:12px;color:var(--text-secondary)">${m.observacao}</div>` : ''}
+            ${custoInfo}
+          </td>
+        </tr>`;
+    }).join('');
+
+    // Paginação
+    const atual = pag.pagina_atual || 1;
+    const totalPags = pag.total_paginas || 1;
+    if (totalPags <= 1) {
+      pagDiv.innerHTML = '';
+      return;
+    }
+
+    let btns = `<button class="page-btn" ${atual <= 1 ? 'disabled' : ''} onclick="carregarExtrato(${atual - 1})">◀ Anterior</button>`;
+    for (let p = 1; p <= totalPags; p++) {
+      if (p === 1 || p === totalPags || Math.abs(p - atual) <= 2) {
+        btns += `<button class="page-btn ${p === atual ? 'active' : ''}" onclick="carregarExtrato(${p})">${p}</button>`;
+      }
+    }
+    btns += `<button class="page-btn" ${atual >= totalPags ? 'disabled' : ''} onclick="carregarExtrato(${atual + 1})">Próxima ▶</button>`;
+    pagDiv.innerHTML = btns;
   }
 
   /* ======================== CATEGORIAS ======================== */
@@ -421,10 +1653,6 @@
     const selectId = 'insumo-categoria';
     const atual = document.getElementById(selectId).value;
     carregarCategoriaSelect(catTipoAtivo, selectId, atual);
-  }
-
-  function closeCatModalOnBackdrop(event) {
-    if (event.target === document.getElementById('cat-modal-overlay')) closeCatModal();
   }
 
   async function renderCatList() {
@@ -481,7 +1709,7 @@
     }
   }
 
-  /* ======================== MODAL CENTRALIZADO DE INSUMO ======================== */
+  /* ======================== MODAL DE CADASTRO DE INSUMO ======================== */
   async function openInsumoModal(id = null) {
     const form = document.getElementById('form-insumo');
     form.reset();
@@ -506,8 +1734,13 @@
       const pPago = item.preco_pago ? parseFloat(item.preco_pago) : parseFloat(item.custo_unitario || 0);
       const pEmb  = item.peso_embalagem ? parseFloat(item.peso_embalagem) : (item.unidade_medida === 'un' ? 1 : 1000);
 
-      document.getElementById('insumo-preco-pago').value = pPago || '';
-      document.getElementById('insumo-peso-embalagem').value = pEmb || '';
+      const inputPreco = document.getElementById('insumo-preco-pago');
+      inputPreco.value = pPago > 0 ? pPago.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '';
+
+      const inputEmb = document.getElementById('insumo-peso-embalagem');
+      inputEmb.value = pEmb || '';
+      atualizarBadgePesoGramas(inputEmb, 'badge-peso-emb');
+
       document.getElementById('insumo-estoque').value = parseFloat(item.estoque_atual || 0);
 
       const sel = document.getElementById('insumo-categoria');
@@ -516,6 +1749,7 @@
       }
     } else {
       document.getElementById('insumo-modal-title').textContent = '📦 Novo Insumo';
+      atualizarBadgePesoGramas(document.getElementById('insumo-peso-embalagem'), 'badge-peso-emb');
     }
 
     calcularCustoReal();
@@ -526,30 +1760,49 @@
     document.getElementById('insumo-modal-overlay').classList.remove('open');
   }
 
-  function closeInsumoModalOnBackdrop(event) {
-    if (event.target === document.getElementById('insumo-modal-overlay')) closeInsumoModal();
-  }
-
   function atualizarCamposTipoMedida() {
     const tipo = document.getElementById('insumo-tipo-medida').value;
     const labelEmb = document.getElementById('label-peso-emb');
+    const inputEmb = document.getElementById('insumo-peso-embalagem');
     const aviso = document.getElementById('aviso-embalagem');
+
+    const labelEst = document.getElementById('label-estoque');
+    const inputEst = document.getElementById('insumo-estoque');
+    const badgeEst = document.getElementById('badge-unidade-estoque');
+    const hintEst  = document.getElementById('hint-estoque');
 
     if (tipo === 'Peso') {
       labelEmb.textContent = 'Peso da Embalagem (g) *';
-      document.getElementById('insumo-peso-embalagem').placeholder = 'Ex: 5000 (para 5kg)';
+      inputEmb.placeholder = 'Ex: 5000 (para 5kg)';
       aviso.innerHTML = '🍊 <strong>Importante:</strong> Se comprou 1kg, digite <strong>1000g</strong>. Se comprou 500g, digite <strong>500g</strong>. O sistema calcula o custo exato por quilo automaticamente.';
+
+      if (labelEst) labelEst.textContent = 'Estoque Atual (em Quilos - kg)';
+      if (inputEst) {
+        inputEst.placeholder = 'Ex: 25.5 (para 25kg e meio)';
+        inputEst.step = '0.001';
+      }
+      if (badgeEst) badgeEst.textContent = 'kg';
+      if (hintEst)  hintEst.innerHTML = '💡 Digite em quilos. Exemplo: 1 saco de 25kg = digite 25. Se tiver 500g = digite 0.5';
     } else {
       labelEmb.textContent = 'Quantidade da Embalagem (un) *';
-      document.getElementById('insumo-peso-embalagem').placeholder = 'Ex: 1 ou 12';
+      inputEmb.placeholder = 'Ex: 1 ou 12';
       aviso.innerHTML = '📦 <strong>Importante:</strong> Digite a quantidade de unidades contidas no pacote/caixa comprada.';
+
+      if (labelEst) labelEst.textContent = 'Estoque Atual (em Unidades - un)';
+      if (inputEst) {
+        inputEst.placeholder = 'Ex: 100';
+        inputEst.step = '1';
+      }
+      if (badgeEst) badgeEst.textContent = 'un';
+      if (hintEst)  hintEst.innerHTML = '💡 Digite a quantidade de embalagens/peças avulsas em estoque';
     }
+    atualizarBadgePesoGramas(inputEmb, 'badge-peso-emb');
     calcularCustoReal();
   }
 
   function calcularCustoReal() {
     const tipo  = document.getElementById('insumo-tipo-medida').value;
-    const preco = parseFloat(document.getElementById('insumo-preco-pago').value || 0);
+    const preco = parseMoeda(document.getElementById('insumo-preco-pago').value);
     const emb   = parseFloat(document.getElementById('insumo-peso-embalagem').value || 0);
     const label = document.getElementById('label-custo-calculado');
 
@@ -567,12 +1820,14 @@
     }
   }
 
-  /* ======================== LOAD / RENDER CARDS ======================== */
+  /* ======================== LOAD / RENDER CARDS DE SALDOS ======================== */
   async function carregarInsumos() {
     try {
       const res = await fetch(API_INSUMOS);
       todosInsumos = await res.json();
-      renderizar(todosInsumos);
+      document.getElementById('count-insumos').textContent = todosInsumos.length;
+      popularSelectsInsumos();
+      filtrar();
     } catch {
       document.getElementById('insumos-grid').innerHTML =
         `<p style="grid-column:1/-1;text-align:center;padding:40px;color:var(--red)">
@@ -594,30 +1849,31 @@
       const unidade  = i.unidade_medida || (i.tipo_medida === 'Unidade' ? 'un' : 'kg');
       const estoqueClass = estoque <= 0 ? 'badge-red' : estoque < 5 ? 'badge-amber' : 'badge-green';
 
-      const pPago = i.preco_pago ? formatarDinheiro(i.preco_pago) : null;
-      const pEmb  = i.peso_embalagem ? (i.tipo_medida === 'Unidade' ? `${Math.round(i.peso_embalagem)} un` : formatarPeso(i.peso_embalagem)) : null;
-      
-      const infoEmb = (pPago && pEmb) ? `Pacote: ${pPago} por ${pEmb}` : '';
+      const pPago = i.preco_pago && parseFloat(i.preco_pago) > 0 ? formatarDinheiro(i.preco_pago) : null;
+      const pEmb  = i.peso_embalagem && parseFloat(i.peso_embalagem) > 0
+        ? (i.tipo_medida === 'Unidade' || unidade === 'un' ? `${Math.round(i.peso_embalagem)} un` : formatarPeso(i.peso_embalagem))
+        : null;
+      const infoEmb = (pPago && pEmb) ? `Referência: ${pPago} por ${pEmb}` : '';
 
       return `
         <div class="insumo-card">
           <div>
             <div class="insumo-card-header">
               <span class="badge badge-purple">${i.categoria || 'Outros'}</span>
-              <span class="badge ${estoqueClass}">Estoque: ${estoque} ${unidade}</span>
+              <span class="badge ${estoqueClass}">Saldo: ${formatarQtd(estoque, unidade)}</span>
             </div>
             <div class="insumo-title">${i.nome}</div>
             ${infoEmb ? `<div style="font-size:12px;color:var(--text-muted);margin-top:3px">${infoEmb}</div>` : ''}
           </div>
 
           <div class="insumo-price-box">
-            <span class="insumo-price-label">Preço Calculado:</span>
+            <span class="insumo-price-label">Custo Unitário Atual:</span>
             <span class="insumo-price-val">${custo} / ${unidade}</span>
           </div>
 
           <div class="insumo-card-footer">
-            <button class="btn btn-entrada btn-sm"
-              onclick="darEntradaInsumo(${i.id}, '${i.nome.replace(/'/g, "\\'")}', '${unidade}')">📥 Entrada</button>
+            <button class="btn btn-dividir btn-sm" onclick="openNFModal(${i.id})">🧾 Lançar NF</button>
+            <button class="btn btn-outline btn-sm" onclick="openMovModal(${i.id}, 'AJUSTE')">📦 Movimentar</button>
             <button class="btn btn-outline btn-sm" onclick="openInsumoModal(${i.id})">Editar</button>
             <button class="btn btn-outline btn-sm" style="color:var(--red);border-color:var(--red)"
               onclick="excluirInsumo(${i.id}, '${i.nome.replace(/'/g, "\\'")}')">Excluir</button>
@@ -626,48 +1882,20 @@
     }).join('');
   }
 
-  /* ======================== ENTRADA DE COMPRAS ======================== */
-  async function darEntradaInsumo(id, nome, unidade) {
-    const valor = prompt('Quantidade recebida do fornecedor?');
-    if (!valor) return;
-    const qtd = parseFloat(valor.replace(',', '.'));
-    if (isNaN(qtd) || qtd <= 0) {
-      showToast('Digite uma quantidade válida maior que zero.', 'error');
-      return;
-    }
-
-    try {
-      const res = await fetch(`${API_INSUMOS}/${id}/entrada`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ quantidade: qtd })
-      });
-      const data = await res.json();
-      if (res.ok) {
-        showToast(`📥 Entrada de ${qtd} ${unidade} registrada para "${nome}"!`, 'success');
-        carregarInsumos();
-      } else {
-        showToast('Erro: ' + (data.erro || 'Não foi possível registrar a entrada.'), 'error');
-      }
-    } catch {
-      showToast('Erro de conexão com o servidor.', 'error');
-    }
-  }
-
   function filtrar() {
-    const q = document.getElementById('input-busca').value.toLowerCase();
+    const q = (document.getElementById('input-busca').value || '').toLowerCase();
     renderizar(todosInsumos.filter(i =>
       i.nome.toLowerCase().includes(q) ||
       (i.categoria || '').toLowerCase().includes(q)
     ));
   }
 
-  /* ======================== SAVE ======================== */
+  /* ======================== SAVE INSUMO ======================== */
   async function salvarInsumo(e) {
     e.preventDefault();
     const id = document.getElementById('insumo-id').value;
     const tipo = document.getElementById('insumo-tipo-medida').value;
-    const preco = parseFloat(document.getElementById('insumo-preco-pago').value || 0);
+    const preco = parseMoeda(document.getElementById('insumo-preco-pago').value);
     const emb   = parseFloat(document.getElementById('insumo-peso-embalagem').value || 1);
 
     const custoCalc = tipo === 'Peso' ? (preco / emb) * 1000.0 : (preco / emb);
@@ -692,7 +1920,8 @@
       if (res.ok) {
         showToast(id ? '✅ Insumo atualizado!' : '✅ Insumo cadastrado com sucesso!', 'success');
         closeInsumoModal();
-        carregarInsumos();
+        await carregarInsumos();
+        if (abaAtiva === 'extrato') await carregarExtrato(1);
       } else {
         const d = await res.json();
         showToast('Erro ao salvar: ' + d.erro, 'error');
@@ -702,7 +1931,7 @@
     }
   }
 
-  /* ======================== DELETE ======================== */
+  /* ======================== DELETE INSUMO ======================== */
   async function excluirInsumo(id, nome) {
     if (!confirm(`Excluir "${nome}"? Esta ação não pode ser desfeita.`)) return;
     try {
