@@ -201,15 +201,15 @@ Este plano conecta de ponta a ponta os módulos **Comercial**, **Produção (Pla
 - [x] **Etapa 3 — Validação do Backend**
   - [x] Criar/rodar script de teste automatizado cobrindo: cenário 50/100/50 (Quarta vs. Sexta), venda `RETIRADA` bloqueando sem estoque, trava de exclusão de OP de pedido, trava de edição durante OP programada, entrega bloqueando sem estoque e baixando Câmara Fria, faturamento À Vista (`CONCLUIDO` imediato) e A Prazo (`ENTREGUE` -> baixa em Contas a Receber -> `CONCLUIDO`), cancelamento, ocorrência mantendo Boleto cheio + gerando Crédito ao cliente, e uso desse Crédito no faturamento do pedido seguinte.
 
-- [ ] **Etapa 4 — Frontend: `vendas.html`, `orcamentos.html`, `clientes.html` e Ajuste Contextual em `planejamento.html`**
-  - [ ] Atualizar `frontend/vendas.html`:
+- [x] **Etapa 4 — Frontend: `vendas.html`, `orcamentos.html`, `clientes.html` e Ajuste Contextual em `planejamento.html`**
+  - [x] Atualizar `frontend/vendas.html`:
     - Novo Pedido com seleção `Entrega / Produção` vs `Retirada Imediata` (sem bloco financeiro na criação).
     - Substituir filtro recolhível para os novos status (`Todos`, `Aguardando Produção`, `Pronto p/ Entrega`, `Entregue (A Fat.)`, `Entregue (A Pag.)`, `Concluído`, `Cancelado/Devolvido`).
     - Substituir dropdown solto de status por botões de ação reais por status (`✏️ Editar`, `🚚 Entregar`, `💰 Faturar`, `❌ Cancelar`, `↩️ Ocorrência / Devolução`).
     - Modais de **Faturar** (exibindo crédito disponível do cliente com opção de desconto), **Editar Pedido** e **Ocorrência / Devolução** (orientando crédito automático quando for Boleto ou título já Pago).
-  - [ ] Atualizar `frontend/clientes.html` para exibir badge discreto de `🎁 Crédito disponível` quando `saldo_credito > 0`.
-  - [ ] Atualizar `frontend/orcamentos.html` (aprovação gera pedido no novo fluxo sem exigir financeiro antecipado).
-  - [ ] Atualizar `frontend/planejamento.html` no `+ Atribuir OP` do card do colaborador/dia para fixar o dia e colaborador clicados (mostrando apenas a seleção das OPs quando nenhuma estiver marcada na esquerda).
+  - [x] Atualizar `frontend/clientes.html` para exibir badge discreto de `🎁 Crédito disponível` quando `saldo_credito > 0`.
+  - [x] Atualizar `frontend/orcamentos.html` (aprovação gera pedido no novo fluxo sem exigir financeiro antecipado).
+  - [x] Atualizar `frontend/planejamento.html` no `+ Atribuir OP` do card do colaborador/dia para fixar o dia e colaborador clicados (mostrando apenas a seleção das OPs quando nenhuma estiver marcada na esquerda).
 
-- [ ] **Etapa 5 — Validação Ponta a Ponta**
-  - [ ] Testar todo o ciclo no navegador (`vendas.html` ↔ `planejamento.html` ↔ `estoque_produtos.html` ↔ `contas_receber.html`) confirmando que nenhum passo permite inconsistência de estoque ou financeiro.
+- [x] **Etapa 5 — Validação Ponta a Ponta**
+  - [x] Testar todo o ciclo no navegador (`vendas.html` ↔ `planejamento.html` ↔ `estoque_produtos.html` ↔ `contas_receber.html`) confirmando que nenhum passo permite inconsistência de estoque ou financeiro.
