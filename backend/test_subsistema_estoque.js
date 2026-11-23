@@ -435,12 +435,11 @@ async function executarAuditoriaEstoque() {
         );
         const pedidoId = resPedido.body.pedido_id;
 
-        // Confirmar entrega do pedido (garantindo que não haja baixa duplicada)
+        // Confirmar entrega do pedido via entregarPedido (baixa definitiva na Câmara Fria)
         const resEntrega = mockRes();
-        await comercialController.atualizarPedido(
+        await comercialController.entregarPedido(
             {
-                params: { id: pedidoId },
-                body: { status: 'ENTREGUE' }
+                params: { id: pedidoId }
             },
             resEntrega
         );

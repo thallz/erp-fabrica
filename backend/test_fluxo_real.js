@@ -116,37 +116,11 @@ async function testarFluxoReal() {
         const opMontagem = ops.rows.find(o => o.tipo_op === 'MONTAGEM');
 
         if (!opMontagem) throw new Error('❌ ERRO: OP de MONTAGEM não foi gerada.');
-        if (!opPreparo) throw new Error('❌ ERRO: OP de PREPARO (Massa) não foi gerada para suprir a demanda.');
+        if (opPreparo) throw new Error('❌ ERRO: Sub-OP de PREPARO não deve ser gerada automaticamente na fila (Opção A: apenas Produto Final / MONTAGEM).');
 
-        // 8. Simular Finalização da OP de PREPARO
-        console.log(`\n🥣 7. Finalizando OP de PREPARO #${opPreparo.id} (Cozinha)...`);
+        // 8. Simular Finalização da OP de MONTAGEM (baixa integrada de insumos da receita + crédito na Câmara Fria)
+        console.log(`\n🛠️ 7. Finalizando OP de MONTAGEM #${opMontagem.id} (Bancada de Salgados com baixa integrada)...`);
         const producaoController = require('./src/controllers/producaoController');
-
-        let resPrep = null;
-        const fakeReqPrep = { params: { id: opPreparo.id } };
-        const fakeResPrep = {
-            status: function(c) { this.statusCode = c; return this; },
-            json: function(d) { resPrep = d; return this; }
-        };
-        await producaoController.finalizarOP(fakeReqPrep, fakeResPrep);
-        if (resPrep?.status === 'erro') throw new Error(`Falha ao finalizar OP Preparo: ${resPrep.erro}`);
-
-        // Verificar Farinha após preparo
-        const farinhaAposPrep = await client.query('SELECT estoque_atual FROM insumo WHERE id = $1', [farinhaId]);
-        const qtdFarinha1 = parseFloat(farinhaAposPrep.rows[0].estoque_atual);
-        console.log(`   -> Estoque de Farinha após Preparo: ${qtdFarinha1.toFixed(2)} kg (esperado: 9.00 kg)`);
-
-        // Verificar Coxinha na câmara fria (não deve ter aumentado ainda)
-        const coxinhaAposPrep = await client.query('SELECT estoque_atual FROM produto WHERE id = $1', [produtoId]);
-        const qtdCoxinha1 = parseInt(coxinhaAposPrep.rows[0].estoque_atual, 10);
-        console.log(`   -> Estoque de Coxinha após Preparo: ${qtdCoxinha1} un (esperado: 0 un)`);
-
-        if (qtdCoxinha1 !== 0) {
-            throw new Error(`❌ ERRO: OP de PREPARO creditou indevidamente a Câmara Fria! Estoque Coxinha: ${qtdCoxinha1}`);
-        }
-
-        // 9. Simular Finalização da OP de MONTAGEM
-        console.log(`\n🛠️ 8. Finalizando OP de MONTAGEM #${opMontagem.id} (Bancada de Salgados)...`);
         let resMont = null;
         const fakeReqMont = { params: { id: opMontagem.id } };
         const fakeResMont = {

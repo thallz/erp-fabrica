@@ -6,11 +6,11 @@ const financeiroController = {
     try {
       const vendas = await pool.query(`
         SELECT
-          COALESCE(SUM(valor_total), 0) AS faturamento_total,
-          COUNT(*) AS total_pedidos,
-          COALESCE(SUM(CASE WHEN status = 'CRIADO' THEN valor_total ELSE 0 END), 0) AS pendente_producao,
-          COALESCE(SUM(CASE WHEN status IN ('FATURADO', 'PRODUZINDO') THEN valor_total ELSE 0 END), 0) AS a_receber,
-          COALESCE(SUM(CASE WHEN status = 'ENTREGUE' THEN valor_total ELSE 0 END), 0) AS recebido
+          COALESCE(SUM(CASE WHEN status NOT IN ('CANCELADO', 'ORCAMENTO') THEN valor_total ELSE 0 END), 0) AS faturamento_total,
+          COUNT(*) FILTER (WHERE status NOT IN ('CANCELADO', 'ORCAMENTO')) AS total_pedidos,
+          COALESCE(SUM(CASE WHEN status = 'ABERTO' THEN valor_total ELSE 0 END), 0) AS pendente_producao,
+          COALESCE(SUM(CASE WHEN status = 'ENTREGUE' THEN valor_total ELSE 0 END), 0) AS a_receber,
+          COALESCE(SUM(CASE WHEN status = 'CONCLUIDO' THEN valor_total ELSE 0 END), 0) AS recebido
         FROM pedido
       `);
 
@@ -234,6 +234,17 @@ const financeiroController = {
          RETURNING *`,
         [formaFinal, id]
       );
+
+      if (atual.pedido_id) {
+        await client.query(
+          `UPDATE pedido
+           SET status = 'CONCLUIDO'
+           WHERE id = $1
+             AND estoque_baixado = TRUE
+             AND status = 'ENTREGUE'`,
+          [atual.pedido_id]
+        );
+      }
 
       await client.query('COMMIT');
       res.json({

@@ -543,3 +543,86 @@ input::placeholder, textarea::placeholder { color: var(--text-muted); }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 10px; }
 ::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+
+
+/* ---- Filtro Dropdown Recolhível (Todos ▾) ---- */
+.filter-dropdown {
+  position: relative;
+  display: inline-block;
+}
+.filter-dropdown-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all .15s;
+  white-space: nowrap;
+}
+.filter-dropdown-btn:hover,
+.filter-dropdown.open .filter-dropdown-btn {
+  border-color: var(--brand);
+  color: var(--brand);
+  background: var(--brand-light);
+}
+.filter-dropdown-caret {
+  font-size: 11px;
+  opacity: .75;
+  transition: transform .15s;
+}
+.filter-dropdown.open .filter-dropdown-caret {
+  transform: rotate(180deg);
+}
+.filter-dropdown-menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 195px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: var(--shadow-md);
+  padding: 6px;
+  z-index: 650;
+  flex-direction: column;
+  gap: 3px;
+}
+.filter-dropdown.open .filter-dropdown-menu,
+.filter-dropdown-menu.open {
+  display: flex;
+}
+.filter-dropdown-menu .pill,
+.filter-dropdown-menu .filter-option {
+  width: 100%;
+  text-align: left;
+  padding: 8px 12px;
+  border-radius: 7px;
+  border: none !important;
+  background: transparent;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-primary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: background .12s, color .12s;
+}
+.filter-dropdown-menu .pill:hover,
+.filter-dropdown-menu .filter-option:hover {
+  background: var(--bg);
+  color: var(--brand);
+}
+.filter-dropdown-menu .pill.active,
+.filter-dropdown-menu .filter-option.active {
+  background: var(--brand-light) !important;
+  color: var(--brand) !important;
+  font-weight: 600;
+}

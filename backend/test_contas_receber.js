@@ -156,6 +156,7 @@ async function executarTesteContasReceber() {
             resProduto
         );
         const produtoId = resProduto.body.produto_id;
+        await pool.query('UPDATE produto SET estoque_atual = 100 WHERE id = $1', [produtoId]);
         const prodDb = (await pool.query('SELECT id, preco_venda FROM produto WHERE id = $1', [produtoId])).rows[0];
 
         verificar(
@@ -176,9 +177,9 @@ async function executarTesteContasReceber() {
         ).rows[0];
 
         // =========================================================================
-        // 3. LANÇAMENTO DE PEDIDO DE VENDA A PRAZO (50 COXINHAS = R$ 400,00 | BOLETO +15 DIAS)
+        // 3. LANÇAMENTO -> ENTREGA -> FATURAMENTO A PRAZO (50 COXINHAS = R$ 400,00 | BOLETO +15 DIAS)
         // =========================================================================
-        console.log(`\n🛒 ETAPA 3: Lançando Pedido de 50 Coxinhas (R$ 400,00) A_PRAZO (BOLETO, venc. ${datasPg.venc_15d})...`);
+        console.log(`\n🛒 ETAPA 3: Lançando, Entregando e Faturando Pedido de 50 Coxinhas (R$ 400,00) A_PRAZO (BOLETO, venc. ${datasPg.venc_15d})...`);
 
         const resPedido = mockRes();
         await comercialController.lancarPedido(
@@ -186,9 +187,6 @@ async function executarTesteContasReceber() {
                 body: {
                     cliente_id: clienteId,
                     data_entrega: datasPg.entrega_2d,
-                    pagamento_tipo: 'A_PRAZO',
-                    forma_pagamento: 'BOLETO',
-                    data_vencimento: datasPg.venc_15d,
                     itens: [
                         {
                             produto_id: produtoId,
@@ -202,6 +200,23 @@ async function executarTesteContasReceber() {
         );
 
         const pedDb = (await pool.query('SELECT * FROM pedido WHERE id = $1', [resPedido.body.pedido_id])).rows[0];
+
+        // Entregar e Faturar o pedido
+        const resEntregar = mockRes();
+        await comercialController.entregarPedido({ params: { id: resPedido.body.pedido_id } }, resEntregar);
+
+        const resFaturar = mockRes();
+        await comercialController.faturarPedido(
+            {
+                params: { id: resPedido.body.pedido_id },
+                body: {
+                    pagamento_tipo: 'A_PRAZO',
+                    forma_pagamento: 'BOLETO',
+                    data_vencimento: datasPg.venc_15d
+                }
+            },
+            resFaturar
+        );
 
         verificar(
             'Pedido de Venda #1 criado com sucesso (valor_total = R$ 400,00)',

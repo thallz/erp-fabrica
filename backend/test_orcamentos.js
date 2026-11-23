@@ -280,18 +280,19 @@ async function executarTesteOrcamentos() {
         ).rows[0];
 
         verificar(
-            'Pedido de venda oficial criado com 50 coxinhas, R$ 400,00 e entrega em +3 dias',
+            'Pedido de venda oficial criado com 50 coxinhas, R$ 400,00, entrega em +3 dias e status ABERTO',
             Boolean(
                 pedidoGeradoDb &&
                     pedidoGeradoDb.cliente_id === clienteId &&
                     aproxIgual(pedidoGeradoDb.valor_total, 400.00) &&
                     pedidoGeradoDb.qtd_total === 50 &&
-                    pedidoGeradoDb.data_entrega_iso === datasDb.entrega_3d
+                    pedidoGeradoDb.data_entrega_iso === datasDb.entrega_3d &&
+                    pedidoGeradoDb.status === 'ABERTO'
             ),
             pedidoGeradoDb
                 ? `pedido=#${pedidoGeradoDb.id}, valor=R$ ${parseFloat(pedidoGeradoDb.valor_total).toFixed(2)}, qtd=${pedidoGeradoDb.qtd_total} un, entrega=${pedidoGeradoDb.data_entrega_iso}, status=${pedidoGeradoDb.status}`
                 : 'Pedido não encontrado',
-            `pedido=#1, valor=R$ 400.00, qtd=50 un, entrega=${datasDb.entrega_3d}, status=PRODUZINDO`
+            `pedido=#1, valor=R$ 400.00, qtd=50 un, entrega=${datasDb.entrega_3d}, status=ABERTO`
         );
 
         const opsGeradasDb = (

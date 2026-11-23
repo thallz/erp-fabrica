@@ -1,12 +1,27 @@
 const pool = require('../config/db');
 
+function obterPesoTotalReceitaKg(rawPesoTotal, itemsRows) {
+    const somaGramas = (itemsRows || []).reduce((acc, it) => acc + parseFloat(it.quantidade_gramas || 0), 0);
+    const raw = parseFloat(rawPesoTotal || 0);
+    if (somaGramas > 0) {
+        if (Math.abs(raw - somaGramas) < 0.05) {
+            return somaGramas / 1000.0;
+        }
+        if (raw > 0) {
+            return raw;
+        }
+        return somaGramas / 1000.0;
+    }
+    return raw > 100 ? raw / 1000.0 : (raw || 10.0);
+}
+
 async function explodirReceitaRec(client, receitaId, pesoNecessarioKg, insumosAcumulados = {}) {
     const items = await client.query(
         'SELECT * FROM receita_item WHERE receita_id = $1',
         [receitaId]
     );
     const recRes = await client.query('SELECT peso_total FROM receita WHERE id = $1', [receitaId]);
-    const pesoTotalReceita = parseFloat(recRes.rows[0]?.peso_total || 10.0);
+    const pesoTotalReceita = obterPesoTotalReceitaKg(recRes.rows[0]?.peso_total, items.rows);
     const scaleFactor = pesoTotalReceita > 0 ? (pesoNecessarioKg / pesoTotalReceita) : 0;
 
     for (const item of items.rows) {
@@ -76,6 +91,26 @@ const producaoController = {
     alocar: async (req, res) => {
         try {
             const { produto_id, quantidade_planejada } = req.body;
+            const qtdNum = parseInt(quantidade_planejada, 10);
+
+            if (!produto_id || isNaN(qtdNum) || qtdNum <= 0) {
+                return res.status(400).json({
+                    status: 'erro',
+                    erro: 'Informe produto_id e quantidade_planejada maior que zero.'
+                });
+            }
+
+            const prodRes = await pool.query(
+                'SELECT id, nome, categoria, categoria_producao, embalagem_id FROM produto WHERE id = $1',
+                [produto_id]
+            );
+            if (prodRes.rows.length === 0) {
+                return res.status(404).json({
+                    status: 'erro',
+                    erro: 'Produto não encontrado.'
+                });
+            }
+            const prod = prodRes.rows[0];
 
             const ficha = await pool.query(
                 `SELECT 
@@ -84,17 +119,19 @@ const producaoController = {
                     (SELECT COUNT(*)::int FROM ficha_tecnica_receita WHERE produto_id = $1) AS total`,
                 [produto_id]
             );
-            if (ficha.rows[0].total === 0) {
+            if (ficha.rows[0].total === 0 && !prod.embalagem_id) {
                 return res.status(400).json({
                     status: 'erro',
                     erro: 'Produto sem ficha técnica cadastrada (receitas, insumos ou embalagens).'
                 });
             }
 
+            const categoriaProd = prod.categoria_producao || prod.categoria || 'Geral';
+
             const novaOp = await pool.query(
-                `INSERT INTO ordem_producao (produto_id, quantidade_planejada, status)
-                 VALUES ($1, $2, 'FILA') RETURNING *`,
-                [produto_id, quantidade_planejada]
+                `INSERT INTO ordem_producao (produto_id, quantidade_planejada, status, tipo_op, pedido_id, categoria_producao)
+                 VALUES ($1, $2, 'FILA', 'MONTAGEM', NULL, $3) RETURNING *`,
+                [produto_id, qtdNum, categoriaProd]
             );
 
             res.status(201).json(novaOp.rows[0]);
@@ -108,22 +145,46 @@ const producaoController = {
             const { status } = req.query;
             let query = `
                 SELECT op.id AS numero_op, op.id, op.produto_id, p.nome AS produto,
-                       op.quantidade_planejada, op.status, op.criado_em,
+                       op.quantidade_planejada, op.quantidade_realizada, op.status, op.criado_em,
                        p.estoque_atual AS estoque_camara_fria,
-                       op.data_programada, op.colaborador_id, op.categoria_producao,
+                       TO_CHAR(op.data_programada, 'YYYY-MM-DD') AS data_programada,
+                       op.colaborador_id, COALESCE(op.categoria_producao, p.categoria_producao, p.categoria, 'Geral') AS categoria_producao,
                        c.nome AS colaborador_nome, p.peso_produtividade,
-                       op.tipo_op, op.receita_id, r.nome AS receita_nome
+                       COALESCE(op.tipo_op, 'MONTAGEM') AS tipo_op,
+                       op.receita_id, r.nome AS receita_nome,
+                       op.pedido_id, COALESCE(op.agrupada, FALSE) AS agrupada,
+                       TO_CHAR(ped.data_entrega, 'YYYY-MM-DD') AS data_entrega,
+                       cli.razao_social AS cliente_nome,
+                       COALESCE((
+                           SELECT json_agg(
+                               json_build_object(
+                                   'id', opo.id,
+                                   'pedido_id', opo.pedido_id,
+                                   'cliente_id', opo.cliente_id,
+                                   'razao_social', c_orig.razao_social,
+                                   'quantidade', opo.quantidade,
+                                   'data_entrega', TO_CHAR(COALESCE(opo.data_entrega, p_orig.data_entrega), 'YYYY-MM-DD')
+                               ) ORDER BY opo.id ASC
+                           )
+                           FROM ordem_producao_origem opo
+                           LEFT JOIN cliente c_orig ON c_orig.id = opo.cliente_id
+                           LEFT JOIN pedido p_orig ON p_orig.id = opo.pedido_id
+                           WHERE opo.ordem_producao_id = op.id
+                       ), '[]'::json) AS origens
                 FROM ordem_producao op
                 JOIN produto p ON op.produto_id = p.id
                 LEFT JOIN colaborador c ON op.colaborador_id = c.id
                 LEFT JOIN receita r ON r.id = op.receita_id
+                LEFT JOIN pedido ped ON ped.id = op.pedido_id
+                LEFT JOIN cliente cli ON cli.id = ped.cliente_id
+                WHERE COALESCE(op.tipo_op, 'MONTAGEM') = 'MONTAGEM'
             `;
             const params = [];
             if (status) {
-                query += ` WHERE op.status = $1`;
+                query += ` AND op.status = $1`;
                 params.push(status);
             }
-            query += ` ORDER BY op.criado_em DESC`;
+            query += ` ORDER BY op.criado_em DESC, op.id DESC`;
 
             const fila = await pool.query(query, params);
             res.json(fila.rows);
@@ -135,13 +196,46 @@ const producaoController = {
     excluirOP: async (req, res) => {
         try {
             const { id } = req.params;
+            const check = await pool.query(
+                'SELECT id, status, pedido_id FROM ordem_producao WHERE id = $1',
+                [id]
+            );
+            if (check.rows.length === 0) {
+                return res.status(404).json({ status: 'erro', erro: 'OP não encontrada' });
+            }
+            if (check.rows[0].status === 'CONCLUIDA') {
+                return res.status(400).json({
+                    status: 'erro',
+                    erro: 'Não é permitido excluir uma OP já concluída (estoque já movimentado).'
+                });
+            }
+
+            const pedidosVinc = await pool.query(
+                `SELECT DISTINCT p.id
+                 FROM pedido p
+                 WHERE p.status NOT IN ('CANCELADO', 'DEVOLVIDO')
+                   AND (
+                     p.id = $2
+                     OR EXISTS (
+                       SELECT 1 FROM ordem_producao_origem opo
+                       WHERE opo.ordem_producao_id = $1 AND opo.pedido_id = p.id
+                     )
+                   )
+                 ORDER BY p.id ASC`,
+                [id, check.rows[0].pedido_id || -1]
+            );
+            if (pedidosVinc.rows.length > 0) {
+                const listaPeds = pedidosVinc.rows.map(r => `#${r.id}`).join(', ');
+                return res.status(400).json({
+                    status: 'erro',
+                    erro: `Esta OP está vinculada ao(s) Pedido(s) ${listaPeds}. Para cancelá-la, cancele ou edite o Pedido em Vendas.`
+                });
+            }
+
             const result = await pool.query(
                 'DELETE FROM ordem_producao WHERE id = $1 RETURNING id',
                 [id]
             );
-            if (result.rows.length === 0) {
-                return res.status(404).json({ status: 'erro', erro: 'OP não encontrada' });
-            }
             res.json({ status: 'sucesso', mensagem: 'OP excluída com sucesso.', id: result.rows[0].id });
         } catch (error) {
             res.status(500).json({ status: 'erro', erro: error.message });
@@ -394,24 +488,23 @@ const producaoController = {
             const metaDiariaIndividual = colaborador.rows[0].meta_diaria_individual;
             const nomeColaborador = colaborador.rows[0].nome;
 
-            // Buscar quantidade planejada calculada em pontos (qtd * peso) para o colaborador na data
+            // Buscar quantidade planejada em unidades simples para o colaborador na data
             const opsExistentes = await pool.query(
-                `SELECT SUM(op.quantidade_planejada * COALESCE(p.peso_produtividade, 1.0)) as total_planejado
+                `SELECT COALESCE(SUM(op.quantidade_planejada), 0) AS total_planejado
                  FROM ordem_producao op
-                 JOIN produto p ON p.id = op.produto_id
                  WHERE op.colaborador_id = $1
                  AND op.data_programada = $2
-                 AND op.status != 'CONCLUIDA'`,
+                 AND op.status != 'CONCLUIDA'
+                 AND COALESCE(op.tipo_op, 'MONTAGEM') = 'MONTAGEM'`,
                 [colaborador_id, data_programada]
             );
 
-            const totalPlanejado = parseFloat(opsExistentes.rows[0].total_planejado || 0);
+            const totalPlanejado = parseInt(opsExistentes.rows[0].total_planejado || 0, 10);
 
-            // Buscar quantidade das novas OPs com peso_produtividade
+            // Buscar quantidade das novas OPs em unidades simples
             const novasOps = await pool.query(
-                `SELECT op.id, op.quantidade_planejada, op.produto_id, COALESCE(p.peso_produtividade, 1.0) as peso_produtividade
+                `SELECT op.id, op.quantidade_planejada, op.produto_id
                  FROM ordem_producao op
-                 JOIN produto p ON p.id = op.produto_id
                  WHERE op.id = ANY($1)`,
                 [ops_ids]
             );
@@ -423,13 +516,13 @@ const producaoController = {
                 });
             }
 
-            const totalNovasOps = novasOps.rows.reduce((sum, op) => sum + (op.quantidade_planejada * parseFloat(op.peso_produtividade)), 0);
+            const totalNovasOps = novasOps.rows.reduce((sum, op) => sum + parseInt(op.quantidade_planejada, 10), 0);
             const novoTotal = totalPlanejado + totalNovasOps;
 
             // Verificar se ultrapassa a meta
             const ultrapassaMeta = novoTotal > metaDiariaIndividual;
             const aviso = ultrapassaMeta
-                ? `⚠️ ALERTA: Alocação ultrapassa meta diária! Pontos Planejados: ${totalPlanejado.toFixed(1)}, Novas OPs: ${totalNovasOps.toFixed(1)}, Total: ${novoTotal.toFixed(1)}, Meta: ${metaDiariaIndividual}. Sobrecarga de ${(novoTotal - metaDiariaIndividual).toFixed(1)} pontos.`
+                ? `⚠️ ALERTA: Alocação ultrapassa meta diária! Unidades Planejadas: ${totalPlanejado}, Novas OPs: ${totalNovasOps}, Total: ${novoTotal}, Meta: ${metaDiariaIndividual}. Sobrecarga de ${novoTotal - metaDiariaIndividual} un.`
                 : null;
 
             // Atualizar as OPs com o colaborador e data programada
@@ -661,42 +754,33 @@ const producaoController = {
                 return res.status(404).json({ status: 'erro', erro: 'OP não encontrada.' });
             }
 
-            const op = result.rows[0];
-            if (op.tipo_op === 'MONTAGEM' && data_programada) {
-                const filhas = await pool.query(
-                    `SELECT id FROM ordem_producao WHERE parent_op_id = $1 AND tipo_op = 'PREPARO'`,
-                    [id]
-                );
-                if (filhas.rows.length === 0) {
-                    await explodirEPrefabricarOPs(pool, id, op.produto_id, op.quantidade_planejada);
-                }
+            let aviso = null;
+            let ultrapassaMeta = false;
 
-                // Aplicar Inteligência de Cronograma: Recheios/Molhos em D-1, Massas em D+0
-                const filhasOPs = await pool.query(
-                    `SELECT op.id, r.categoria FROM ordem_producao op
-                     LEFT JOIN receita r ON r.id = op.receita_id
-                     WHERE op.parent_op_id = $1 AND op.tipo_op = 'PREPARO'`,
-                    [id]
+            if (colaborador_id && data_programada) {
+                const colabRes = await pool.query(
+                    'SELECT nome, COALESCE(meta_diaria_individual, meta_diaria, 350) AS meta_diaria_individual FROM colaborador WHERE id = $1',
+                    [colaborador_id]
                 );
-                for (const f of filhasOPs.rows) {
-                    if (f.categoria === 'Recheio' || f.categoria === 'Molho') {
-                        const dateObj = new Date(data_programada + 'T00:00:00');
-                        dateObj.setDate(dateObj.getDate() - 1);
-                        const dateStrMinus1 = dateObj.toISOString().split('T')[0];
-                        await pool.query(
-                            `UPDATE ordem_producao SET data_programada = $1 WHERE id = $2`,
-                            [dateStrMinus1, f.id]
-                        );
-                    } else {
-                        await pool.query(
-                            `UPDATE ordem_producao SET data_programada = $1 WHERE id = $2`,
-                            [data_programada, f.id]
-                        );
+                if (colabRes.rows.length > 0) {
+                    const meta = parseInt(colabRes.rows[0].meta_diaria_individual, 10) || 350;
+                    const somaRes = await pool.query(
+                        `SELECT COALESCE(SUM(quantidade_planejada), 0)::int AS total_dia
+                         FROM ordem_producao
+                         WHERE colaborador_id = $1 AND data_programada = $2
+                           AND status != 'CONCLUIDA'
+                           AND COALESCE(tipo_op, 'MONTAGEM') = 'MONTAGEM'`,
+                        [colaborador_id, data_programada]
+                    );
+                    const totalDia = parseInt(somaRes.rows[0].total_dia || 0, 10);
+                    if (totalDia > meta) {
+                        ultrapassaMeta = true;
+                        aviso = `⚠️ Capacidade diária de ${colabRes.rows[0].nome} ultrapassada: ${totalDia} / ${meta} un (+${totalDia - meta} un).`;
                     }
                 }
             }
 
-            res.json({ status: 'sucesso', op: result.rows[0] });
+            res.json({ status: 'sucesso', op: result.rows[0], ultrapassa_meta: ultrapassaMeta, aviso });
         } catch (error) {
             res.status(500).json({ status: 'erro', erro: error.message });
         }
@@ -855,19 +939,65 @@ const producaoController = {
                 );
             } 
             // 2. LÓGICA SE FOR OP DE MONTAGEM (EX: COXINHA OU PRODUTO FINAL)
-            else {
-                // Subtrai peso das receitas vinculadas na ficha técnica do produto
+            let produtoFinalInfo = null;
+            if (!(op.tipo_op === 'PREPARO' && op.receita_id)) {
+                // Explodir receitas vinculadas na ficha técnica do produto até insumos base
                 const receitasFt = await client.query(
                     `SELECT receita_id, quantidade_necessaria FROM ficha_tecnica_receita WHERE produto_id = $1`,
                     [op.produto_id]
                 );
 
+                const insumosAcumulados = {};
                 for (const r of receitasFt.rows) {
                     const pesoKgNecessario = parseFloat(r.quantidade_necessaria || 0) * qtdPlanejada;
-                    await client.query(
-                        `UPDATE receita SET estoque_atual = GREATEST(0, COALESCE(estoque_atual, 0) - $1) WHERE id = $2`,
-                        [pesoKgNecessario, r.receita_id]
-                    );
+                    if (pesoKgNecessario > 0) {
+                        await explodirReceitaRec(client, r.receita_id, pesoKgNecessario, insumosAcumulados);
+                        await client.query(
+                            `UPDATE receita SET estoque_atual = GREATEST(0, COALESCE(estoque_atual, 0) - $1) WHERE id = $2`,
+                            [pesoKgNecessario, r.receita_id]
+                        );
+                    }
+                }
+
+                // Deduzir insumos explodidos das receitas do Almoxarifado + Kardex
+                for (const insumoIdStr of Object.keys(insumosAcumulados)) {
+                    const insumoId = parseInt(insumoIdStr, 10);
+                    const qtdKg = parseFloat(insumosAcumulados[insumoIdStr].quantidade_total || 0);
+                    if (qtdKg > 0) {
+                        const insRes = await client.query(
+                            'SELECT COALESCE(estoque_atual, 0) AS estoque_atual, unidade_medida, COALESCE(custo_unitario, 0) AS custo_unitario FROM insumo WHERE id = $1 FOR UPDATE',
+                            [insumoId]
+                        );
+                        if (insRes.rows.length > 0) {
+                            const saldoAnt = parseFloat(insRes.rows[0].estoque_atual || 0);
+                            const saldoPost = saldoAnt - qtdKg;
+                            const unidade = insRes.rows[0].unidade_medida || 'kg';
+                            const custoMom = parseFloat(insRes.rows[0].custo_unitario || 0);
+
+                            await client.query(
+                                `UPDATE insumo SET estoque_atual = $1 WHERE id = $2`,
+                                [saldoPost, insumoId]
+                            );
+
+                            await client.query(
+                                `INSERT INTO movimentacao_estoque (
+                                    tipo_estoque, insumo_id, produto_id, tipo_movimento, motivo,
+                                    quantidade, unidade_medida, custo_unitario_momento,
+                                    saldo_anterior, saldo_posterior, documento_ref, observacao
+                                ) VALUES ('MATERIA_PRIMA', $1, NULL, 'SAIDA', 'CONSUMO_PRODUCAO', $2, $3, $4, $5, $6, $7, $8)`,
+                                [
+                                    insumoId,
+                                    qtdKg,
+                                    unidade,
+                                    custoMom,
+                                    saldoAnt,
+                                    saldoPost,
+                                    `OP #${op.id}`,
+                                    `Consumo de receita na OP #${op.id}`
+                                ]
+                            );
+                        }
+                    }
                 }
 
                 // Subtrai insumos diretos da ficha técnica (se houver) + Kardex
@@ -985,13 +1115,21 @@ const producaoController = {
                             `Entrada na Câmara Fria por conclusão da OP #${op.id}`
                         ]
                     );
+
+                    produtoFinalInfo = {
+                        id: prodRow.id,
+                        nome: prodRow.nome,
+                        estoque_atual: saldoPostProd
+                    };
                 }
             }
 
-            // Atualizar status da OP para CONCLUIDA
+            // Atualizar status da OP para CONCLUIDA e registrar quantidade_realizada
             const updatedOp = await client.query(
                 `UPDATE ordem_producao 
-                 SET status = 'CONCLUIDA', data_fim = CURRENT_TIMESTAMP 
+                 SET status = 'CONCLUIDA',
+                     data_fim = CURRENT_TIMESTAMP,
+                     quantidade_realizada = quantidade_planejada
                  WHERE id = $1 RETURNING *`,
                 [id]
             );
@@ -1001,7 +1139,8 @@ const producaoController = {
             res.json({
                 status: 'sucesso',
                 mensagem: 'OP finalizada com baixa de insumos/receitas e estoque creditado com sucesso!',
-                op: updatedOp.rows[0]
+                op: updatedOp.rows[0],
+                produto: produtoFinalInfo
             });
         } catch (error) {
             await client.query('ROLLBACK');

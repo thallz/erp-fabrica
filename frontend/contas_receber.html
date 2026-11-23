@@ -160,8 +160,8 @@
           <div class="dropdown-content">
             <a href="vendas.html">Vendas</a>
             <a href="orcamentos.html">Orçamentos</a>
-            <a href="produtos.html">Produtos Finais</a>
             <a href="clientes.html">Clientes</a>
+            <a href="estoque_vendas.html">Estoque Pronta-Entrega</a>
           </div>
         </div>
 
@@ -176,8 +176,8 @@
         <div class="dropdown">
           <button class="dropbtn">🏭 PRODUÇÃO</button>
           <div class="dropdown-content">
-            <a href="planejamento.html">Planejamento Maestro</a>
-            <a href="ordens_producao.html">Fila de OPs</a>
+            <a href="planejamento.html">Planejamento de Produção</a>
+            <a href="produtos.html">Produtos Finais</a>
             <a href="receitas.html">Receitas (Preparos)</a>
             <a href="colaboradores.html">Colaboradores</a>
           </div>
@@ -239,11 +239,17 @@
 
       <!-- BARRA DE FILTROS E BUSCA -->
       <div class="filter-bar">
-        <div class="filter-pills">
-          <span class="pill active" onclick="selecionarStatus('', this)">Todos</span>
-          <span class="pill" onclick="selecionarStatus('PENDENTE', this)">🟡 Pendentes</span>
-          <span class="pill" onclick="selecionarStatus('RECEBIDO', this)">🟢 Recebidos</span>
-          <span class="pill" onclick="selecionarStatus('VENCIDO', this)">🔴 Vencidos</span>
+        <div class="filter-dropdown" id="status-filter-dropdown">
+          <button type="button" class="filter-dropdown-btn" id="status-filter-btn" onclick="toggleFiltroStatusDropdown(event)">
+            <span id="status-filter-label">Todos</span>
+            <span class="filter-dropdown-caret">▾</span>
+          </button>
+          <div class="filter-dropdown-menu" id="status-filter-menu">
+            <button type="button" class="pill active" onclick="selecionarStatus('', this)">Todos</button>
+            <button type="button" class="pill" onclick="selecionarStatus('PENDENTE', this)">🟡 Pendentes</button>
+            <button type="button" class="pill" onclick="selecionarStatus('RECEBIDO', this)">🟢 Recebidos</button>
+            <button type="button" class="pill" onclick="selecionarStatus('VENCIDO', this)">🔴 Vencidos</button>
+          </div>
         </div>
 
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
@@ -488,10 +494,22 @@
     }
   }
 
+  function toggleFiltroStatusDropdown(e) {
+    if (e) e.stopPropagation();
+    document.getElementById('status-filter-dropdown')?.classList.toggle('open');
+  }
+  document.addEventListener('click', (e) => {
+    const dd = document.getElementById('status-filter-dropdown');
+    if (dd && !dd.contains(e.target)) dd.classList.remove('open');
+  });
+
   function selecionarStatus(st, el) {
     statusSelecionado = st;
     document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
-    el.classList.add('active');
+    if (el) el.classList.add('active');
+    const lbl = document.getElementById('status-filter-label');
+    if (lbl && el) lbl.textContent = el.textContent.trim();
+    document.getElementById('status-filter-dropdown')?.classList.remove('open');
     carregarContasReceber();
   }
 

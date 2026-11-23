@@ -163,12 +163,12 @@
   
   <nav class="topbar-nav">
     <div class="dropdown">
-      <button class="dropbtn">📊 COMERCIAL</button>
+      <button class="dropbtn" style="color:var(--brand)">📊 COMERCIAL</button>
       <div class="dropdown-content">
         <a href="vendas.html">Vendas</a>
         <a href="orcamentos.html">Orçamentos</a>
-        <a href="produtos.html">Produtos Finais</a>
-        <a href="clientes.html">Clientes</a>
+        <a href="clientes.html" class="active">Clientes</a>
+        <a href="estoque_vendas.html">Estoque Pronta-Entrega</a>
       </div>
     </div>
     
@@ -183,8 +183,8 @@
     <div class="dropdown">
       <button class="dropbtn">🏭 PRODUÇÃO</button>
       <div class="dropdown-content">
-        <a href="planejamento.html">Planejamento Maestro</a>
-        <a href="ordens_producao.html">Fila de OPs</a>
+        <a href="planejamento.html">Planejamento de Produção</a>
+        <a href="produtos.html">Produtos Finais</a>
         <a href="receitas.html">Receitas (Preparos)</a>
         <a href="colaboradores.html">Colaboradores</a>
       </div>
@@ -409,12 +409,19 @@
     grid.innerHTML = lista.map(c => {
       const tipo = c.tipo || 'B2B';
       const endereco = c.endereco ? c.endereco : null;
+      const saldoCredito = parseFloat(c.saldo_credito || 0);
+      const creditoBadge = saldoCredito > 0
+        ? `<span class="badge" style="background:var(--green-bg);color:var(--green);border:1px solid #a7f3d0;font-size:11px;font-weight:700" title="Crédito disponível para abater na próxima fatura">🎁 Crédito: R$ ${saldoCredito.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>`
+        : '';
 
       return `
         <div class="cli-card">
           <div>
             <div class="cli-card-header">
-              <span class="badge-b2b">${tipo}</span>
+              <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+                <span class="badge-b2b">${tipo}</span>
+                ${creditoBadge}
+              </div>
               <span class="badge badge-gray">#${c.id}</span>
             </div>
             <div class="cli-title">${c.razao_social}</div>

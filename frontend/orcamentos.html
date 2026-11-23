@@ -240,8 +240,8 @@
           <div class="dropdown-content">
             <a href="vendas.html">Vendas</a>
             <a href="orcamentos.html" class="active">Orçamentos</a>
-            <a href="produtos.html">Produtos Finais</a>
             <a href="clientes.html">Clientes</a>
+            <a href="estoque_vendas.html">Estoque Pronta-Entrega</a>
           </div>
         </div>
 
@@ -256,8 +256,8 @@
         <div class="dropdown">
           <button class="dropbtn">🏭 PRODUÇÃO</button>
           <div class="dropdown-content">
-            <a href="planejamento.html">Planejamento Maestro</a>
-            <a href="ordens_producao.html">Fila de OPs</a>
+            <a href="planejamento.html">Planejamento de Produção</a>
+            <a href="produtos.html">Produtos Finais</a>
             <a href="receitas.html">Receitas (Preparos)</a>
             <a href="colaboradores.html">Colaboradores</a>
           </div>
@@ -304,12 +304,20 @@
         </div>
       </div>
 
-      <!-- FILTROS DE STATUS -->
-      <div class="filter-pills">
-        <button type="button" class="pill active" onclick="filtrarStatus('', this)" id="pill-todos">Todos</button>
-        <button type="button" class="pill" onclick="filtrarStatus('PENDENTE', this)" id="pill-pendente">🟡 Pendentes</button>
-        <button type="button" class="pill" onclick="filtrarStatus('APROVADO', this)" id="pill-aprovado">🟢 Aprovados</button>
-        <button type="button" class="pill" onclick="filtrarStatus('RECUSADO', this)" id="pill-recusado">🔴 Recusados</button>
+      <!-- FILTROS DE STATUS RECOLHÍVEL (Todos ▾) -->
+      <div style="margin-bottom:16px">
+        <div class="filter-dropdown" id="status-filter-dropdown">
+          <button type="button" class="filter-dropdown-btn" id="status-filter-btn" onclick="toggleFiltroStatusDropdown(event)">
+            <span id="status-filter-label">Todos</span>
+            <span class="filter-dropdown-caret">▾</span>
+          </button>
+          <div class="filter-dropdown-menu" id="status-filter-menu">
+            <button type="button" class="pill active" onclick="filtrarStatus('', this)" id="pill-todos">Todos</button>
+            <button type="button" class="pill" onclick="filtrarStatus('PENDENTE', this)" id="pill-pendente">🟡 Pendentes</button>
+            <button type="button" class="pill" onclick="filtrarStatus('APROVADO', this)" id="pill-aprovado">🟢 Aprovados</button>
+            <button type="button" class="pill" onclick="filtrarStatus('RECUSADO', this)" id="pill-recusado">🔴 Recusados</button>
+          </div>
+        </div>
       </div>
 
       <!-- TABELA DE ORÇAMENTOS -->
@@ -428,11 +436,19 @@
           <div id="aprovar-resumo-valor" style="font-size:16px;font-weight:800;color:var(--green);margin-top:6px">R$ 0,00</div>
         </div>
 
+        <div class="form-group" style="margin-bottom:12px">
+          <label>Tipo de Pedido *</label>
+          <select id="aprovar-tipo-pedido" onchange="atualizarHintAprovacaoOrc()">
+            <option value="ENTREGA">🚚 Entrega (Produz / Reserva para Data Marcada)</option>
+            <option value="RETIRADA">🛍️ Retirada Imediata (Exige Estoque Pronto)</option>
+          </select>
+        </div>
+
         <div class="form-group" style="margin-bottom:8px">
-          <label>Data de Entrega Esperada do Pedido *</label>
+          <label id="aprovar-label-data">Data de Entrega Esperada do Pedido *</label>
           <input type="date" id="aprovar-data-entrega" required />
-          <div style="font-size:11.5px;color:var(--text-secondary);margin-top:6px;line-height:1.4">
-            ⚙️ Ao confirmar, o ERP baixará automaticamente o saldo disponível na Câmara Fria e criará as <strong>Ordens de Produção (OPs)</strong> para os itens faltantes.
+          <div id="aprovar-hint-texto" style="font-size:11.5px;color:var(--text-secondary);margin-top:6px;line-height:1.4">
+            ⚙️ Ao confirmar, o pedido entra em <strong>ABERTO</strong> sem baixar a Câmara Fria nem gerar cobrança agora. Se faltar produção líquida, as <strong>Ordens de Produção (OPs)</strong> serão criadas automaticamente.
           </div>
         </div>
       </form>
@@ -541,12 +557,28 @@
     document.getElementById('pill-pendente').textContent = `🟡 Pendentes (${pend})`;
     document.getElementById('pill-aprovado').textContent = `🟢 Aprovados (${apro})`;
     document.getElementById('pill-recusado').textContent = `🔴 Recusados (${recu})`;
+
+    const activePill = document.querySelector('#status-filter-menu .pill.active');
+    const lbl = document.getElementById('status-filter-label');
+    if (lbl && activePill) lbl.textContent = activePill.textContent.trim();
   }
+
+  function toggleFiltroStatusDropdown(e) {
+    if (e) e.stopPropagation();
+    document.getElementById('status-filter-dropdown')?.classList.toggle('open');
+  }
+  document.addEventListener('click', (e) => {
+    const dd = document.getElementById('status-filter-dropdown');
+    if (dd && !dd.contains(e.target)) dd.classList.remove('open');
+  });
 
   function filtrarStatus(status, el) {
     filtroStatus = status;
     document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
-    el.classList.add('active');
+    if (el) el.classList.add('active');
+    const lbl = document.getElementById('status-filter-label');
+    if (lbl && el) lbl.textContent = el.textContent.trim();
+    document.getElementById('status-filter-dropdown')?.classList.remove('open');
     renderizarOrcamentos();
   }
 
@@ -800,8 +832,23 @@
     const entregaSugerida = new Date();
     entregaSugerida.setDate(entregaSugerida.getDate() + 3);
     document.getElementById('aprovar-data-entrega').value = entregaSugerida.toISOString().slice(0, 10);
+    document.getElementById('aprovar-tipo-pedido').value = 'ENTREGA';
+    atualizarHintAprovacaoOrc();
 
     document.getElementById('aprovar-modal-overlay').classList.add('open');
+  }
+
+  function atualizarHintAprovacaoOrc() {
+    const tipo = document.getElementById('aprovar-tipo-pedido').value;
+    const hint = document.getElementById('aprovar-hint-texto');
+    const lbl  = document.getElementById('aprovar-label-data');
+    if (tipo === 'RETIRADA') {
+      lbl.textContent = 'Data Prevista de Retirada *';
+      hint.innerHTML = '🛍️ Para <strong>Retirada Imediata</strong>, a Câmara Fria precisa ter saldo disponível agora. A baixa física ocorre ao clicar em <strong>Entregar / Retirar</strong>.';
+    } else {
+      lbl.textContent = 'Data de Entrega Esperada do Pedido *';
+      hint.innerHTML = '⚙️ Ao confirmar, o pedido entra em <strong>ABERTO</strong> sem baixar a Câmara Fria nem gerar cobrança agora. Se faltar produção líquida, as <strong>Ordens de Produção (OPs)</strong> serão criadas automaticamente.';
+    }
   }
 
   function closeAprovarModal() {
@@ -812,6 +859,7 @@
     e.preventDefault();
     const orcId = parseInt(document.getElementById('aprovar-orc-id').value, 10);
     const dataEntrega = document.getElementById('aprovar-data-entrega').value;
+    const tipoPedido  = document.getElementById('aprovar-tipo-pedido').value || 'ENTREGA';
 
     if (!orcId || !dataEntrega) {
       showToast('Informe a data de entrega esperada.', 'error');
@@ -822,7 +870,7 @@
       const res = await fetch(`${API_ORCAMENTOS}/${orcId}/aprovar`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data_entrega: dataEntrega })
+        body: JSON.stringify({ data_entrega: dataEntrega, tipo_pedido: tipoPedido })
       });
       const data = await res.json();
 

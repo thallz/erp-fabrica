@@ -13,6 +13,7 @@ router.put('/op/:id/iniciar', producaoController.iniciarOP);
 router.put('/op/:id/finalizar', producaoController.finalizarOP);
 router.put('/op/:id/agendar', producaoController.agendarOP);
 router.put('/op/:id/status', producaoController.atualizarStatusOP);
+router.delete('/op/:id', producaoController.excluirOP);
 router.post('/intercorrencia', producaoController.registrarIntercorrencia);
 
 module.exports = router;

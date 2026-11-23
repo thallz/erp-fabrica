@@ -9,8 +9,13 @@ router.post('/aplicar-sugestao', planejamentoController.aplicarSugestao);
 router.post('/split-op', planejamentoController.splitOP);
 router.get('/semanal', planejamentoController.obterPlanejamentoSemanal);
 router.post('/agendar', planejamentoController.agendarOP);
+router.post('/agendar-lote', planejamentoController.agendarLote);
 router.put('/op/:id/agendar', planejamentoController.agendarOP);
+router.post('/agrupar-ops', planejamentoController.agruparOPs);
 router.get('/validar-estoque', planejamentoController.validarEstoqueSemana);
+router.get('/mapa-preparo', planejamentoController.obterMapaPreparo);
+router.get('/fichas-colaboradores', planejamentoController.obterFichasColaboradores);
 router.get('/ficha/:colaborador_id/:data', planejamentoController.obterFichaTrabalho);
+router.get('/ficha-semana/:colaborador_id', planejamentoController.obterFichaSemana);
 
 module.exports = router;

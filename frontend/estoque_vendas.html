@@ -12,12 +12,13 @@
             font-family: 'Inter', system-ui, sans-serif;
             background: #f8fafc;
             margin: 0;
-            padding: 20px;
+            padding: 0;
         }
 
         .header {
             max-width: 1200px;
-            margin: 0 auto 20px;
+            margin: 24px auto 20px;
+            padding: 0 20px;
             text-align: center;
         }
 
@@ -217,9 +218,55 @@
     </style>
 </head>
 <body>
+    <header class="topbar">
+      <div class="topbar-logo">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        <span>ERP Fabrica</span>
+      </div>
+      <nav class="topbar-nav">
+        <div class="dropdown">
+          <button class="dropbtn" style="color:var(--brand)">📊 COMERCIAL</button>
+          <div class="dropdown-content">
+            <a href="vendas.html">Vendas</a>
+            <a href="orcamentos.html">Orçamentos</a>
+            <a href="clientes.html">Clientes</a>
+            <a href="estoque_vendas.html" class="active">Estoque Pronta-Entrega</a>
+          </div>
+        </div>
+        <div class="dropdown">
+          <button class="dropbtn">📦 ESTOQUE</button>
+          <div class="dropdown-content">
+            <a href="almoxarifado.html">Matéria-Prima</a>
+            <a href="estoque_produtos.html">Produto Acabado</a>
+          </div>
+        </div>
+        <div class="dropdown">
+          <button class="dropbtn">🏭 PRODUÇÃO</button>
+          <div class="dropdown-content">
+            <a href="planejamento.html">Planejamento de Produção</a>
+            <a href="produtos.html">Produtos Finais</a>
+            <a href="receitas.html">Receitas (Preparos)</a>
+            <a href="colaboradores.html">Colaboradores</a>
+          </div>
+        </div>
+        <div class="dropdown">
+          <button class="dropbtn">💰 FINANCEIRO</button>
+          <div class="dropdown-content">
+            <a href="financeiro.html">Fluxo de Caixa</a>
+            <a href="contas_receber.html">Contas a Receber</a>
+            <a href="contas_pagar.html">Contas a Pagar</a>
+          </div>
+        </div>
+      </nav>
+      <div class="topbar-right">
+        <span class="badge-online">● Sistema Online</span>
+        <div class="user-chip"><div class="user-avatar">AD</div></div>
+      </div>
+    </header>
+
     <div class="header">
         <a href="index.html" class="voltar-btn">← Voltar ao Dashboard</a>
-        <h1>🧊 Câmara Fria - Estoque de Produtos</h1>
+        <h1>🧊 Câmara Fria - Estoque Pronta-Entrega</h1>
         <p>Visão da Vendedora: O que está disponível para entrega imediata</p>
         <div style="margin-top: 10px; font-size: 0.9rem; color: #64748b;">
             💡 <strong>Dica:</strong> Produtos com estoque &lt; 100 unidades precisam de produção imediata

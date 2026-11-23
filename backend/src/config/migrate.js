@@ -202,7 +202,96 @@ async function runMigrations() {
         CREATE INDEX IF NOT EXISTS idx_conta_receber_status_venc ON conta_receber (status, data_vencimento);
     `);
 
-    console.log('✅ Tabela de categorias dinâmicas, Kardex, Contas a Pagar/Receber e Orçamentos verificados');
+    // Migration: Unificação do Planejamento de Produção (origem e agrupamento de OPs)
+    await pool.query(`
+        ALTER TABLE ordem_producao ADD COLUMN IF NOT EXISTS pedido_id INT REFERENCES pedido(id) ON DELETE SET NULL;
+        ALTER TABLE ordem_producao ADD COLUMN IF NOT EXISTS agrupada BOOLEAN DEFAULT FALSE;
+
+        CREATE TABLE IF NOT EXISTS ordem_producao_origem (
+            id SERIAL PRIMARY KEY,
+            ordem_producao_id INT NOT NULL REFERENCES ordem_producao(id) ON DELETE CASCADE,
+            pedido_id INT REFERENCES pedido(id) ON DELETE SET NULL,
+            cliente_id INT REFERENCES cliente(id) ON DELETE SET NULL,
+            quantidade INT NOT NULL,
+            data_entrega DATE NULL
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_op_origem_op ON ordem_producao_origem (ordem_producao_id);
+        CREATE INDEX IF NOT EXISTS idx_op_origem_pedido ON ordem_producao_origem (pedido_id);
+    `);
+
+    // Migration: Fluxo Integrado Vendas <-> Produção <-> Entrega <-> Faturamento & Crédito Cliente
+    await pool.query(`
+        ALTER TABLE pedido ADD COLUMN IF NOT EXISTS tipo_pedido VARCHAR(20) DEFAULT 'ENTREGA';
+        ALTER TABLE pedido DROP CONSTRAINT IF EXISTS chk_pedido_tipo_pedido;
+        ALTER TABLE pedido ADD CONSTRAINT chk_pedido_tipo_pedido CHECK (tipo_pedido IN ('ENTREGA', 'RETIRADA'));
+        ALTER TABLE pedido ADD COLUMN IF NOT EXISTS estoque_baixado BOOLEAN DEFAULT FALSE;
+        ALTER TABLE pedido ADD COLUMN IF NOT EXISTS data_entrega_efetiva TIMESTAMP NULL;
+        ALTER TABLE pedido ADD COLUMN IF NOT EXISTS faturado BOOLEAN DEFAULT FALSE;
+        ALTER TABLE pedido ADD COLUMN IF NOT EXISTS observacao TEXT NULL;
+        ALTER TABLE pedido ALTER COLUMN status SET DEFAULT 'ABERTO';
+
+        ALTER TABLE item_pedido ADD COLUMN IF NOT EXISTS quantidade_avariada INT DEFAULT 0;
+
+        ALTER TABLE cliente ADD COLUMN IF NOT EXISTS saldo_credito DECIMAL(10, 2) DEFAULT 0.00;
+        ALTER TABLE conta_receber ADD COLUMN IF NOT EXISTS credito_utilizado DECIMAL(10, 2) DEFAULT 0.00;
+
+        CREATE TABLE IF NOT EXISTS ocorrencia_entrega (
+            id SERIAL PRIMARY KEY,
+            pedido_id INT NOT NULL REFERENCES pedido(id) ON DELETE CASCADE,
+            produto_id INT NOT NULL REFERENCES produto(id) ON DELETE RESTRICT,
+            quantidade INT NOT NULL CHECK (quantidade > 0),
+            condicao_produto VARCHAR(20) NOT NULL CHECK (condicao_produto IN ('BOM', 'AVARIADO')),
+            acao_financeira VARCHAR(20) NOT NULL CHECK (acao_financeira IN ('ABATER_VALOR', 'GERAR_CREDITO', 'REPOR_PRODUTO')),
+            valor_abatido DECIMAL(10, 2) DEFAULT 0.00,
+            op_reposicao_id INT REFERENCES ordem_producao(id) ON DELETE SET NULL,
+            observacao TEXT NULL,
+            criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE INDEX IF NOT EXISTS idx_ocorrencia_entrega_pedido ON ocorrencia_entrega (pedido_id);
+
+        CREATE TABLE IF NOT EXISTS credito_cliente_mov (
+            id SERIAL PRIMARY KEY,
+            cliente_id INT NOT NULL REFERENCES cliente(id) ON DELETE CASCADE,
+            pedido_id INT REFERENCES pedido(id) ON DELETE SET NULL,
+            ocorrencia_id INT REFERENCES ocorrencia_entrega(id) ON DELETE SET NULL,
+            tipo VARCHAR(10) NOT NULL CHECK (tipo IN ('CREDITO', 'USO')),
+            valor DECIMAL(10, 2) NOT NULL CHECK (valor > 0),
+            saldo_anterior DECIMAL(10, 2) NOT NULL,
+            saldo_posterior DECIMAL(10, 2) NOT NULL,
+            observacao TEXT NULL,
+            criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE INDEX IF NOT EXISTS idx_credito_cliente_mov_cli ON credito_cliente_mov (cliente_id);
+        CREATE INDEX IF NOT EXISTS idx_credito_cliente_mov_ped ON credito_cliente_mov (pedido_id);
+    `);
+
+    // Migração idempotente de pedidos legados
+    await pool.query(`
+        UPDATE pedido SET status = 'ABERTO' WHERE status IN ('CRIADO', 'PRODUZINDO');
+        UPDATE pedido SET status = 'ENTREGUE' WHERE status = 'FATURADO';
+        UPDATE pedido
+           SET estoque_baixado = TRUE,
+               data_entrega_efetiva = COALESCE(data_entrega_efetiva, data_pedido, CURRENT_TIMESTAMP)
+         WHERE status = 'ENTREGUE' AND estoque_baixado = FALSE AND data_entrega_efetiva IS NULL;
+        UPDATE pedido p
+           SET faturado = TRUE
+         WHERE EXISTS (
+             SELECT 1 FROM conta_receber cr
+             WHERE cr.pedido_id = p.id AND cr.status <> 'CANCELADO'
+         ) AND p.faturado = FALSE;
+        UPDATE pedido p
+           SET status = 'CONCLUIDO'
+         WHERE p.status = 'ENTREGUE'
+           AND p.estoque_baixado = TRUE
+           AND p.faturado = TRUE
+           AND EXISTS (
+               SELECT 1 FROM conta_receber cr
+               WHERE cr.pedido_id = p.id AND cr.status = 'RECEBIDO'
+           );
+    `);
+
+    console.log('✅ Tabela de categorias dinâmicas, Kardex, Contas a Pagar/Receber, Orçamentos, Origem de OPs e Fluxo Vendas/Faturamento verificados');
 }
 
 module.exports = { runMigrations };

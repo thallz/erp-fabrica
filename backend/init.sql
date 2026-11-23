@@ -237,3 +237,60 @@ CREATE TABLE IF NOT EXISTS conta_receber (
 );
 
 CREATE INDEX IF NOT EXISTS idx_conta_receber_status_venc ON conta_receber (status, data_vencimento);
+
+-- 15. VÍNCULO DE ORIGEM E AGRUPAMENTO DE ORDENS DE PRODUÇÃO
+ALTER TABLE ordem_producao ADD COLUMN IF NOT EXISTS pedido_id INT REFERENCES pedido(id) ON DELETE SET NULL;
+ALTER TABLE ordem_producao ADD COLUMN IF NOT EXISTS agrupada BOOLEAN DEFAULT FALSE;
+
+CREATE TABLE IF NOT EXISTS ordem_producao_origem (
+    id SERIAL PRIMARY KEY,
+    ordem_producao_id INT NOT NULL REFERENCES ordem_producao(id) ON DELETE CASCADE,
+    pedido_id INT REFERENCES pedido(id) ON DELETE SET NULL,
+    cliente_id INT REFERENCES cliente(id) ON DELETE SET NULL,
+    quantidade INT NOT NULL,
+    data_entrega DATE NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_op_origem_op ON ordem_producao_origem (ordem_producao_id);
+CREATE INDEX IF NOT EXISTS idx_op_origem_pedido ON ordem_producao_origem (pedido_id);
+
+-- 16. FLUXO INTEGRADO VENDAS -> PRODUÇÃO -> ENTREGA -> FATURAMENTO & CRÉDITO CLIENTE
+ALTER TABLE pedido ADD COLUMN IF NOT EXISTS tipo_pedido VARCHAR(20) DEFAULT 'ENTREGA' CHECK (tipo_pedido IN ('ENTREGA', 'RETIRADA'));
+ALTER TABLE pedido ADD COLUMN IF NOT EXISTS estoque_baixado BOOLEAN DEFAULT FALSE;
+ALTER TABLE pedido ADD COLUMN IF NOT EXISTS data_entrega_efetiva TIMESTAMP NULL;
+ALTER TABLE pedido ADD COLUMN IF NOT EXISTS faturado BOOLEAN DEFAULT FALSE;
+ALTER TABLE pedido ADD COLUMN IF NOT EXISTS observacao TEXT NULL;
+ALTER TABLE pedido ALTER COLUMN status SET DEFAULT 'ABERTO';
+
+ALTER TABLE item_pedido ADD COLUMN IF NOT EXISTS quantidade_avariada INT DEFAULT 0;
+ALTER TABLE cliente ADD COLUMN IF NOT EXISTS saldo_credito DECIMAL(10, 2) DEFAULT 0.00;
+ALTER TABLE conta_receber ADD COLUMN IF NOT EXISTS credito_utilizado DECIMAL(10, 2) DEFAULT 0.00;
+
+CREATE TABLE IF NOT EXISTS ocorrencia_entrega (
+    id SERIAL PRIMARY KEY,
+    pedido_id INT NOT NULL REFERENCES pedido(id) ON DELETE CASCADE,
+    produto_id INT NOT NULL REFERENCES produto(id) ON DELETE RESTRICT,
+    quantidade INT NOT NULL CHECK (quantidade > 0),
+    condicao_produto VARCHAR(20) NOT NULL CHECK (condicao_produto IN ('BOM', 'AVARIADO')),
+    acao_financeira VARCHAR(20) NOT NULL CHECK (acao_financeira IN ('ABATER_VALOR', 'GERAR_CREDITO', 'REPOR_PRODUTO')),
+    valor_abatido DECIMAL(10, 2) DEFAULT 0.00,
+    op_reposicao_id INT REFERENCES ordem_producao(id) ON DELETE SET NULL,
+    observacao TEXT NULL,
+    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_ocorrencia_entrega_pedido ON ocorrencia_entrega (pedido_id);
+
+CREATE TABLE IF NOT EXISTS credito_cliente_mov (
+    id SERIAL PRIMARY KEY,
+    cliente_id INT NOT NULL REFERENCES cliente(id) ON DELETE CASCADE,
+    pedido_id INT REFERENCES pedido(id) ON DELETE SET NULL,
+    ocorrencia_id INT REFERENCES ocorrencia_entrega(id) ON DELETE SET NULL,
+    tipo VARCHAR(10) NOT NULL CHECK (tipo IN ('CREDITO', 'USO')),
+    valor DECIMAL(10, 2) NOT NULL CHECK (valor > 0),
+    saldo_anterior DECIMAL(10, 2) NOT NULL,
+    saldo_posterior DECIMAL(10, 2) NOT NULL,
+    observacao TEXT NULL,
+    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_credito_cliente_mov_cli ON credito_cliente_mov (cliente_id);
+CREATE INDEX IF NOT EXISTS idx_credito_cliente_mov_ped ON credito_cliente_mov (pedido_id);
